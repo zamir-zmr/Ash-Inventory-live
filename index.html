@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ash Cafe | Pro Inventory & Crop</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js"></script>
+
+    <style>
+        /* --- Themes --- */
+        :root {
+            --bg: #f8fafc;
+            --panel: #ffffff;
+            --card: #ffffff;
+            --accent: #0ea5e9;
+            --teal: #0d9488;
+            --danger: #e11d48;
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+            --glass: rgba(0, 0, 0, 0.05);
+            --input-bg: #f1f5f9;
+            --border: #e2e8f0;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0b0f1a;
+            --panel: #161d2f;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --teal: #2dd4bf;
+            --danger: #fb7185;
+            --text-main: #f1f5f9;
+            --text-dim: #64748b;
+            --glass: rgba(255, 255, 255, 0.03);
+            --input-bg: #0f172a;
+            --border: #2d3748;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg); color: var(--text-main);
+            margin: 0; padding: 15px; min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .container { width: 100%; max-width: 500px; margin: auto; }
+
+        /* --- Header --- */
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 5px 20px 5px; }
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .avatar { 
+            width: 42px; height: 42px; background: linear-gradient(135deg, var(--accent), var(--teal)); 
+            border-radius: 14px; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; color: #fff; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
+        }
+        .header-text span { font-size: 10px; color: var(--text-dim); font-weight: 800; display: block; }
+        .header-text strong { font-size: 15px; color: var(--text-main); }
+
+        .header-actions { display: flex; gap: 8px; }
+        .icon-btn {
+            background: var(--panel); border: 1px solid var(--border);
+            color: var(--accent); width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .icon-btn.active { background: var(--accent); color: #fff; }
+
+        /* --- Forms --- */
+        .glass-panel { background: var(--panel); border-radius: 20px; padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; display: none; }
+        input, select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 12px; border-radius: 12px; width: 100%; margin-bottom: 12px; box-sizing: border-box; outline: none; }
+        .file-label { display: block; background: var(--panel); border: 1px dashed var(--accent); color: var(--accent); padding: 10px; border-radius: 10px; text-align: center; font-size: 12px; margin-bottom: 12px; cursor: pointer; }
+        .btn-main { background: var(--accent); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 800; width: 100%; cursor: pointer; }
+
+        /* --- Grid & Cards --- */
+        .category-header { font-size: 11px; font-weight: 900; color: var(--text-dim); text-transform: uppercase; margin: 25px 0 12px 5px; display: flex; align-items: center; gap: 10px; }
+        .category-header::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+        .stock-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+        .stock-card {
+            background: var(--card); border-radius: 20px; overflow: hidden;
+            position: relative; border: 1px solid var(--border);
+            aspect-ratio: 1 / 1.15; display: flex; flex-direction: column;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+
+        .card-img { width: 100%; height: 55%; object-fit: cover; background: var(--input-bg); }
+        .card-body { padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+        .card-body h4 { margin: 0; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .qty-tag { color: var(--teal); font-size: 11px; font-weight: 800; display: inline-block; margin-top: 2px; }
+        .meta-text { font-size: 8px; color: var(--text-dim); text-transform: uppercase; display: block; margin-top: 4px; }
+
+        /* --- Manage Overlay --- */
+        .manage-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0; top: 0;
+            background: transparent;
+            display: none; align-items: flex-end; justify-content: center;
+            z-index: 5; pointer-events: none;
+        }
+        
+        .action-bar {
+            background: var(--panel); width: 100%; padding: 8px;
+            display: flex; justify-content: space-around; align-items: center;
+            backdrop-filter: blur(4px); pointer-events: auto; border-top: 1px solid var(--border);
+        }
+
+        .action-circle { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; }
+
+        /* --- Modals --- */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal { background: var(--panel); padding: 25px; border-radius: 24px; width: 90%; max-width: 360px; border: 1px solid var(--border); color: var(--text-main); }
+        
+        /* Cropping Modal UI */
+        #cropArea { width: 100%; height: 280px; margin-bottom: 20px; }
+        
+        /* Professional Toast Styling */
+#toast {
+    visibility: hidden;
+    min-width: 280px;
+    background: #0d9488; /* Professional Teal */
+    color: white;
+    text-align: center;
+    border-radius: 50px; /* Capsule shape */
+    padding: 14px 24px;
+    position: fixed;
+    z-index: 9999;
+    left: 50%;
+    bottom: 40px;
+    transform: translateX(-50%);
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+#toast.show {
+    visibility: visible;
+    animation: slideUpFade 0.5s forwards, slideDownFade 0.5s 2.5s forwards;
+}
+
+/* Modal and Preview Animations */
+.fade-in { animation: fadeIn 0.4s ease-in-out; }
+
+@keyframes slideUpFade {
+    from { bottom: 0; opacity: 0; }
+    to { bottom: 40px; opacity: 1; }
+}
+
+@keyframes slideDownFade {
+    from { bottom: 40px; opacity: 1; }
+    to { bottom: 0; opacity: 0; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Edit Preview Image Enhancement */
+#editImgPreview {
+    transition: transform 0.3s ease;
+    cursor: zoom-in;
+}
+#editImgPreview:hover {
+    transform: scale(1.05);
+}
+
+        
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="app-header">
+        <div class="user-profile">
+            <div class="avatar" id="uAvatar">?</div>
+            <div class="header-text">
+                <span id="roleLabel">VIEWER MODE</span>
+                <strong id="uNameDisplay">Guest User</strong>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="icon-btn" id="themeBtn" onclick="toggleTheme()"><i class="fas fa-moon"></i></div>
+            <div class="icon-btn" id="manageBtn" onclick="toggleManageMode()" style="display:none;"><i class="fas fa-sliders-h"></i></div>
+            <div class="icon-btn" onclick="openLogin()"><i class="fas fa-user-lock" id="lockIcon"></i></div>
+        </div>
+    </div>
+
+    <div id="adminPanel" class="glass-panel">
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="newCat" placeholder="New Category...">
+            <button onclick="addCat()" class="btn-main" style="width:55px; background:var(--teal)">+</button>
+        </div>
+        <select id="catDropdown"></select>
+        <input type="text" id="stockName" placeholder="Item Name">
+        <input type="number" id="stockQty" placeholder="Quantity">
+        <label class="file-label" for="stockImg"><i class="fas fa-image"></i> <span id="fileName">Add & Crop Photo</span></label>
+        <input type="file" id="stockImg" accept="image/*" style="display:none;" onchange="handleFileSelect(this, 'new')">
+        <button class="btn-main" onclick="addStock()">SAVE TO INVENTORY</button>
+    </div>
+
+    <input type="text" id="search" onkeyup="filter()" placeholder="🔍 Search inventory..." style="border-radius:15px; margin-bottom: 20px;">
+    <div id="contentArea"></div>
+</div>
+
+
+<div class="overlay" id="cropModal" style="z-index: 2000;">
+    <div class="modal">
+        <h3 style="color:white; text-align:center;">Crop Photo</h3>
+        <div id="cropArea" style="height: 300px;"></div>
+        <button class="btn-main" onclick="saveCroppedImage()">APPLY & SAVE</button>
+        <p onclick="closeModals()" style="color:var(--text-dim); cursor:pointer; text-align:center; margin-top:15px;">Cancel</p>
+    </div>
+</div>
+
+<div class="overlay" id="loginModal">
+    <div class="modal">
+        <h2 style="margin:0 0 15px 0;">Admin Login</h2>
+        <input type="text" id="loginUser" placeholder="Username">
+        <input type="password" id="loginPass" placeholder="Password">
+        <button class="btn-main" onclick="handleLogin()">LOGIN</button>
+        <p onclick="closeModals()" style="color:var(--text-dim); cursor:pointer; text-align:center; margin-top:15px;">Cancel</p>
+    </div>
+</div>
+
+
+<div id="addPreviewBox" style="text-align:center; display:none; margin-bottom:10px;">
+    <img id="addImgPreview" src="" style="width:80px; height:80px; border-radius:10px; border:2px solid var(--teal);">
+</div>
+
+<div class="overlay" id="editModal">
+    <div class="modal">
+        <h2 style="color:white;">Update Item</h2>
+        <div id="editPreviewContainer" style="text-align:center; display:none; margin-bottom:10px;">
+            <img id="editImgPreview" src="" style="width:80px; height:80px; border-radius:10px; border:2px solid var(--accent);">
+        </div>
+        <input type="text" id="editName">
+        <input type="number" id="editQty">
+        <select id="editCatDropdown"></select>
+        <label class="file-label" for="editImg"><i class="fas fa-camera"></i> <span id="editFileName">Change Photo</span></label>
+        <input type="file" id="editImg" accept="image/*" style="display:none;" onchange="handleFileSelect(this, 'edit')">
+        <button class="btn-main" id="saveEditBtn">UPDATE</button>
+        <p onclick="closeModals()" style="color:var(--text-dim); cursor:pointer; text-align:center; margin-top:15px;">Cancel</p>
+    </div>
+</div>
+
+<div class="overlay" id="deleteModal">
+    <div class="modal" style="text-align:center;">
+        <i class="fas fa-trash-alt" style="font-size:30px; color:var(--danger); margin-bottom:15px;"></i>
+        <h3>Delete Item?</h3>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-main" style="background:var(--text-dim); color:white;" onclick="closeModals()">BACK</button>
+            <button class="btn-main" style="background:var(--danger); color:white;" id="confirmDelBtn">DELETE</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Firebase Setup
+    const firebaseConfig = {
+        apiKey: "AIzaSyA3bsKfP7CxS0Sb0CY6xu_vFogVcxbJCII",
+        authDomain: "ashcostingapp.firebaseapp.com",
+        databaseURL: "https://ashcostingapp-default-rtdb.firebaseio.com",
+        projectId: "ashcostingapp",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let isAdmin = false, isManageMode = false, currentUser = "Guest";
+    let cropperInstance = null, currentFileMode = "new", finalImageData = "";
+
+    // --- Theme Logic ---
+    function toggleTheme() {
+        const body = document.body;
+        const icon = document.querySelector('#themeBtn i');
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.removeAttribute('data-theme');
+            icon.className = 'fas fa-moon';
+            localStorage.setItem('theme', 'light');
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'fas fa-sun';
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+
+    // --- Cropping Functions ---
+
+function handleFileSelect(input, mode) {
+    if (input.files && input.files[0]) {
+        currentFileMode = mode;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            // Modal display style
+            const modal = document.getElementById('cropModal');
+            modal.style.display = 'flex';
+            modal.style.zIndex = '2000'; // Pop-up sabse upar dikhega
+
+            if (cropperInstance) cropperInstance.destroy();
+
+            // Cropper setup
+            cropperInstance = new Croppie(document.getElementById('cropArea'), {
+                viewport: { width: 250, height: 250, type: 'square' },
+                boundary: { width: 320, height: 320 },
+                showZoomer: true,
+                enableOrientation: true,
+                mouseWheelZoom: 'on'
+            });
+            cropperInstance.bind({ url: e.target.result });
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+
+
+    // --- Admin & Inventory Logic ---
+function handleLogin() {
+    const u = document.getElementById('loginUser').value.toLowerCase().trim();
+    const p = document.getElementById('loginPass').value;
+
+    // Har user ke liye alag password set kiya gaya hai
+    const users = {
+        "zamir": "123",
+        "sojib": "456",
+        "peter": "678"
+    };
+
+    // Check karein ki user list mein hai aur password sahi hai
+    if (users[u] && users[u] === p) {
+        isAdmin = true; 
+        currentUser = u.charAt(0).toUpperCase() + u.slice(1);
+        
+        // UI Updates
+        localStorage.setItem("user", currentUser);
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('manageBtn').style.display = 'flex';
+        document.getElementById('uNameDisplay').innerText = currentUser;
+        document.getElementById('uAvatar').innerText = currentUser[0];
+        document.getElementById('roleLabel').innerText = "ADMINISTRATOR";
+        document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
+        
+        closeModals(); 
+        render();
+        
+        // Professional Toast Pop-up
+        showToast(`Welcome Back, ${currentUser}! 👋`);
+    } else { 
+        // Agar password galat hai
+        showToast("Invalid Username or Password! ❌");
+    }
+}
+
+
+async function addStock() {
+    const c = document.getElementById('catDropdown').value;
+    const n = document.getElementById('stockName').value.trim();
+    const q = document.getElementById('stockQty').value;
+
+    // Yahan hum cropped image variable (finalImageData) check kar rahe hain
+    if(c && n && finalImageData) {
+        db.ref("stocks").push({ 
+            catId: c, 
+            name: n, 
+            qty: q, 
+            img: finalImageData, // Cropped photo yahan save hogi
+            by: currentUser, 
+            time: new Date().toLocaleString() 
+        });
+        
+        // Form clear karein
+        document.getElementById('stockName').value = ""; 
+        document.getElementById('stockQty').value = "";
+        document.getElementById('fileName').innerText = "Add Photo";
+        finalImageData = ""; // Agli photo ke liye reset
+        alert("Inventory Saved!");
+    } else {
+        alert("Please enter Name and Crop a Photo first!");
+    }
+}
+
+// --- 1. Professional Toast Function (Stylish Popup) ---
+function showToast(msg) {
+    // Agar pehle se toast nahi hai toh naya banayein
+    let toast = document.getElementById("toast");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "toast";
+        document.body.appendChild(toast);
+    }
+    
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+    toast.className = "toast show";
+    
+    // 3 second baad apne aap gayab ho jayega
+    setTimeout(() => { 
+        toast.className = toast.className.replace("show", ""); 
+    }, 3000);
+}
+
+// --- 2. Professional openEdit Function ---
+function openEdit(id, cId, name, qty, currentImg) {
+    // Purana data fields mein set karein
+    document.getElementById('editName').value = name;
+    document.getElementById('editQty').value = qty;
+    document.getElementById('editCatDropdown').value = cId;
+    
+    // Image Preview reset aur set karein
+    const previewImg = document.getElementById('editImgPreview');
+    const previewCont = document.getElementById('editPreviewContainer');
+    
+    if (currentImg && previewImg) {
+        previewImg.src = currentImg;
+        previewCont.style.display = 'block';
+        previewCont.classList.add('fade-in'); // Smooth appearance
+    } else {
+        previewCont.style.display = 'none';
+    }
+
+    // Modal ko flex karke dikhana
+    document.getElementById('editModal').style.display = 'flex';
+
+    // Update Button Logic
+    document.getElementById('saveEditBtn').onclick = function() {
+        // Loading State (Button ko thoda disable jaisa dikhana)
+        const btn = document.getElementById('saveEditBtn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> UPDATING...';
+        btn.style.opacity = '0.7';
+
+        let updateData = {
+            catId: document.getElementById('editCatDropdown').value,
+            name: document.getElementById('editName').value,
+            qty: document.getElementById('editQty').value,
+            by: currentUser,
+            time: new Date().toLocaleString()
+        };
+
+        // Agar user ne nayi photo crop ki hai toh hi add karein
+        if (typeof finalImageData !== 'undefined' && finalImageData !== "") {
+            updateData.img = finalImageData;
+        }
+
+        // Firebase Update
+        db.ref("stocks/" + id).update(updateData).then(() => {
+            // Success hone par variables reset
+            if (typeof finalImageData !== 'undefined') finalImageData = ""; 
+            
+            // UI Clean up
+            btn.innerHTML = 'UPDATE';
+            btn.style.opacity = '1';
+            closeModals();
+            
+            // Professional Toast Call
+            showToast("Item Updated Successfully! ✅");
+        }).catch(err => {
+            showToast("Error: " + err.message);
+            btn.innerHTML = 'UPDATE';
+        });
+    };
+}
+
+
+function saveCroppedImage() {
+    // Croppie se result lena (Base64 format mein)
+    cropperInstance.result({ 
+        type: 'base64', 
+        size: { width: 500, height: 500 }, // Acchi quality ke liye size
+        format: 'jpeg',
+        quality: 0.8 
+    }).then(function (base64) {
+        finalImageData = base64; // Yeh variable Firebase mein save hoga
+
+        if (currentFileMode === 'edit') {
+            // Edit modal mein photo dikhana
+            document.getElementById('editImgPreview').src = base64;
+            document.getElementById('editPreviewContainer').style.display = 'block';
+            document.getElementById('editFileName').innerText = "✅ Photo Updated";
+        } else {
+            // Add (New) panel mein photo dikhana
+            document.getElementById('addImgPreview').src = base64;
+            document.getElementById('addPreviewBox').style.display = 'block';
+            document.getElementById('fileName').innerText = "✅ Photo Ready";
+        }
+
+        // Crop wala pop-up band karein
+        document.getElementById('cropModal').style.display = 'none';
+    });
+}
+
+
+
+    function toggleManageMode() {
+        isManageMode = !isManageMode;
+        document.getElementById('manageBtn').classList.toggle('active');
+        render();
+    }
+
+    function render() {
+        db.ref("categories").on("value", snap => {
+            let opts = '<option value="">Category</option>';
+            const cats = snap.val();
+            for(let k in cats) opts += `<option value="${k}">${cats[k].name}</option>`;
+            document.getElementById('catDropdown').innerHTML = opts;
+            document.getElementById('editCatDropdown').innerHTML = opts;
+        });
+
+        db.ref("stocks").on("value", stockSnap => {
+            const stocks = stockSnap.val();
+            db.ref("categories").once("value", catSnap => {
+                const cats = catSnap.val();
+                let html = "";
+                for(let cId in cats) {
+                    let itemsHtml = "";
+                    for(let sId in stocks) {
+                        if(stocks[sId].catId === cId) {
+                            const s = stocks[sId];
+                            itemsHtml += `
+                            <div class="stock-card">
+                                ${s.img ? `<img src="${s.img}" class="card-img">` : `<div class="no-img"><i class="fas fa-image"></i></div>`}
+                                <div class="card-body">
+                                    <h4>${s.name}</h4>
+                                    <div>
+                                        <div class="qty-tag">${s.qty} Units</div>
+                                        <span class="meta-text">${s.by} | ${s.time}</span>
+                                    </div>
+                                </div>
+                                <div class="manage-overlay" style="display: ${isManageMode ? 'flex' : 'none'}">
+                                    <div class="action-bar">
+                                        <div class="action-circle" style="background:var(--accent); color:#fff;" onclick="openEdit('${sId}','${cId}','${s.name}','${s.qty}')"><i class="fas fa-pen"></i></div>
+                                        <div class="action-circle" style="background:var(--danger); color:#fff;" onclick="askDelete('${sId}')"><i class="fas fa-trash"></i></div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }
+                    }
+                    html += `<div class="cat-block"><div class="category-header">${cats[cId].name}</div><div class="stock-grid">${itemsHtml}</div></div>`;
+                }
+                document.getElementById('contentArea').innerHTML = html;
+            });
+        });
+    }
+
+    function filter() {
+        const q = document.getElementById('search').value.toLowerCase();
+        document.querySelectorAll('.stock-card').forEach(c => {
+            c.style.display = c.innerText.toLowerCase().includes(q) ? "flex" : "none";
+        });
+    }
+
+    function addCat() {
+        const n = document.getElementById('newCat').value.trim();
+        if(n) db.ref("categories").push({ name: n });
+        document.getElementById('newCat').value = "";
+    }
+
+    function openLogin() {
+        if(isAdmin) { if(confirm("Logout?")) { localStorage.removeItem("user"); location.reload(); } }
+        else document.getElementById('loginModal').style.display = 'flex';
+    }
+
+    function askDelete(id) {
+        document.getElementById('deleteModal').style.display = 'flex';
+        document.getElementById('confirmDelBtn').onclick = () => { db.ref("stocks/" + id).remove().then(() => closeModals()); };
+    }
+
+    function closeModals() { document.querySelectorAll('.overlay').forEach(o => o.style.display = 'none'); }
+    
+    // Init
+    if(localStorage.getItem('theme') === 'dark') toggleTheme();
+    const savedUser = localStorage.getItem("user");
+    if(savedUser) { 
+        document.getElementById('loginUser').value = savedUser; 
+        document.getElementById('loginPass').value = "123"; 
+        handleLogin(); 
+    }
+    render();
+</script>
+</body>
+</html>
