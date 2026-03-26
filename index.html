@@ -500,29 +500,38 @@ function saveCroppedImage() {
 
 
     // 4. Admin & Login Logic
-    function handleLogin() {
-        const u = document.getElementById('loginUser').value.toLowerCase().trim();
-        const p = document.getElementById('loginPass').value;
-        const users = { "alauddin khan": "admin" };
 
-        if (users[u] && users[u] === p) {
-            isAdmin = true; 
-            currentUser = u.charAt(0).toUpperCase() + u.slice(1);
-            localStorage.setItem("user", currentUser);
-            document.getElementById('adminPanel').style.display = 'block';
-            document.getElementById('manageBtn').style.display = 'flex';
-            document.getElementById('catBtn').style.display = 'flex'; // Header button show
-            document.getElementById('uNameDisplay').innerText = currentUser;
-            document.getElementById('uAvatar').innerText = currentUser[0];
-            document.getElementById('roleLabel').innerText = "ADMIN";
-            document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
-            closeModals(); 
-            render();
-            showToast(`Welcome Back, ${currentUser}! 👋`);
-        } else { 
-            showToast("Invalid Username or Password! ❌");
-        }
+function handleLogin() {
+    const u = document.getElementById('loginUser').value.toLowerCase().trim();
+    const p = document.getElementById('loginPass').value;
+
+    // Naye users aur passwords yahan add kiye gaye hain
+    const users = { 
+        "zamir": "admin",
+        "alauddin": "admin" 
+    };
+
+    if (users[u] && users[u] === p) {
+        isAdmin = true; 
+        currentUser = u.charAt(0).toUpperCase() + u.slice(1);
+        localStorage.setItem("user", currentUser);
+        
+        // UI Updates
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('manageBtn').style.display = 'flex';
+        document.getElementById('catBtn').style.display = 'flex'; 
+        document.getElementById('uNameDisplay').innerText = currentUser;
+        document.getElementById('uAvatar').innerText = currentUser[0];
+        document.getElementById('roleLabel').innerText = "ADMIN";
+        document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
+        
+        closeModals(); 
+        render();
+        showToast(`Welcome Back, ${currentUser}! 👋`);
+    } else { 
+        showToast("Invalid Username or Password! ❌");
     }
+}
 
     // 5. Inventory Stock Functions
 
