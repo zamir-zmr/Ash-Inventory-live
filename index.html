@@ -499,13 +499,91 @@ function saveCroppedImage() {
 }
 
 
-    // 4. Admin & Login Logic
+function openLogin() {
+    if(isAdmin) { 
+        // Professional Logout Popup (SweetAlert2)
+        Swal.fire({
+            title: 'Logout?',
+            text: "Kya aap session band karna chahte hain?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--danger)',
+            cancelButtonColor: 'var(--text-dim)',
+            confirmButtonText: 'Yes, Logout',
+            background: 'var(--panel)',
+            color: 'var(--text-main)',
+            backdrop: `rgba(0,0,0,0.5)`
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem("user");
+                showToast("Logged out successfully! 👋");
+                setTimeout(() => { location.reload(); }, 1000);
+            }
+        });
+    } else {
+        // Professional Login Popup (SweetAlert2)
+        Swal.fire({
+            title: 'Admin Login',
+            html: `
+                <div style="padding: 10px 0;">
+                    <i class="fas fa-user-shield" style="font-size: 3.5rem; color: var(--accent); margin-bottom: 20px; display: block;"></i>
+                    <input type="text" id="swal-input1" class="swal2-input" placeholder="Username" 
+                        style="width: 80%; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 15px;">
+                    <input type="password" id="swal-input2" class="swal2-input" placeholder="Password" 
+                        style="width: 80%; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 15px;">
+                </div>
+            `,
+            background: 'var(--panel)',
+            color: 'var(--text-main)',
+            confirmButtonText: 'LOGIN NOW',
+            confirmButtonColor: 'var(--accent)',
+            showCancelButton: true,
+            cancelButtonText: 'CANCEL',
+            focusConfirm: false,
+            preConfirm: () => {
+                const u = document.getElementById('swal-input1').value.toLowerCase().trim();
+                const p = document.getElementById('swal-input2').value;
+                
+                // --- INTEGRATION WITH YOUR PASSWORDS ---
+                const users = { "zamir": "admin", "alauddin": "admin" };
 
+                if (users[u] && users[u] === p) {
+                    return { username: u };
+                } else {
+                    Swal.showValidationMessage('Invalid Username or Password! ❌');
+                    return false;
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Login Success Logic (Same as your handleLogin)
+                isAdmin = true; 
+                currentUser = result.value.username.charAt(0).toUpperCase() + result.value.username.slice(1);
+                localStorage.setItem("user", currentUser);
+                
+                // UI Updates
+                document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('manageBtn').style.display = 'flex';
+                document.getElementById('catBtn').style.display = 'flex'; 
+                document.getElementById('uNameDisplay').innerText = currentUser;
+                document.getElementById('uAvatar').innerText = currentUser[0];
+                document.getElementById('roleLabel').innerText = "ADMIN";
+                document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
+                
+                render();
+                showToast(`Welcome Back, ${currentUser}! ✨`);
+            }
+        });
+    }
+}
+
+
+    // 4. Admin & Login Logic
 function handleLogin() {
     const u = document.getElementById('loginUser').value.toLowerCase().trim();
     const p = document.getElementById('loginPass').value;
 
-    // Naye users aur passwords yahan add kiye gaye hain
+    // Saare Admin aur Passwords sirf isi ek jagah par rahenge
     const users = { 
         "zamir": "admin",
         "alauddin": "admin" 
@@ -532,6 +610,7 @@ function handleLogin() {
         showToast("Invalid Username or Password! ❌");
     }
 }
+
 
     // 5. Inventory Stock Functions
 
@@ -906,10 +985,7 @@ function render() {
         });
     }
 
-    function openLogin() {
-        if(isAdmin) { if(confirm("Logout?")) { localStorage.removeItem("user"); location.reload(); } }
-        else document.getElementById('loginModal').style.display = 'flex';
-    }
+
 
 function askDelete(id) {
     Swal.fire({
