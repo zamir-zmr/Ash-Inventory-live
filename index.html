@@ -159,6 +159,17 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.03);
         }
 
+
+/* SweetAlert Popup: Thick Cyan Border & Extra Curves */
+.cyan-border-popup {
+    border: 5px solid #00cbcd69 !important; /* Thick Border */
+    border-radius: 30px !important; /* More Curves */
+    box-shadow: 0 0 20px rgba(0, 186, 195, 0.3) !important;
+    overflow: hidden; /* Taaki corners perfect dikhen */
+}
+
+
+
         .card-img { width: 100%; height: 70%; object-fit: cover; background: var(--input-bg); }
         .card-body { padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
         .card-body h4 { margin: 0; font-size: 12px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -501,18 +512,17 @@ function saveCroppedImage() {
 
 function openLogin() {
     if(isAdmin) { 
-        // Professional Logout Popup (SweetAlert2)
         Swal.fire({
-            title: 'Logout?',
+            title: '<span style="font-size: 18px;">Logout?</span>',
             text: "Kya aap session band karna chahte hain?",
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: 'var(--danger)',
-            cancelButtonColor: 'var(--text-dim)',
             confirmButtonText: 'Yes, Logout',
             background: 'var(--panel)',
             color: 'var(--text-main)',
-            backdrop: `rgba(0,0,0,0.5)`
+            width: '280px',
+            customClass: { popup: 'cyan-border-popup' } // Thick border applied here
         }).then((result) => {
             if (result.isConfirmed) {
                 localStorage.removeItem("user");
@@ -521,57 +531,49 @@ function openLogin() {
             }
         });
     } else {
-        // Professional Login Popup (SweetAlert2)
         Swal.fire({
-            title: 'Admin Login',
+            title: '<span style="font-size: 16px;">Admin Access</span>',
             html: `
-                <div style="padding: 10px 0;">
-                    <i class="fas fa-user-shield" style="font-size: 3.5rem; color: var(--accent); margin-bottom: 20px; display: block;"></i>
+                <div style="margin-top: -5px;">
+                    <i class="fas fa-user-shield" style="font-size: 2rem; color: #00bac3; margin-bottom: 8px; display: block;"></i>
                     <input type="text" id="swal-input1" class="swal2-input" placeholder="Username" 
-                        style="width: 80%; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 15px;">
+                        style="width: 85%; height: 38px; margin: 5px auto; border-radius: 12px; border: 2px solid #00bac3; background: var(--input-bg); color: var(--text-main); font-size: 14px; outline: none;">
+                    
                     <input type="password" id="swal-input2" class="swal2-input" placeholder="Password" 
-                        style="width: 80%; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 15px;">
+                        style="width: 85%; height: 38px; margin: 5px auto; border-radius: 12px; border: 2px solid #00bac3; background: var(--input-bg); color: var(--text-main); font-size: 14px; outline: none;">
                 </div>
             `,
             background: 'var(--panel)',
             color: 'var(--text-main)',
-            confirmButtonText: 'LOGIN NOW',
-            confirmButtonColor: 'var(--accent)',
+            confirmButtonText: 'LOGIN',
+            confirmButtonColor: '#00bac3',
             showCancelButton: true,
-            cancelButtonText: 'CANCEL',
+            width: '290px',
+            padding: '15px',
+            customClass: { popup: 'cyan-border-popup' }, // Thick border applied here
             focusConfirm: false,
             preConfirm: () => {
                 const u = document.getElementById('swal-input1').value.toLowerCase().trim();
                 const p = document.getElementById('swal-input2').value;
-                
-                // --- INTEGRATION WITH YOUR PASSWORDS ---
                 const users = { "zamir": "admin", "alauddin": "admin" };
-
                 if (users[u] && users[u] === p) {
                     return { username: u };
                 } else {
-                    Swal.showValidationMessage('Invalid Username or Password! ❌');
+                    Swal.showValidationMessage('Invalid Credentials! ❌');
                     return false;
                 }
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                // Login Success Logic (Same as your handleLogin)
                 isAdmin = true; 
                 currentUser = result.value.username.charAt(0).toUpperCase() + result.value.username.slice(1);
                 localStorage.setItem("user", currentUser);
-                
-                // UI Updates
-                document.getElementById('adminPanel').style.display = 'block';
-                document.getElementById('manageBtn').style.display = 'flex';
-                document.getElementById('catBtn').style.display = 'flex'; 
                 document.getElementById('uNameDisplay').innerText = currentUser;
                 document.getElementById('uAvatar').innerText = currentUser[0];
                 document.getElementById('roleLabel').innerText = "ADMIN";
                 document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
-                
                 render();
-                showToast(`Welcome Back, ${currentUser}! ✨`);
+                showToast(`Welcome Back! ✨`);
             }
         });
     }
