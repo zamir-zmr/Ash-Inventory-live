@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ash inventory Live</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -76,10 +79,76 @@
         .file-label { display: block; background: var(--panel); border: 1px dashed var(--accent); color: var(--accent); padding: 10px; border-radius: 10px; text-align: center; font-size: 12px; margin-bottom: 12px; cursor: pointer; }
         .btn-main { background: var(--accent); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 800; width: 100%; cursor: pointer; }
 
+/* Category List Styling */
+
+
+
+.cat-btns {
+    display: flex;
+    gap: 15px;
+}
+/* Purana wala delete karke ye naya paste karein */
+#catListArea span {
+    color: var(--text-main) !important; /* Ye automatically Theme ke hisaab se color badlega */
+    font-weight: 600;
+    font-size: 15px;
+}
+
+/* Full Page Category Modal Style */
+#categoryModal .modal {
+    width: 100%;
+    height: 100%;
+    max-width: none; /* Desktop limit hatane ke liye */
+    border-radius: 0; /* Full screen mein corners round nahi chahiye */
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0; /* Padding control niche header mein karenge */
+}
+
+/* Modal ke andar ka content full scrollable banane ke liye */
+#categoryModal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Header ko fix karne ke liye (Optionally) */
+.cat-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+
+.cat-item-container {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 12px; 
+    background: var(--glass); 
+    border-radius: 12px; 
+    margin-bottom: 8px; 
+    border: 1px solid var(--border);
+}
+
+
         /* --- Grid & Cards --- */
         .category-header { font-size: 11px; font-weight: 900; color: var(--text-dim); text-transform: uppercase; margin: 25px 0 12px 5px; display: flex; align-items: center; gap: 10px; }
         .category-header::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-        .stock-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+
+/* Cards ke beech professional gap dene ke liye */
+.stock-grid { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 16px; /* Dono cards ke beech 16px ka gap */
+    padding: 10px 5px; /* Side se thoda space */
+}
+
+
 
         .stock-card {
             background: var(--card); border-radius: 20px; overflow: hidden;
@@ -88,27 +157,53 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.03);
         }
 
-        .card-img { width: 100%; height: 55%; object-fit: cover; background: var(--input-bg); }
+        .card-img { width: 100%; height: 70%; object-fit: cover; background: var(--input-bg); }
         .card-body { padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
-        .card-body h4 { margin: 0; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .qty-tag { color: var(--teal); font-size: 11px; font-weight: 800; display: inline-block; margin-top: 2px; }
-        .meta-text { font-size: 8px; color: var(--text-dim); text-transform: uppercase; display: block; margin-top: 4px; }
+        .card-body h4 { margin: 0; font-size: 12px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .qty-tag { color: var(--teal); font-size: 14px; font-weight: 800; display: inline-block; margin-top: 2px; }
+        .meta-text { font-size: 1px; color: var(--text-dim); text-transform: uppercase; display: block; margin-top: 1px; }
+/* --- Manage Overlay Updated --- */
+.manage-overlay {
+    position: absolute; 
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2); /* Light dim effect taaki card focus mein rahe */
+    display: none; 
+    align-items: flex-end; /* Buttons ko niche shift karne ke liye */
+    justify-content: center;
+    z-index: 5;
+    transition: all 0.3s ease;
+}
 
-        /* --- Manage Overlay --- */
-        .manage-overlay {
-            position: absolute; bottom: 0; left: 0; right: 0; top: 0;
-            background: transparent;
-            display: none; align-items: flex-end; justify-content: center;
-            z-index: 5; pointer-events: none;
-        }
+.action-bar {
+    background: var(--panel); 
+    width: 100%; 
+    padding: 10px 0;
+    display: flex; 
+    justify-content: space-evenly; 
+    align-items: center;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+    border-radius: 0 0 20px 20px; /* Card ke bottom corners ke saath match karega */
+}
+
+/* Icons ko thoda bada aur saaf dikhane ke liye */
+.action-circle { 
+    width: 40px; 
+    height: 40px; 
+    border-radius: 12px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    font-size: 16px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+
         
-        .action-bar {
-            background: var(--panel); width: 100%; padding: 8px;
-            display: flex; justify-content: space-around; align-items: center;
-            backdrop-filter: blur(4px); pointer-events: auto; border-top: 1px solid var(--border);
-        }
 
-        .action-circle { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; }
+
+
 
         /* --- Modals --- */
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
@@ -172,7 +267,10 @@
     transform: scale(1.05);
 }
 
-        
+   #catListArea span {
+    color: #00bac3 !important; /* Force names to be white */
+}
+     
     </style>
 </head>
 <body>
@@ -186,6 +284,10 @@
                 <strong id="uNameDisplay">Guest User</strong>
             </div>
         </div>
+        
+        
+        <div class="icon-btn" id="catBtn" onclick="openCatModal()" style="display:none; color:var(--teal);"><i class="fas fa-tags"></i></div>
+        
         <div class="header-actions">
             <div class="icon-btn" id="themeBtn" onclick="toggleTheme()"><i class="fas fa-moon"></i></div>
             <div class="icon-btn" id="manageBtn" onclick="toggleManageMode()" style="display:none;"><i class="fas fa-sliders-h"></i></div>
@@ -193,22 +295,59 @@
         </div>
     </div>
 
-    <div id="adminPanel" class="glass-panel">
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="newCat" placeholder="New Category...">
-            <button onclick="addCat()" class="btn-main" style="width:55px; background:var(--teal)">+</button>
-        </div>
-        <select id="catDropdown"></select>
-        <input type="text" id="stockName" placeholder="Item Name">
-        <input type="number" id="stockQty" placeholder="Quantity">
-        <label class="file-label" for="stockImg"><i class="fas fa-image"></i> <span id="fileName">Add & Crop Photo</span></label>
-        <input type="file" id="stockImg" accept="image/*" style="display:none;" onchange="handleFileSelect(this, 'new')">
-        <button class="btn-main" onclick="addStock()">SAVE TO INVENTORY</button>
+
+<div id="adminPanel" class="glass-panel">
+    <input type="text" id="stockName" placeholder="Item Name">
+    <input type="number" id="stockQty" placeholder="Quantity">
+    <select id="catDropdown"></select>
+
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <label class="btn-file" style="flex:1; background:var(--teal); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; display:block;">
+            <i class="fas fa-camera"></i> <span id="fileName">Add Photo</span>
+            <input type="file" accept="image/*" onchange="handleFileSelect(this, 'new')" hidden>
+        </label>
     </div>
+
+    <div id="addPreviewBox" style="display:none; text-align:center; margin-top:10px; background:var(--bg); padding:10px; border-radius:15px; border:1px solid var(--border);">
+        <p style="font-size:10px; color:var(--teal); font-weight:600; margin-bottom:5px; text-transform:uppercase;">Ready Photo</p>
+        <img id="addImgPreview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:12px; border:2px solid var(--teal);">
+    </div>
+
+    <button class="btn-main" onclick="addStock()" style="margin-top:15px;">SAVE TO INVENTORY</button>
+</div>
+
+
 
     <input type="text" id="search" onkeyup="filter()" placeholder="🔍 Search inventory..." style="border-radius:15px; margin-bottom: 20px;">
     <div id="contentArea"></div>
 </div>
+
+<div id="categoryModal" class="overlay" style="align-items: flex-start; background: var(--bg);">
+    <div class="modal" style="width: 100%; height: 100vh; max-width: none; border-radius: 0; padding: 20px; display: flex; flex-direction: column;">
+        
+        <div style="display:flex; align-items:center; gap: 15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-left" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 1.3rem;"></i>
+            <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Categories</h3>
+        </div>
+
+        <div id="addCatBox" style="background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 20px; flex-shrink: 0;">
+            <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">Add New Category</label>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="newCatInput" placeholder="Enter category name..." 
+                    style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 14px; outline: none;">
+                <button onclick="processAddCat()" 
+                    style="background: var(--teal); color: white; border: none; padding: 0 20px; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                    ADD
+                </button>
+            </div>
+        </div>
+
+        <div id="catListArea" style="flex: 1; overflow-y: auto; padding-bottom: 30px;">
+            </div>
+    </div>
+</div>
+
+
 
 
 <div class="overlay" id="cropModal" style="z-index: 2000;">
@@ -236,20 +375,29 @@
 </div>
 
 <div class="overlay" id="editModal">
-    <div class="modal">
-        <h2 style="color:white;">Update Item</h2>
-        <div id="editPreviewContainer" style="text-align:center; display:none; margin-bottom:10px;">
-            <img id="editImgPreview" src="" style="width:80px; height:80px; border-radius:10px; border:2px solid var(--accent);">
+    <div class="modal" style="max-width: 400px; padding: 20px; border-radius: 20px;">
+        <h2 style="color:var(--text-main); text-align:center; margin-bottom:15px;">Update Item</h2>
+        
+        <div id="editPreviewContainer" style="text-align:center; display:none; margin-bottom:15px; background:var(--bg); padding:10px; border-radius:15px; border:1px dashed var(--accent);">
+            <p style="font-size:10px; color:var(--accent); font-weight:600; margin-bottom:5px;">NEW PHOTO READY</p>
+            <img id="editImgPreview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border:2px solid var(--accent);">
         </div>
-        <input type="text" id="editName">
-        <input type="number" id="editQty">
-        <select id="editCatDropdown"></select>
-        <label class="file-label" for="editImg"><i class="fas fa-camera"></i> <span id="editFileName">Change Photo</span></label>
-        <input type="file" id="editImg" accept="image/*" style="display:none;" onchange="handleFileSelect(this, 'edit')">
-        <button class="btn-main" id="saveEditBtn">UPDATE</button>
-        <p onclick="closeModals()" style="color:var(--text-dim); cursor:pointer; text-align:center; margin-top:15px;">Cancel</p>
+
+        <input type="text" id="editName" placeholder="Item Name" style="width:100%; margin-bottom:10px; padding:12px; border-radius:10px; border:1px solid var(--border);">
+        <input type="number" id="editQty" placeholder="Quantity" style="width:100%; margin-bottom:10px; padding:12px; border-radius:10px; border:1px solid var(--border);">
+        <select id="editCatDropdown" style="width:100%; margin-bottom:15px; padding:12px; border-radius:10px; border:1px solid var(--border);"></select>
+        
+        <label class="btn-file" style="display:block; background:var(--accent); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; margin-bottom:15px;">
+            <i class="fas fa-camera"></i> <span id="editFileName">Change Photo</span>
+            <input type="file" accept="image/*" onchange="handleFileSelect(this, 'edit')" hidden>
+        </label>
+
+        <button class="btn-main" id="saveEditBtn" style="width:100%;">UPDATE INVENTORY</button>
+        <p onclick="closeModals()" style="color:var(--text-dim); cursor:pointer; text-align:center; margin-top:15px; font-weight:600;">Cancel</p>
     </div>
 </div>
+
+
 
 <div class="overlay" id="deleteModal">
     <div class="modal" style="text-align:center;">
@@ -263,7 +411,7 @@
 </div>
 
 <script>
-    // Firebase Setup
+    // 1. Firebase Setup
     const firebaseConfig = {
         apiKey: "AIzaSyA3bsKfP7CxS0Sb0CY6xu_vFogVcxbJCII",
         authDomain: "ashcostingapp.firebaseapp.com",
@@ -276,7 +424,7 @@
     let isAdmin = false, isManageMode = false, currentUser = "Guest";
     let cropperInstance = null, currentFileMode = "new", finalImageData = "";
 
-    // --- Theme Logic ---
+    // 2. Theme Logic
     function toggleTheme() {
         const body = document.body;
         const icon = document.querySelector('#themeBtn i');
@@ -291,21 +439,19 @@
         }
     }
 
-    // --- Cropping Functions ---
-
-function handleFileSelect(input, mode) {
+    // 3. Cropping Functions
+ 
+ function handleFileSelect(input, mode) {
     if (input.files && input.files[0]) {
         currentFileMode = mode;
         const reader = new FileReader();
         reader.onload = function (e) {
-            // Modal display style
             const modal = document.getElementById('cropModal');
             modal.style.display = 'flex';
-            modal.style.zIndex = '2000'; // Pop-up sabse upar dikhega
-
+            modal.style.zIndex = '2000';
+            
             if (cropperInstance) cropperInstance.destroy();
-
-            // Cropper setup
+            
             cropperInstance = new Croppie(document.getElementById('cropArea'), {
                 viewport: { width: 250, height: 250, type: 'square' },
                 boundary: { width: 320, height: 320 },
@@ -319,118 +465,114 @@ function handleFileSelect(input, mode) {
     }
 }
 
-
-
-    // --- Admin & Inventory Logic ---
-function handleLogin() {
-    const u = document.getElementById('loginUser').value.toLowerCase().trim();
-    const p = document.getElementById('loginPass').value;
-
-    // Har user ke liye alag password set kiya gaya hai
-    const users = {
-        "zamir": "admin"    };
-
-    // Check karein ki user list mein hai aur password sahi hai
-    if (users[u] && users[u] === p) {
-        isAdmin = true; 
-        currentUser = u.charAt(0).toUpperCase() + u.slice(1);
+function saveCroppedImage() {
+    // Quality ko 0.3 kiya hai taaki 11MB ki photo 15-20KB ban jaye
+    cropperInstance.result({ 
+        type: 'base64', 
+        size: { width: 300, height: 300 }, // Size chhota karne se KB kam ho jata hai
+        format: 'jpeg',
+        quality: 0.3 // Compression level (0.1 low to 1.0 high)
+    }).then(function (base64) {
+        finalImageData = base64;
         
-        // UI Updates
-        localStorage.setItem("user", currentUser);
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('manageBtn').style.display = 'flex';
-        document.getElementById('uNameDisplay').innerText = currentUser;
-        document.getElementById('uAvatar').innerText = currentUser[0];
-        document.getElementById('roleLabel').innerText = "ADMIN";
-        document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
+        if (currentFileMode === 'edit') {
+            // Edit Modal ke liye preview
+            const editPreview = document.getElementById('editImgPreview');
+            const editContainer = document.getElementById('editPreviewContainer');
+            editPreview.src = base64;
+            editContainer.style.display = 'block';
+            document.getElementById('editFileName').innerText = "✅ Photo Changed";
+        } else {
+            // Add Panel ke liye preview
+            const previewBox = document.getElementById('addPreviewBox');
+            const previewImg = document.getElementById('addImgPreview');
+            previewImg.src = base64;
+            previewBox.style.display = 'block'; 
+            document.getElementById('fileName').innerText = "✅ Photo Ready";
+        }
         
-        closeModals(); 
-        render();
-        
-        // Professional Toast Pop-up
-        showToast(`Welcome Back, ${currentUser}! 👋`);
-    } else { 
-        // Agar password galat hai
-        showToast("Invalid Username or Password! ❌");
-    }
+        document.getElementById('cropModal').style.display = 'none';
+        showToast("Photo Compressed & Ready! 📸");
+    });
 }
 
+
+    // 4. Admin & Login Logic
+    function handleLogin() {
+        const u = document.getElementById('loginUser').value.toLowerCase().trim();
+        const p = document.getElementById('loginPass').value;
+        const users = { "alauddin khan": "admin" };
+
+        if (users[u] && users[u] === p) {
+            isAdmin = true; 
+            currentUser = u.charAt(0).toUpperCase() + u.slice(1);
+            localStorage.setItem("user", currentUser);
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('manageBtn').style.display = 'flex';
+            document.getElementById('catBtn').style.display = 'flex'; // Header button show
+            document.getElementById('uNameDisplay').innerText = currentUser;
+            document.getElementById('uAvatar').innerText = currentUser[0];
+            document.getElementById('roleLabel').innerText = "ADMIN";
+            document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
+            closeModals(); 
+            render();
+            showToast(`Welcome Back, ${currentUser}! 👋`);
+        } else { 
+            showToast("Invalid Username or Password! ❌");
+        }
+    }
+
+    // 5. Inventory Stock Functions
 
 async function addStock() {
     const c = document.getElementById('catDropdown').value;
     const n = document.getElementById('stockName').value.trim();
     const q = document.getElementById('stockQty').value;
-
-    // Yahan hum cropped image variable (finalImageData) check kar rahe hain
+    
     if(c && n && finalImageData) {
         db.ref("stocks").push({ 
             catId: c, 
             name: n, 
             qty: q, 
-            img: finalImageData, // Cropped photo yahan save hogi
+            img: finalImageData, 
             by: currentUser, 
             time: new Date().toLocaleString() 
+        }).then(() => {
+            // Save hone ke baad UI saaf karein
+            document.getElementById('stockName').value = ""; 
+            document.getElementById('stockQty').value = "";
+            document.getElementById('fileName').innerText = "Add Photo";
+            
+            // Preview box ko hide karein
+            document.getElementById('addPreviewBox').style.display = 'none';
+            document.getElementById('addImgPreview').src = "";
+            
+            finalImageData = "";
+            showToast("Inventory Saved! ✅");
+        }).catch(err => {
+            showToast("Error saving data! ❌");
         });
-        
-        // Form clear karein
-        document.getElementById('stockName').value = ""; 
-        document.getElementById('stockQty').value = "";
-        document.getElementById('fileName').innerText = "Add Photo";
-        finalImageData = ""; // Agli photo ke liye reset
-        alert("Inventory Saved!");
     } else {
-        alert("Please enter Name and Crop a Photo first!");
+        alert("Please fill Name, Category and Crop a Photo!");
     }
 }
 
-// --- 1. Professional Toast Function (Stylish Popup) ---
-function showToast(msg) {
-    // Agar pehle se toast nahi hai toh naya banayein
-    let toast = document.getElementById("toast");
-    if (!toast) {
-        toast = document.createElement("div");
-        toast.id = "toast";
-        document.body.appendChild(toast);
-    }
-    
-    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
-    toast.className = "toast show";
-    
-    // 3 second baad apne aap gayab ho jayega
-    setTimeout(() => { 
-        toast.className = toast.className.replace("show", ""); 
-    }, 3000);
-}
-
-// --- 2. Professional openEdit Function ---
 function openEdit(id, cId, name, qty, currentImg) {
-    // Purana data fields mein set karein
     document.getElementById('editName').value = name;
     document.getElementById('editQty').value = qty;
     document.getElementById('editCatDropdown').value = cId;
     
-    // Image Preview reset aur set karein
     const previewImg = document.getElementById('editImgPreview');
     const previewCont = document.getElementById('editPreviewContainer');
     
     if (currentImg && previewImg) {
         previewImg.src = currentImg;
         previewCont.style.display = 'block';
-        previewCont.classList.add('fade-in'); // Smooth appearance
-    } else {
-        previewCont.style.display = 'none';
     }
-
-    // Modal ko flex karke dikhana
+    
     document.getElementById('editModal').style.display = 'flex';
-
-    // Update Button Logic
+    
     document.getElementById('saveEditBtn').onclick = function() {
-        // Loading State (Button ko thoda disable jaisa dikhana)
-        const btn = document.getElementById('saveEditBtn');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> UPDATING...';
-        btn.style.opacity = '0.7';
-
         let updateData = {
             catId: document.getElementById('editCatDropdown').value,
             name: document.getElementById('editName').value,
@@ -438,110 +580,312 @@ function openEdit(id, cId, name, qty, currentImg) {
             by: currentUser,
             time: new Date().toLocaleString()
         };
-
-        // Agar user ne nayi photo crop ki hai toh hi add karein
-        if (typeof finalImageData !== 'undefined' && finalImageData !== "") {
-            updateData.img = finalImageData;
-        }
-
-        // Firebase Update
+        
+        if (finalImageData !== "") updateData.img = finalImageData;
+        
         db.ref("stocks/" + id).update(updateData).then(() => {
-            // Success hone par variables reset
-            if (typeof finalImageData !== 'undefined') finalImageData = ""; 
-            
-            // UI Clean up
-            btn.innerHTML = 'UPDATE';
-            btn.style.opacity = '1';
+            finalImageData = ""; 
             closeModals();
             
-            // Professional Toast Call
-            showToast("Item Updated Successfully! ✅");
-        }).catch(err => {
-            showToast("Error: " + err.message);
-            btn.innerHTML = 'UPDATE';
+            // --- ACTION COMPLETED: DISABLE MANAGE MODE ---
+            isManageMode = false; 
+            render(); 
+            
+            showToast("Item Updated! ✅");
         });
     };
 }
 
+    // 6. Category Management (FIXED LIST)
 
-function saveCroppedImage() {
-    // Croppie se result lena (Base64 format mein)
-    cropperInstance.result({ 
-        type: 'base64', 
-        size: { width: 500, height: 500 }, // Acchi quality ke liye size
-        format: 'jpeg',
-        quality: 0.8 
-    }).then(function (base64) {
-        finalImageData = base64; // Yeh variable Firebase mein save hoga
+// 1. Open Modal and check Admin Status
 
-        if (currentFileMode === 'edit') {
-            // Edit modal mein photo dikhana
-            document.getElementById('editImgPreview').src = base64;
-            document.getElementById('editPreviewContainer').style.display = 'block';
-            document.getElementById('editFileName').innerText = "✅ Photo Updated";
+
+// 2. Load List (Aapke logic ke hisaab se layout fixed)
+function loadCatList() {
+    const listArea = document.getElementById('catListArea');
+    if (!db) return;
+
+    db.ref("categories").on("value", snap => {
+        const cats = snap.val();
+        let listHtml = "";
+        
+        if (!cats) {
+            listHtml = '<p style="color:var(--text-dim); text-align:center; padding:20px;">No Categories Found.</p>';
         } else {
-            // Add (New) panel mein photo dikhana
-            document.getElementById('addImgPreview').src = base64;
-            document.getElementById('addPreviewBox').style.display = 'block';
-            document.getElementById('fileName').innerText = "✅ Photo Ready";
+            for (let id in cats) {
+                listHtml += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:8px; border:1px solid var(--border);">
+                    <span style="color:var(--text-main) !important; font-weight: 600; font-size: 14px;">${cats[id].name}</span>
+                    <div style="display:flex; gap:15px;">
+                        <i class="fas fa-edit" style="color:var(--accent); cursor:pointer;" onclick="renameCat('${id}', '${cats[id].name}')"></i>
+                        <i class="fas fa-trash-alt" style="color:var(--danger); cursor:pointer;" onclick="deleteCat('${id}', '${cats[id].name}')"></i>
+                    </div>
+                </div>`;
+            }
         }
+        listArea.innerHTML = listHtml;
+    });
+}
 
-        // Crop wala pop-up band karein
-        document.getElementById('cropModal').style.display = 'none';
+// 3. Simple Add Function
+
+// Add Category Logic
+function processAddCat() {
+    const input = document.getElementById('newCatInput');
+    const name = input.value.trim();
+    
+    if(name) {
+        db.ref("categories").push({ name: name }).then(() => {
+            input.value = ""; // Sirf text clear hoga, box nahi hatega
+            // closeModals(); // Is line ko delete kiya taaki modal khula rahe
+            showToast(`Category "${name}" added! 🏷️`);
+        }).catch(err => {
+            showToast("Error adding category! ❌");
+        });
+    } else {
+        showToast("Please enter a category name! ⚠️");
+    }
+}
+
+// Category List Loader
+
+
+
+
+
+    function showAddCatInput() {
+        const box = document.getElementById('addCatBox');
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+
+// 1. Mobile Back Press Logic
+window.addEventListener('popstate', function (event) {
+    // Agar koi modal khula hai toh use band karein, varna piche jayein
+    const modals = document.querySelectorAll('.overlay');
+    let anyModalOpen = false;
+    
+    modals.forEach(m => {
+        if(m.style.display === 'flex') {
+            m.style.display = 'none';
+            anyModalOpen = true;
+        }
+    });
+
+    if (anyModalOpen) {
+        // Stop default back behavior to just close modal
+        history.pushState(null, null, window.location.pathname);
+    }
+});
+
+// 2. Open Modal function mein state add karein (for back press)
+function openCatModal() {
+    if (!isAdmin) {
+        showToast("Access Denied! 🔒");
+        return;
+    }
+    document.getElementById('categoryModal').style.display = 'flex';
+    // Back button control ke liye history state
+    history.pushState(null, null, window.location.pathname);
+    loadCatList();
+}
+
+// 3. FIXED: processAddCat (Box hide nahi hoga)
+function processAddCat() {
+    const input = document.getElementById('newCatInput');
+    const name = input.value.trim();
+    if(name) {
+        db.ref("categories").push({ name: name }).then(() => {
+            input.value = ""; // Sirf text clear hoga
+            showToast(`Category "${name}" Added! ✅`);
+        });
+    }
+}
+
+// 4. closeModals update
+function closeModals() {
+    document.querySelectorAll('.overlay').forEach(o => o.style.display = 'none');
+}
+
+    function renameCat(id, oldName) {
+        const newName = prompt("Rename Category:", oldName);
+        if (newName && newName.trim() !== "" && newName !== oldName) {
+            db.ref("categories/" + id).update({ name: newName.trim() }).then(() => showToast("Renamed! ✅"));
+        }
+    }
+
+
+function renameCat(id, oldName) {
+    Swal.fire({
+        title: 'Rename Category',
+        input: 'text',
+        inputValue: oldName,
+        inputPlaceholder: 'Enter new category name',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--teal)',
+        cancelButtonColor: 'var(--danger)',
+        confirmButtonText: 'Update',
+        background: 'var(--panel)',
+        color: 'var(--text-main)',
+        inputAttributes: {
+            autocapitalize: 'off'
+        },
+        preConfirm: (newName) => {
+            if (!newName || newName.trim() === "") {
+                Swal.showValidationMessage('Name cannot be empty!');
+            }
+            return newName.trim();
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value !== oldName) {
+            db.ref("categories/" + id).update({ name: result.value })
+              .then(() => {
+                  showToast("Category Updated! ✅");
+              });
+        }
+    });
+}
+
+function deleteCat(id, name) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: `Delete "${name}"? Iske andar ke saare items "Undefined" category mein chale jayenge.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: 'var(--text-dim)',
+        confirmButtonText: 'Yes, Delete it!',
+        background: 'var(--panel)',
+        color: 'var(--text-main)'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Step 1: Pehle items ko "undefined" par shift karein
+            db.ref("stocks").once("value", snapshot => {
+                const stocks = snapshot.val();
+                for (let sId in stocks) {
+                    if (stocks[sId].catId === id) {
+                        db.ref("stocks/" + sId).update({ catId: "undefined" });
+                    }
+                }
+                
+                // Step 2: Category ko delete karein
+                db.ref("categories/" + id).remove().then(() => {
+                    showToast("Category Deleted! Items moved to Undefined. 🗑️");
+                });
+            });
+        }
     });
 }
 
 
+function generateStockCardHtml(sId, s, cId) {
+    return `
+    <div class="stock-card" style="position:relative; overflow:hidden; border:1px solid var(--border); border-radius:18px; height: 190px; display: flex; flex-direction: column; background: var(--card); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        
+        ${s.img ? 
+            `<img src="${s.img}" class="card-img" style="width:100%; height:70%; object-fit:cover; display:block;">` : 
+            `<div class="no-img" style="width:100%; height:75%; display:flex; align-items:center; justify-content:center; background:var(--input-bg);">
+                <i class="fas fa-image" style="font-size:24px; color:var(--text-dim);"></i>
+             </div>`
+        }
+        
+        <div class="card-body" style="padding: 6px 10px; height:30%; display: flex; flex-direction: column; justify-content: center; background:var(--card); border-top: 1px solid var(--border);">
+            <h4 style="margin:0; font-size:10px; color:var(--text-main); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height: 1.1;">
+                ${s.name}
+            </h4>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:3px;">
+                <div class="qty-tag" style="color:var(--teal); font-size:10px; font-weight:800; line-height:1;">${s.qty} Units</div>
+            </div>
+            <span class="meta-text" style="font-size:1px; color:var(--text-main); text-transform: uppercase; font-weight:600;">
+                    ${s.by} ${s.time}
+                </span>
+        </div>
+        
+        <div class="manage-overlay" style="display: ${isManageMode ? 'flex' : 'none'}; position: absolute; inset: 0; background: rgba(0,0,0,0.12); align-items: center; justify-content: center; z-index: 10;">
+            <div style="display: flex; gap: 12px;">
+                <div class="action-circle fade-in" style="background:#0ea5e9; color:#fff; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);" 
+                    onclick="openEdit('${sId}','${cId}','${s.name}','${s.qty}','${s.img}')">
+                    <i class="fas fa-pen"></i>
+                </div>
+                <div class="action-circle fade-in" style="background:#e11d48; color:#fff; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);" 
+                    onclick="askDelete('${sId}')">
+                    <i class="fas fa-trash"></i>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
 
-    function toggleManageMode() {
-        isManageMode = !isManageMode;
-        document.getElementById('manageBtn').classList.toggle('active');
-        render();
-    }
 
-    function render() {
-        db.ref("categories").on("value", snap => {
-            let opts = '<option value="">Category</option>';
-            const cats = snap.val();
-            for(let k in cats) opts += `<option value="${k}">${cats[k].name}</option>`;
-            document.getElementById('catDropdown').innerHTML = opts;
-            document.getElementById('editCatDropdown').innerHTML = opts;
-        });
 
-        db.ref("stocks").on("value", stockSnap => {
-            const stocks = stockSnap.val();
-            db.ref("categories").once("value", catSnap => {
-                const cats = catSnap.val();
-                let html = "";
-                for(let cId in cats) {
-                    let itemsHtml = "";
-                    for(let sId in stocks) {
-                        if(stocks[sId].catId === cId) {
-                            const s = stocks[sId];
-                            itemsHtml += `
-                            <div class="stock-card">
-                                ${s.img ? `<img src="${s.img}" class="card-img">` : `<div class="no-img"><i class="fas fa-image"></i></div>`}
-                                <div class="card-body">
-                                    <h4>${s.name}</h4>
-                                    <div>
-                                        <div class="qty-tag">${s.qty} Units</div>
-                                        <span class="meta-text">${s.by} | ${s.time}</span>
-                                    </div>
-                                </div>
-                                <div class="manage-overlay" style="display: ${isManageMode ? 'flex' : 'none'}">
-                                    <div class="action-bar">
-                                        <div class="action-circle" style="background:var(--accent); color:#fff;" onclick="openEdit('${sId}','${cId}','${s.name}','${s.qty}')"><i class="fas fa-pen"></i></div>
-                                        <div class="action-circle" style="background:var(--danger); color:#fff;" onclick="askDelete('${sId}')"><i class="fas fa-trash"></i></div>
-                                    </div>
-                                </div>
-                            </div>`;
-                        }
+    // 7. Core Functions
+
+
+function render() {
+    // 1. Categories Dropdown logic
+    db.ref("categories").on("value", snap => {
+        let opts = '<option value="">Category</option>';
+        const cats = snap.val();
+        for(let k in cats) opts += `<option value="${k}">${cats[k].name}</option>`;
+        if(isAdmin) opts += `<option value="undefined" style="color:var(--danger)">⚠️ Undefined</option>`;
+        
+        document.getElementById('catDropdown').innerHTML = opts;
+        document.getElementById('editCatDropdown').innerHTML = opts;
+    });
+
+    // 2. Stocks Display logic
+    db.ref("stocks").on("value", stockSnap => {
+        const stocks = stockSnap.val();
+        db.ref("categories").once("value", catSnap => {
+            const cats = catSnap.val() || {};
+            let html = "";
+            let processedStockIds = new Set();
+
+            // STEP 1: Normal Categories render karein
+            for(let cId in cats) {
+                let itemsHtml = "";
+                for(let sId in stocks) {
+                    if(stocks[sId].catId === cId) {
+                        itemsHtml += generateStockCardHtml(sId, stocks[sId], cId);
+                        processedStockIds.add(sId);
                     }
-                    html += `<div class="cat-block"><div class="category-header">${cats[cId].name}</div><div class="stock-grid">${itemsHtml}</div></div>`;
                 }
-                document.getElementById('contentArea').innerHTML = html;
-            });
+                if(itemsHtml !== "") {
+                    html += `<div class="cat-block">
+                                <div class="category-header">${cats[cId].name}</div>
+                                <div class="stock-grid">${itemsHtml}</div>
+                             </div>`;
+                }
+            }
+
+            // STEP 2: Undefined items (Sirf Admin ke liye)
+            if(isAdmin) { 
+                let undefinedHtml = "";
+                for(let sId in stocks) {
+                    if(!processedStockIds.has(sId)) {
+                        undefinedHtml += generateStockCardHtml(sId, stocks[sId], "undefined");
+                    }
+                }
+                if(undefinedHtml !== "") {
+                    html = `<div class="cat-block" style="border: 2px dashed var(--danger); border-radius: 15px; padding: 10px; margin-bottom: 20px; background: rgba(225, 29, 72, 0.05);">
+                                <div class="category-header" style="color:var(--danger)">⚠️ Admin Action: Undefined Items</div>
+                                <div class="stock-grid">${undefinedHtml}</div>
+                            </div>` + html;
+                }
+            }
+
+            document.getElementById('contentArea').innerHTML = html || '<p style="text-align:center; padding:50px; color:var(--text-dim);">No items found.</p>';
         });
+    });
+}
+
+
+    function showToast(msg) {
+        let toast = document.getElementById("toast");
+        if (!toast) { toast = document.createElement("div"); toast.id = "toast"; document.body.appendChild(toast); }
+        toast.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+        toast.className = "toast show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
     }
 
     function filter() {
@@ -551,22 +895,42 @@ function saveCroppedImage() {
         });
     }
 
-    function addCat() {
-        const n = document.getElementById('newCat').value.trim();
-        if(n) db.ref("categories").push({ name: n });
-        document.getElementById('newCat').value = "";
-    }
-
     function openLogin() {
         if(isAdmin) { if(confirm("Logout?")) { localStorage.removeItem("user"); location.reload(); } }
         else document.getElementById('loginModal').style.display = 'flex';
     }
 
-    function askDelete(id) {
-        document.getElementById('deleteModal').style.display = 'flex';
-        document.getElementById('confirmDelBtn').onclick = () => { db.ref("stocks/" + id).remove().then(() => closeModals()); };
-    }
+function askDelete(id) {
+    Swal.fire({
+        title: 'Delete Item?',
+        text: "Kya aap is item ko inventory se hatana chahte hain?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: 'var(--text-dim)',
+        confirmButtonText: 'Yes, Delete it!',
+        background: 'var(--panel)',
+        color: 'var(--text-main)',
+        backdrop: `rgba(0,0,0,0.4)`
+    }).then((result) => {
+        if (result.isConfirmed) {
+            db.ref("stocks/" + id).remove().then(() => {
+                // --- ACTION COMPLETED: DISABLE MANAGE MODE ---
+                isManageMode = false;
+                render(); 
+                
+                showToast("Item Deleted! 🗑️");
+            }).catch(err => {
+                showToast("Error deleting item! ❌");
+            });
+        }
+    });
+}
 
+
+
+
+    function toggleManageMode() { isManageMode = !isManageMode; render(); }
     function closeModals() { document.querySelectorAll('.overlay').forEach(o => o.style.display = 'none'); }
     
     // Init
@@ -579,5 +943,7 @@ function saveCroppedImage() {
     }
     render();
 </script>
+
+
 </body>
 </html>
