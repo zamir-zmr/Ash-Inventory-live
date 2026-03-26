@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ash Inventory Live</title>
+    <title>Ash inventory Live</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -171,11 +171,6 @@
 #editImgPreview:hover {
     transform: scale(1.05);
 }
-/* Logout Modal Styling */
-.logout-popup { border-top: 4px solid var(--accent); }
-.logout-icon { font-size: 40px; color: var(--accent); margin-bottom: 15px; display: block; }
-.modal-btns { display: flex; gap: 12px; margin-top: 25px; }
-.btn-secondary { background: #334155; color: white; }
 
         
     </style>
@@ -232,18 +227,6 @@
         <input type="password" id="loginPass" placeholder="Password">
         <button class="btn-main" onclick="handleLogin()">LOGIN</button>
         <p onclick="closeModals()" style="color:var(--text-dim); cursor:pointer; text-align:center; margin-top:15px;">Cancel</p>
-    </div>
-</div>
-
-<div class="overlay" id="logoutModal">
-    <div class="modal logout-popup">
-        <div class="logout-icon"><i class="fas fa-sign-out-alt"></i></div>
-        <h3 style="margin:0;">Confirm Logout</h3>
-        <p style="color:var(--text-dim); font-size:14px; margin-top:10px;">Do you want logout?</p>
-        <div class="modal-btns">
-            <button class="btn-main btn-secondary" onclick="closeModals()"></button>
-            <button class="btn-main" onclick="confirmLogout()">LOGOUT</button>
-        </div>
     </div>
 </div>
 
@@ -345,11 +328,9 @@ function handleLogin() {
 
     // Har user ke liye alag password set kiya gaya hai
     const users = {
-        "zamir": "admin",
-        "sojib": "admin",
-        "peter": "admin"
-        "alauddin": "admin"
-
+        "zamir": "123",
+        "sojib": "456",
+        "peter": "678"
     };
 
     // Check karein ki user list mein hai aur password sahi hai
@@ -363,7 +344,7 @@ function handleLogin() {
         document.getElementById('manageBtn').style.display = 'flex';
         document.getElementById('uNameDisplay').innerText = currentUser;
         document.getElementById('uAvatar').innerText = currentUser[0];
-        document.getElementById('roleLabel').innerText = "ADMINISTRATOR";
+        document.getElementById('roleLabel').innerText = "ADMIN";
         document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
         
         closeModals(); 
@@ -579,24 +560,10 @@ function saveCroppedImage() {
         document.getElementById('newCat').value = "";
     }
 
-function openLogin() {
-    if (isAdmin) {
-        // Purana confirm() hatakar naya modal dikhayega
-        document.getElementById('logoutModal').style.display = 'flex';
-    } else {
-        document.getElementById('loginModal').style.display = 'flex';
+    function openLogin() {
+        if(isAdmin) { if(confirm("Logout?")) { localStorage.removeItem("user"); location.reload(); } }
+        else document.getElementById('loginModal').style.display = 'flex';
     }
-}
-
-function confirmLogout() {
-    localStorage.removeItem("user");
-    location.reload();
-}
-
-// closeModals mein naya ID add karo
-function closeModals() { 
-    document.querySelectorAll('.overlay').forEach(o => o.style.display = 'none'); 
-}
 
     function askDelete(id) {
         document.getElementById('deleteModal').style.display = 'flex';
