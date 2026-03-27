@@ -315,6 +315,12 @@
 
 
 <div id="adminPanel" class="glass-panel">
+      <div id="addPreviewBox" style="display:none; text-align:center; margin-top:10px; background:var(--bg); padding:10px; border-radius:15px; border:1px solid var(--border);">
+        <p style="font-size:10px; color:var(--teal); font-weight:600; margin-bottom:5px; text-transform:uppercase;">Selected Photo</p>
+        <img id="addImgPreview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:12px; border:2px solid var(--teal);">
+    </div>
+
+  
     <input type="text" id="stockName" placeholder="Item Name">
     <input type="number" id="stockQty" placeholder="Quantity">
 
@@ -330,10 +336,6 @@
         </label>
     </div>
 
-    <div id="addPreviewBox" style="display:none; text-align:center; margin-top:10px; background:var(--bg); padding:10px; border-radius:15px; border:1px solid var(--border);">
-        <p style="font-size:10px; color:var(--teal); font-weight:600; margin-bottom:5px; text-transform:uppercase;">Ready Photo</p>
-        <img id="addImgPreview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:12px; border:2px solid var(--teal);">
-    </div>
 
     <button class="btn-main" onclick="addStock()" style="margin-top:15px;">SAVE TO INVENTORY</button>
 </div>
@@ -548,7 +550,7 @@ function saveCroppedImage() {
             const previewImg = document.getElementById('addImgPreview');
             previewImg.src = base64;
             previewBox.style.display = 'block'; 
-            document.getElementById('fileName').innerText = "✅ Photo Ready";
+            document.getElementById('fileName').innerText = "Selected Photo";
         }
         
         document.getElementById('cropModal').style.display = 'none';
@@ -1277,7 +1279,7 @@ function renameUnit(id, oldName) {
 function deleteUnit(id, name) {
     Swal.fire({
         title: '<span style="font-size: 18px;">Delete Unit?</span>',
-        text: `Kya aap "${name}" ko delete karna chahte hain?`,
+        text: `Do you want to delete "${name}"?`,
         icon: 'error',
         iconColor: 'var(--danger)',
         showCancelButton: true,
