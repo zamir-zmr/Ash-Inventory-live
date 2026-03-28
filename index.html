@@ -626,7 +626,9 @@ function openLogin() {
             preConfirm: () => {
                 const u = document.getElementById('swal-input1').value.toLowerCase().trim();
                 const p = document.getElementById('swal-input2').value;
-                const users = { "zamir": "admin", "ashfaque": "123", "nazir": "123" };
+                const users = { "zamir": "admin", 
+                "ashfaque": "admin",
+                "nazir": "admin"};
                 if (users[u] && users[u] === p) {
                     return { username: u };
                 } else {
@@ -662,7 +664,8 @@ document.getElementById('unitBtn').style.display = 'flex';
     // Saare Admin aur Passwords sirf isi ek jagah par rahenge
     const users = { 
         "zamir": "admin",
-        "alauddin": "admin" 
+        "ashfaque": "admin",
+        "nazir": "admin"
     };
 
     if (users[u] && users[u] === p) {
