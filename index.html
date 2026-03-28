@@ -581,6 +581,37 @@ function closeDetails() {
 }
 
 
+
+// --- 1. ADMIN DATA & LOGIN LOGIC (PASSWORD MATCHING SYSTEM) ---
+function handleLogin(inputUser, inputPass) {
+    const u = (inputUser || (document.getElementById('loginUser') ? document.getElementById('loginUser').value : "")).toLowerCase().trim();
+    const p = inputPass || (document.getElementById('loginPass') ? document.getElementById('loginPass').value : "");
+
+    // --- JAB AAP GITHUB PAR YAHAN PASSWORD BADLENGE, SAB LOGOUT HO JAYENGE ---
+    const users = { 
+        "zamir": "admin", 
+        "ashfaque": "admin",
+        "nazir": "admin"
+    };
+
+    if (users[u] && users[u] === p) {
+        isAdmin = true; 
+        currentUser = u.charAt(0).toUpperCase() + u.slice(1);
+        
+        // --- IMPORTANT: User aur Password dono save karne honge ---
+        localStorage.setItem("user", currentUser);
+        localStorage.setItem("userKey", p); 
+        
+        updateAdminUI(currentUser);
+        if(typeof closeModals === 'function') closeModals(); 
+        render();
+        return { success: true, username: currentUser };
+    } else { 
+        return { success: false };
+    }
+}
+
+// --- 2. OPEN LOGIN (SweetAlert Popup) ---
 function openLogin() {
     if(isAdmin) { 
         Swal.fire({
@@ -593,10 +624,11 @@ function openLogin() {
             background: 'var(--panel)',
             color: 'var(--text-main)',
             width: '280px',
-            customClass: { popup: 'cyan-border-popup' } // Thick border applied here
+            customClass: { popup: 'cyan-border-popup' }
         }).then((result) => {
             if (result.isConfirmed) {
                 localStorage.removeItem("user");
+                localStorage.removeItem("userKey");
                 showToast("Logged out successfully! 👋");
                 setTimeout(() => { location.reload(); }, 1000);
             }
@@ -607,11 +639,8 @@ function openLogin() {
             html: `
                 <div style="margin-top: -5px;">
                     <i class="fas fa-user-shield" style="font-size: 2rem; color: #00bac3; margin-bottom: 8px; display: block;"></i>
-                    <input type="text" id="swal-input1" class="swal2-input" placeholder="Username" 
-                        style="width: 85%; height: 38px; margin: 5px auto; border-radius: 12px; border: 2px solid #00bac3; background: var(--input-bg); color: var(--text-main); font-size: 14px; outline: none;">
-                    
-                    <input type="password" id="swal-input2" class="swal2-input" placeholder="Password" 
-                        style="width: 85%; height: 38px; margin: 5px auto; border-radius: 12px; border: 2px solid #00bac3; background: var(--input-bg); color: var(--text-main); font-size: 14px; outline: none;">
+                    <input type="text" id="swal-input1" class="swal2-input" placeholder="Username" style="width: 85%; height: 38px; margin: 5px auto; border-radius: 12px; border: 2px solid #00bac3; background: var(--input-bg); color: var(--text-main); font-size: 14px; outline: none;">
+                    <input type="password" id="swal-input2" class="swal2-input" placeholder="Password" style="width: 85%; height: 38px; margin: 5px auto; border-radius: 12px; border: 2px solid #00bac3; background: var(--input-bg); color: var(--text-main); font-size: 14px; outline: none;">
                 </div>
             `,
             background: 'var(--panel)',
@@ -620,75 +649,72 @@ function openLogin() {
             confirmButtonColor: '#00bac3',
             showCancelButton: true,
             width: '290px',
-            padding: '15px',
-            customClass: { popup: 'cyan-border-popup' }, // Thick border applied here
-            focusConfirm: false,
+            customClass: { popup: 'cyan-border-popup' },
             preConfirm: () => {
-                const u = document.getElementById('swal-input1').value.toLowerCase().trim();
+                const u = document.getElementById('swal-input1').value;
                 const p = document.getElementById('swal-input2').value;
-                const users = { "zamir": "admin", 
-                "ashfaque": "admin",
-                "nazir": "admin"};
-                if (users[u] && users[u] === p) {
-                    return { username: u };
+                const res = handleLogin(u, p);
+                if (res.success) {
+                    return res;
                 } else {
                     Swal.showValidationMessage('Invalid Credentials! ❌');
                     return false;
                 }
             }
         }).then((result) => {
-            if (result.isConfirmed) {
-                isAdmin = true; 
-                currentUser = result.value.username.charAt(0).toUpperCase() + result.value.username.slice(1);
-                localStorage.setItem("user", currentUser);
-                document.getElementById('uNameDisplay').innerText = currentUser;
-                document.getElementById('uAvatar').innerText = currentUser[0];
-                document.getElementById('roleLabel').innerText = "ADMIN";
-                document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
-                render();
-                showToast(`Welcome Back! ✨`);
+            if (result && result.isConfirmed) {
+                showToast(`Welcome Back, ${result.value.username}! ✨`);
             }
         });
     }
 }
 
+// --- 3. AUTO-LOGOUT & WELCOME LOGIC (JAB APP REFRESH HO) ---
+window.addEventListener('DOMContentLoaded', () => {
+    const savedUser = localStorage.getItem("user");
+    const savedPass = localStorage.getItem("userKey");
 
-    // 4. Admin & Login Logic
-function handleLogin() {
-    const u = document.getElementById('loginUser').value.toLowerCase().trim();
-    const p = document.getElementById('loginPass').value;
-
-// loginSuccess ya handleLogin function ke andar
-document.getElementById('unitBtn').style.display = 'flex';
-
-    // Saare Admin aur Passwords sirf isi ek jagah par rahenge
-    const users = { 
-        "zamir": "admin",
-        "ashfaque": "admin",
-        "nazir": "admin"
-    };
-
-    if (users[u] && users[u] === p) {
-        isAdmin = true; 
-        currentUser = u.charAt(0).toUpperCase() + u.slice(1);
-        localStorage.setItem("user", currentUser);
+    if (savedUser && savedPass) {
+        // GITHUB PAR JO NAYE PASSWORDS HAIN UNHE CHECK KAREIN
+        const users = { 
+            "zamir": "admin", 
+            "ashfaque": "admin",
+            "nazir": "admin"
+        };
         
-        // UI Updates
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('manageBtn').style.display = 'flex';
-        document.getElementById('catBtn').style.display = 'flex'; 
-        document.getElementById('uNameDisplay').innerText = currentUser;
-        document.getElementById('uAvatar').innerText = currentUser[0];
-        document.getElementById('roleLabel').innerText = "ADMIN";
-        document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
-        
-        closeModals(); 
-        render();
-        showToast(`Welcome Back, ${currentUser}! 👋`);
-    } else { 
-        showToast("Invalid Username or Password! ❌");
+        const uLower = savedUser.toLowerCase();
+
+        // CHECK: Kya saved password GitHub wale password se match karta hai?
+        if (users[uLower] && users[uLower] === savedPass) {
+            isAdmin = true;
+            currentUser = savedUser;
+            updateAdminUI(savedUser);
+            render();
+            setTimeout(() => { showToast(`Welcome, ${currentUser}! 👋`); }, 1500);
+        } else {
+            // AGAR GITHUB PAR PASSWORD BADAL GAYA HAI TOH FORCE LOGOUT
+            localStorage.removeItem("user");
+            localStorage.removeItem("userKey");
+            isAdmin = false;
+            showToast("Security Update: Please Login Again! 🔒");
+            setTimeout(() => { location.reload(); }, 2000);
+        }
     }
+});
+
+// Helper function: UI update
+function updateAdminUI(name) {
+    if(document.getElementById('adminPanel')) document.getElementById('adminPanel').style.display = 'block';
+    if(document.getElementById('manageBtn')) document.getElementById('manageBtn').style.display = 'flex';
+    if(document.getElementById('catBtn')) document.getElementById('catBtn').style.display = 'flex';
+    if(document.getElementById('unitBtn')) document.getElementById('unitBtn').style.display = 'flex';
+    
+    document.getElementById('uNameDisplay').innerText = name;
+    document.getElementById('uAvatar').innerText = name[0];
+    document.getElementById('roleLabel').innerText = "ADMIN";
+    document.getElementById('lockIcon').className = "fas fa-sign-out-alt";
 }
+
 
 
     // 5. Inventory Stock Functions
