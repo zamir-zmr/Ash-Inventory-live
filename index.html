@@ -1122,19 +1122,21 @@ function deleteCat(id, name) {
 }
 
 
-
-
 function generateStockCardHtml(sId, s, cId) {
     const displayUnit = s.unit ? s.unit : 'Pcs';
     const nameEscaped = s.name.replace(/'/g, "\\'");
+    const searchAttr = s.name.toLowerCase(); // Sirf item ka naam search ke liye
     
-    // Category Name fetch karne ke liye (Agar render mein pass ho raha ho)
-    // Note: Render function se cats[cId].name automatically mil jayega agar hum logic thoda update karein
-    const catName = document.querySelector(`[value="${s.catId}"]`) ? document.querySelector(`[value="${s.catId}"]`).innerText : "No Category";
+    const catSelect = document.getElementById('catDropdown');
+    let catName = "No Category";
+    if(catSelect) {
+        const opt = catSelect.querySelector(`option[value="${s.catId}"]`);
+        if(opt) catName = opt.innerText;
+    }
 
     if (isListView) {
         return `
-        <div class="stock-card list-mode" 
+        <div class="stock-card list-mode" data-name="${searchAttr}"
             onclick="if(!isManageMode) openDetails('${nameEscaped}', '${s.qty}', '${displayUnit}', '${s.img || ""}', '${s.by}', '${s.time}')"
             style="position:relative; cursor:pointer; display:flex; align-items:center; background:var(--card); padding:10px; gap:15px; border-bottom: 1.5px solid #22c55e; margin-bottom: 5px;">
             
@@ -1169,9 +1171,8 @@ function generateStockCardHtml(sId, s, cId) {
         </div>`;
     }
 
-    // --- CARD VIEW DESIGN (Wahi purana rahega) ---
     return `
-    <div class="stock-card" 
+    <div class="stock-card" data-name="${searchAttr}"
         onclick="if(!isManageMode) openDetails('${nameEscaped}', '${s.qty}', '${displayUnit}', '${s.img || ""}', '${s.by}', '${s.time}')"
         style="position:relative; cursor:pointer; overflow:hidden; border:2px solid var(--border); border-radius:18px; height: 190px; display: flex; flex-direction: column; background: var(--card); box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: 2px;">
         ${s.img ? `<img src="${s.img}" style="width:100%; height:70%; object-fit:cover; display:block;">` : `<div style="width:100%; height:70%; display:flex; align-items:center; justify-content:center; background:var(--input-bg);"><i class="fas fa-image" style="font-size:24px; color:var(--text-dim);"></i></div>`}
@@ -1192,22 +1193,16 @@ function generateStockCardHtml(sId, s, cId) {
 
 
 
-    // 7. Core Functions
-
-
 function render() {
-    // 1. Categories Dropdown logic
     db.ref("categories").on("value", snap => {
         let opts = '<option value="">Category</option>';
         const cats = snap.val();
         for(let k in cats) opts += `<option value="${k}">${cats[k].name}</option>`;
         if(isAdmin) opts += `<option value="undefined" style="color:var(--danger)">⚠️ Undefined</option>`;
-        
         document.getElementById('catDropdown').innerHTML = opts;
         document.getElementById('editCatDropdown').innerHTML = opts;
     });
 
-    // 2. Stocks Display logic
     db.ref("stocks").on("value", stockSnap => {
         const stocks = stockSnap.val();
         db.ref("categories").once("value", catSnap => {
@@ -1215,13 +1210,10 @@ function render() {
             let html = "";
             let processedStockIds = new Set();
 
-            // --- VIEW MODE CSS LOGIC ---
-            // Agar isListView true hai toh 1 column dikhao, warna purana grid
             const gridStyle = isListView 
                 ? "display: flex; flex-direction: column; gap: 10px;" 
                 : "display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;";
 
-            // STEP 1: Normal Categories render karein
             for(let cId in cats) {
                 let itemsHtml = "";
                 for(let sId in stocks) {
@@ -1240,7 +1232,6 @@ function render() {
                 }
             }
 
-            // STEP 2: Undefined items (Sirf Admin ke liye)
             if(isAdmin) { 
                 let undefinedHtml = "";
                 for(let sId in stocks) {
@@ -1255,11 +1246,11 @@ function render() {
                             </div>` + html;
                 }
             }
-
             document.getElementById('contentArea').innerHTML = html || '<p style="text-align:center; padding:50px; color:var(--text-dim);">No items found.</p>';
         });
     });
 }
+
 
 
     function showToast(msg) {
@@ -1270,12 +1261,37 @@ function render() {
         setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
     }
 
-    function filter() {
-        const q = document.getElementById('search').value.toLowerCase();
-        document.querySelectorAll('.stock-card').forEach(c => {
-            c.style.display = c.innerText.toLowerCase().includes(q) ? "flex" : "none";
-        });
-    }
+function filter() {
+    const q = document.getElementById('search').value.toLowerCase();
+    const cards = document.querySelectorAll('.stock-card');
+    
+    cards.forEach(card => {
+        // Hum sirf card ke naam wala attribute check karenge
+        const itemName = card.getAttribute('data-name') || "";
+        
+        if (itemName.includes(q)) {
+            // FIX: Agar List View hai toh flex, agar Card view hai toh block/flex as per CSS
+            // Isse search result dono view mein sahi dikhenge
+            card.style.setProperty('display', isListView ? 'flex' : 'flex', 'important');
+        } else {
+            card.style.setProperty('display', 'none', 'important');
+        }
+    });
+
+    // Khaali categories ko hide karne ke liye
+    document.querySelectorAll('.cat-block').forEach(block => {
+        // Check if there are any visible cards in this block
+        const hasVisibleCards = Array.from(block.querySelectorAll('.stock-card')).some(c => 
+            c.style.display !== "none"
+        );
+        
+        if (hasVisibleCards || q === "") {
+            block.style.display = "block";
+        } else {
+            block.style.display = "none";
+        }
+    });
+}
 
 
 function askDelete(id) {
