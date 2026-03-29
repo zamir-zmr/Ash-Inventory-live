@@ -1571,17 +1571,14 @@ function openSharePanel() {
     panel.style.display = 'flex';
     panel.style.zIndex = '10000'; 
 
-    // --- ADMIN ONLY ELEMENTS ---
     const inputSection = document.getElementById('shareInputSection'); 
     const btnSend = document.getElementById('btnConfirmShare');
     const stockInfo = document.getElementById('shareStockInfo');
     
-    // Labels ke liye extra IDs (Check your HTML for these IDs)
     const branchLabel = document.getElementById('branchLabelID');
     const qtyLabel = document.getElementById('qtyLabelID');
 
     if(typeof isAdmin !== 'undefined' && isAdmin) {
-        // ADMIN: Sab dikhao
         if(inputSection) inputSection.style.display = 'block';
         if(btnSend) btnSend.style.display = 'block';
         if(stockInfo) stockInfo.style.display = 'block';
@@ -1589,7 +1586,6 @@ function openSharePanel() {
         if(qtyLabel) qtyLabel.style.display = 'block';
         populateShareDropdown();
     } else {
-        // GUEST: Sab hide kar do
         if(inputSection) inputSection.style.display = 'none';
         if(btnSend) btnSend.style.display = 'none';
         if(stockInfo) stockInfo.style.display = 'none';
@@ -1600,12 +1596,10 @@ function openSharePanel() {
     loadTransferHistory(); 
 }
 
-
 function closeSharePanel() {
     document.getElementById('sharePanel').style.display = 'none';
 }
 
-// Dropdown mein items bharna
 function populateShareDropdown() {
     db.ref("stocks").once("value", snap => {
         const stocks = snap.val();
@@ -1617,7 +1611,6 @@ function populateShareDropdown() {
     });
 }
 
-// Max quantity aur Unit update karna
 function updateShareMaxQty() {
     const sel = document.getElementById('shareItemSelect');
     const opt = sel.options[sel.selectedIndex];
@@ -1627,22 +1620,15 @@ function updateShareMaxQty() {
     document.getElementById('shareUnitLabel').innerText = opt.getAttribute('data-unit');
 }
 
-// Send to Branch Logic
 function processStockShare() {
-    // 1. Panel ko target banana taaki pop-up upar dikhe
     const panelTarget = document.getElementById('sharePanel');
 
     if(!isAdmin) {
-        Swal.fire({
-            title: "Access Denied",
-            text: "Aap admin nahi hain!",
-            icon: "error",
-            target: panelTarget // Isse pop-up panel ke upar aayega
-        });
+        Swal.fire({ title: "Access Denied", text: "Aap admin nahi hain!", icon: "error", target: panelTarget });
         return;
     }
 
-    const sId = document.getElementById('shareItemSelect').value;
+    const sId = document.getElementById('shareItemSelect').value; 
     const branch = document.getElementById('shareBranch').value;
     const qtyInput = document.getElementById('shareQty');
     const sendQty = parseFloat(qtyInput.value);
@@ -1651,12 +1637,7 @@ function processStockShare() {
     const opt = sel.options[sel.selectedIndex];
 
     if(!sId || !branch || isNaN(sendQty) || sendQty <= 0) {
-        Swal.fire({
-            title: "Error",
-            text: "Enter the correct details!",
-            icon: "error",
-            target: panelTarget
-        });
+        Swal.fire({ title: "Error", text: "Enter the correct details!", icon: "error", target: panelTarget });
         return;
     }
 
@@ -1665,12 +1646,7 @@ function processStockShare() {
     const itemName = opt.text;
 
     if(sendQty > currentQty) {
-        Swal.fire({
-            title: "Low Stock",
-            text: "Not much stock available!",
-            icon: "error",
-            target: panelTarget
-        });
+        Swal.fire({ title: "Low Stock", text: "Not much stock available!", icon: "error", target: panelTarget });
         return;
     }
 
@@ -1683,21 +1659,18 @@ function processStockShare() {
         let senderName = (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin";
 
         const transferData = {
-            itemName: itemName, branch: branch, qty: sendQty,
-            unit: unit, by: senderName, time: finalDateTime
+            itemId: sId, 
+            itemName: itemName, 
+            branch: branch, 
+            qty: sendQty,
+            unit: unit, 
+            by: senderName, 
+            time: finalDateTime
         };
 
         return db.ref("transfers").push(transferData);
     }).then(() => {
-        // SUCCESS POP-UP
-        Swal.fire({ 
-            title: "Sent Successfully!", 
-            icon: "success", 
-            timer: 1500, 
-            showConfirmButton: false,
-            target: panelTarget 
-        });
-
+        Swal.fire({ title: "Sent Successfully!", icon: "success", timer: 1500, showConfirmButton: false, target: panelTarget });
         qtyInput.value = "";
         document.getElementById('shareBranch').value = "";
         sel.value = "";
@@ -1705,17 +1678,10 @@ function processStockShare() {
         document.getElementById('shareUnitLabel').innerText = "Unit";
         populateShareDropdown();
     }).catch(err => {
-        Swal.fire({
-            title: "Error",
-            text: "Stock update failed",
-            icon: "error",
-            target: panelTarget
-        });
+        Swal.fire({ title: "Error", text: "Stock update failed", icon: "error", target: panelTarget });
     });
 }
 
-
-// History loading function
 function loadTransferHistory() {
     db.ref("transfers").limitToLast(15).on("value", snap => {
         const data = snap.val();
@@ -1735,7 +1701,7 @@ function loadTransferHistory() {
         keys.forEach(id => {
             const t = data[id];
             html += `
-            <div style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+            <div id="card-${id}" oncontextmenu="showTransferOptions('${id}'); return false;" style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); cursor:pointer; position:relative; transition:0.3s;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <div style="flex:1;">
                         <b style="color:var(--text-main); font-size:14px; display:block;">${t.itemName}</b>
@@ -1767,18 +1733,183 @@ function loadTransferHistory() {
     });
 }
 
+function showTransferOptions(tId) {
+    if(!isAdmin) return; 
+
+    Swal.fire({
+        title: 'Select Action',
+        text: "Do you want to modify this distribution?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-edit"></i> Edit',
+        cancelButtonText: '<i class="fas fa-trash"></i> Delete',
+        confirmButtonColor: 'var(--teal)',
+        cancelButtonColor: 'var(--danger)',
+        target: document.getElementById('sharePanel')
+    }).then((result) => {
+        if (result.isConfirmed) {
+            editTransfer(tId);
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            deleteTransfer(tId);
+        }
+    });
+}
+
+// FIX: Edit function jo stock ko sahi se adjust karta hai
+function editTransfer(tId) {
+    const panelTarget = document.getElementById('sharePanel');
+
+    db.ref(`transfers/${tId}`).once("value", snap => {
+        const oldData = snap.val();
+        if(!oldData) return;
+
+        Swal.fire({
+            title: 'Update Quantity',
+            input: 'number',
+            inputValue: oldData.qty,
+            showCancelButton: true,
+            confirmButtonText: 'Update Stock',
+            confirmButtonColor: 'var(--teal)',
+            target: panelTarget,
+            inputValidator: (value) => {
+                if (!value || value <= 0) return 'Enter the correct quantity!'
+            }
+        }).then((res) => {
+            if(res.isConfirmed) {
+                const newQty = parseFloat(res.value);
+                const oldQty = parseFloat(oldData.qty);
+                const diff = newQty - oldQty; 
+
+                const stockId = oldData.itemId; 
+                
+                if(!stockId) {
+                    // Agar itemId nahi hai, toh name se search karo (for old data)
+                    db.ref("stocks").orderByChild("name").equalTo(oldData.itemName).once("value", sSnap => {
+                        const stocks = sSnap.val();
+                        if(!stocks) {
+                            Swal.fire({ title: "Error", text: "Item nahi mila!", icon: "error", target: panelTarget });
+                            return;
+                        }
+                        const sKey = Object.keys(stocks)[0];
+                        finalizeUpdate(sKey, stocks[sKey].qty, diff, newQty, tId);
+                    });
+                } else {
+                    db.ref(`stocks/${stockId}`).once("value", sSnap => {
+                        const sData = sSnap.val();
+                        if(!sData) {
+                            Swal.fire({ title: "Error", text: "Stock item missing!", icon: "error", target: panelTarget });
+                            return;
+                        }
+                        finalizeUpdate(stockId, sData.qty, diff, newQty, tId);
+                    });
+                }
+            }
+        });
+    });
+}
+
+function finalizeUpdate(sKey, currentStockQty, diff, newQty, tId) {
+    const currentStock = parseFloat(currentStockQty);
+    
+    // Check if we have enough stock if quantity is increased
+    if(diff > currentStock) {
+        Swal.fire({ title: "Low Stock!", text: `In stock ${currentStock} left only`, icon: "error", target: document.getElementById('sharePanel') });
+        return;
+    }
+
+    const finalStock = (currentStock - diff).toFixed(2);
+    const updates = {};
+    updates[`/stocks/${sKey}/qty`] = finalStock;
+    updates[`/transfers/${tId}/qty`] = newQty;
+
+    db.ref().update(updates).then(() => {
+        Swal.fire({ title: "Updated!", icon: "success", timer: 1000, showConfirmButton: false, target: document.getElementById('sharePanel') });
+        populateShareDropdown(); // Dropdown refresh karein
+    });
+}
+
+
+function deleteTransfer(tId) {
+    const panelTarget = document.getElementById('sharePanel');
+    
+    Swal.fire({
+        title: 'Delete History?',
+        text: "This will bring the stock back!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete!',
+        confirmButtonColor: 'var(--danger)',
+        target: panelTarget
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // 1. Pehle transfer data uthao
+            db.ref(`transfers/${tId}`).once("value", snap => {
+                const tData = snap.val();
+                if(!tData) return;
+
+                const returnQty = parseFloat(tData.qty);
+                const itemName = tData.itemName;
+                const itemId = tData.itemId;
+
+                // 2. Stock dhoondne ka logic
+                let stockRef;
+                if(itemId) {
+                    // Agar itemId hai (Nayi entries)
+                    stockRef = db.ref(`stocks/${itemId}`);
+                } else {
+                    // Agar itemId nahi hai (Purani entries), toh Name se dhoondo
+                    stockRef = db.ref("stocks").orderByChild("name").equalTo(itemName);
+                }
+
+                stockRef.once("value", sSnap => {
+                    let sKey, sData;
+                    
+                    if(itemId) {
+                        sKey = itemId;
+                        sData = sSnap.val();
+                    } else {
+                        // Name search se pehla item pakdo
+                        const stocks = sSnap.val();
+                        if(stocks) {
+                            sKey = Object.keys(stocks)[0];
+                            sData = stocks[sKey];
+                        }
+                    }
+
+                    if(sData && sKey) {
+                        // 3. Stock update karo (2 + 2 = 4 logic)
+                        const currentStock = parseFloat(sData.qty) || 0;
+                        const finalStock = (currentStock + returnQty).toFixed(2);
+
+                        db.ref(`stocks/${sKey}`).update({ qty: finalStock }).then(() => {
+                            // 4. History se delete karo
+                            return db.ref(`transfers/${tId}`).remove();
+                        }).then(() => {
+                            Swal.fire({ 
+                                title: "Deleted!", 
+                                text: `${returnQty} is bake in stock.`, 
+                                icon: "success", 
+                                target: panelTarget 
+                            });
+                            if(typeof populateShareDropdown === 'function') populateShareDropdown();
+                        });
+                    } else {
+                        // Agar stock item hi delete ho gaya ho tab ye aayega
+                        db.ref(`transfers/${tId}`).remove();
+                        Swal.fire({ title: "Deleted", text: "History deleted, but stock item not found.", icon: "info", target: panelTarget });
+                    }
+                });
+            });
+        }
+    });
+}
 
 function openAndHighlight(tId) {
-    openSharePanel(); // 1. Panel kholo
-    
-    // 600ms wait taaki panel poora khul kar data load kar le
+    openSharePanel(); 
     setTimeout(() => {
         const target = document.getElementById(`card-${tId}`);
         if(target) {
-            // 2. Isse item screen ke bilkul TOP (front) par aa jayega
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            
-            // 3. Glowing Highlight effect
             target.style.transition = "0.4s";
             target.style.background = "rgba(13, 148, 136, 0.15)";
             target.style.border = "2px solid var(--teal)";
