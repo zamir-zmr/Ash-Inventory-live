@@ -383,12 +383,17 @@
 </div>
 
 
-
-    <input type="text" id="search" onkeyup="filter()" placeholder="🔍 Search Stocks inventory..." style="border-radius:15px; margin-bottom: 20px;">
+<input type="text" id="search" onkeyup="filter()" placeholder="🔍 Search Stocks inventory..." style="border-radius:15px; margin-bottom: 15px;">
     
+
+<div style="display: flex; justify-content: flex-start; margin-bottom: 15px;">
     <button onclick="toggleView()" style="background: var(--panel); border: 1px solid var(--border); color: var(--teal); width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);">
         <i id="viewToggleIcon" class="fas fa-list" style="font-size: 18px;"></i>
     </button>
+</div>
+
+ 
+ 
     
     <div id="contentArea"></div>
 </div>
@@ -1121,12 +1126,15 @@ function deleteCat(id, name) {
     });
 }
 
-
 function generateStockCardHtml(sId, s, cId) {
     const displayUnit = s.unit ? s.unit : 'Pcs';
     const nameEscaped = s.name.replace(/'/g, "\\'");
-    const searchAttr = s.name.toLowerCase(); // Sirf item ka naam search ke liye
+    const searchAttr = s.name.toLowerCase(); 
     
+    // Low Stock Check (Quantity < 5)
+    const isLow = parseFloat(s.qty) < 5;
+    const lowBorderStyle = isLow ? 'border: 2px solid #e11d48 !important;' : '';
+
     const catSelect = document.getElementById('catDropdown');
     let catName = "No Category";
     if(catSelect) {
@@ -1136,9 +1144,9 @@ function generateStockCardHtml(sId, s, cId) {
 
     if (isListView) {
         return `
-        <div class="stock-card list-mode" data-name="${searchAttr}"
+        <div class="stock-card list-mode" data-name="${searchAttr}" data-low="${isLow}"
             onclick="if(!isManageMode) openDetails('${nameEscaped}', '${s.qty}', '${displayUnit}', '${s.img || ""}', '${s.by}', '${s.time}')"
-            style="position:relative; cursor:pointer; display:flex; align-items:center; background:var(--card); padding:10px; gap:15px; border-bottom: 1.5px solid #22c55e; margin-bottom: 5px;">
+            style="position:relative; cursor:pointer; display:flex; align-items:center; background:var(--card); padding:10px; gap:15px; border-bottom: 1.5px solid #22c55e; margin-bottom: 5px; ${lowBorderStyle}">
             
             <div style="width: 75px; height: 75px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: var(--input-bg); border: 1px solid var(--border);">
                 ${s.img ? 
@@ -1150,7 +1158,7 @@ function generateStockCardHtml(sId, s, cId) {
             <div style="flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 2px;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <h4 style="margin:0; font-size:15px; color:var(--text-main); font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</h4>
-                    <div style="color:var(--teal); font-size:16px; font-weight:900;">${s.qty} <span style="font-size:11px; font-weight:600;">${displayUnit}</span></div>
+                    <div style="color:${isLow ? '#e11d48' : 'var(--teal)'}; font-size:16px; font-weight:900;">${s.qty} <span style="font-size:11px; font-weight:600;">${displayUnit}</span></div>
                 </div>
                 
                 <div style="font-size: 11px; color: var(--accent); font-weight: 700; text-transform: uppercase;">
@@ -1172,13 +1180,13 @@ function generateStockCardHtml(sId, s, cId) {
     }
 
     return `
-    <div class="stock-card" data-name="${searchAttr}"
+    <div class="stock-card" data-name="${searchAttr}" data-low="${isLow}"
         onclick="if(!isManageMode) openDetails('${nameEscaped}', '${s.qty}', '${displayUnit}', '${s.img || ""}', '${s.by}', '${s.time}')"
-        style="position:relative; cursor:pointer; overflow:hidden; border:2px solid var(--border); border-radius:18px; height: 190px; display: flex; flex-direction: column; background: var(--card); box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: 2px;">
+        style="position:relative; cursor:pointer; overflow:hidden; border:2px solid var(--border); border-radius:18px; height: 190px; display: flex; flex-direction: column; background: var(--card); box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: 2px; ${lowBorderStyle}">
         ${s.img ? `<img src="${s.img}" style="width:100%; height:70%; object-fit:cover; display:block;">` : `<div style="width:100%; height:70%; display:flex; align-items:center; justify-content:center; background:var(--input-bg);"><i class="fas fa-image" style="font-size:24px; color:var(--text-dim);"></i></div>`}
         <div class="card-body" style="padding: 6px 10px; height:30%; display: flex; flex-direction: column; justify-content: center; background:var(--card);">
             <h4 style="margin:0; font-size:12px; color:var(--text-main); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</h4>
-            <div style="color:var(--teal); font-size:17px; font-weight:800;">${s.qty} ${displayUnit}</div>
+            <div style="color:${isLow ? '#e11d48' : 'var(--teal)'}; font-size:17px; font-weight:800;">${s.qty} ${displayUnit}</div>
             <span style="font-size:7px; color:var(--text-main); text-transform: uppercase; font-weight:600;">${s.by} ${s.time}</span>
         </div>
         <div class="manage-overlay" style="display: ${isManageMode ? 'flex' : 'none'}; position: absolute; inset: 0; background: rgba(0,0,0,0.12); align-items: center; justify-content: center; z-index: 10;">
@@ -1189,9 +1197,6 @@ function generateStockCardHtml(sId, s, cId) {
         </div>
     </div>`;
 }
-
-
-
 
 function render() {
     db.ref("categories").on("value", snap => {
@@ -1208,12 +1213,40 @@ function render() {
         db.ref("categories").once("value", catSnap => {
             const cats = catSnap.val() || {};
             let html = "";
+            let lowStockItemsHtml = ""; // For Top Dashboard
             let processedStockIds = new Set();
 
             const gridStyle = isListView 
                 ? "display: flex; flex-direction: column; gap: 10px;" 
                 : "display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;";
 
+            // --- Step 1: Low Stock Dashboard Logic ---
+            for(let sId in stocks) {
+                if(parseFloat(stocks[sId].qty) < 5) {
+                    lowStockItemsHtml += `
+                        <div style="background: var(--card); border: 1px solid #e11d48; padding: 8px 12px; border-radius: 12px; min-width: 110px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <div style="font-size: 10px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${stocks[sId].name}</div>
+                            <div style="color: #e11d48; font-size: 14px; font-weight: 900;">${stocks[sId].qty} <span style="font-size: 9px;">${stocks[sId].unit || 'Pcs'}</span></div>
+                        </div>`;
+                }
+            }
+
+            // Create Dashboard Section
+            let dashboardHtml = "";
+            if(lowStockItemsHtml !== "") {
+                dashboardHtml = `
+                <div id="lowStockDashboard" style="margin-bottom: 25px; background: rgba(225, 29, 72, 0.08); border: 1px solid #e11d48; border-radius: 20px; padding: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <i class="fas fa-exclamation-triangle" style="color: #e11d48; font-size: 14px;"></i>
+                        <span style="color: var(--text-main); font-size: 12px; font-weight: 800; text-transform: uppercase;">Low Stock Alert</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;">
+                        ${lowStockItemsHtml}
+                    </div>
+                </div>`;
+            }
+
+            // --- Step 2: Main Categories and Items ---
             for(let cId in cats) {
                 let itemsHtml = "";
                 for(let sId in stocks) {
@@ -1246,41 +1279,33 @@ function render() {
                             </div>` + html;
                 }
             }
-            document.getElementById('contentArea').innerHTML = html || '<p style="text-align:center; padding:50px; color:var(--text-dim);">No items found.</p>';
+            
+            // Combine Dashboard + Main Content
+            document.getElementById('contentArea').innerHTML = (dashboardHtml + html) || '<p style="text-align:center; padding:50px; color:var(--text-dim);">No items found.</p>';
         });
     });
 }
 
-
-
-    function showToast(msg) {
-        let toast = document.getElementById("toast");
-        if (!toast) { toast = document.createElement("div"); toast.id = "toast"; document.body.appendChild(toast); }
-        toast.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
-        toast.className = "toast show";
-        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
-    }
-
 function filter() {
     const q = document.getElementById('search').value.toLowerCase();
     const cards = document.querySelectorAll('.stock-card');
+    const dashboard = document.getElementById('lowStockDashboard');
     
+    // Search ke waqt dashboard hide karo
+    if(dashboard) {
+        dashboard.style.display = (q === "") ? "block" : "none";
+    }
+
     cards.forEach(card => {
-        // Hum sirf card ke naam wala attribute check karenge
         const itemName = card.getAttribute('data-name') || "";
-        
         if (itemName.includes(q)) {
-            // FIX: Agar List View hai toh flex, agar Card view hai toh block/flex as per CSS
-            // Isse search result dono view mein sahi dikhenge
             card.style.setProperty('display', isListView ? 'flex' : 'flex', 'important');
         } else {
             card.style.setProperty('display', 'none', 'important');
         }
     });
 
-    // Khaali categories ko hide karne ke liye
     document.querySelectorAll('.cat-block').forEach(block => {
-        // Check if there are any visible cards in this block
         const hasVisibleCards = Array.from(block.querySelectorAll('.stock-card')).some(c => 
             c.style.display !== "none"
         );
@@ -1292,6 +1317,18 @@ function filter() {
         }
     });
 }
+
+
+
+
+
+    function showToast(msg) {
+        let toast = document.getElementById("toast");
+        if (!toast) { toast = document.createElement("div"); toast.id = "toast"; document.body.appendChild(toast); }
+        toast.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+        toast.className = "toast show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+    }
 
 
 function askDelete(id) {
