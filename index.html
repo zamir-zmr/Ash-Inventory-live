@@ -1628,10 +1628,17 @@ function updateShareMaxQty() {
 }
 
 // Send to Branch Logic
-
 function processStockShare() {
+    // 1. Panel ko target banana taaki pop-up upar dikhe
+    const panelTarget = document.getElementById('sharePanel');
+
     if(!isAdmin) {
-        Swal.fire("Access Denied", "Aap admin nahi hain!", "error");
+        Swal.fire({
+            title: "Access Denied",
+            text: "Aap admin nahi hain!",
+            icon: "error",
+            target: panelTarget // Isse pop-up panel ke upar aayega
+        });
         return;
     }
 
@@ -1644,7 +1651,12 @@ function processStockShare() {
     const opt = sel.options[sel.selectedIndex];
 
     if(!sId || !branch || isNaN(sendQty) || sendQty <= 0) {
-        Swal.fire("Error", "Sahi details bhariye!", "error");
+        Swal.fire({
+            title: "Error",
+            text: "Enter the correct details!",
+            icon: "error",
+            target: panelTarget
+        });
         return;
     }
 
@@ -1653,7 +1665,12 @@ function processStockShare() {
     const itemName = opt.text;
 
     if(sendQty > currentQty) {
-        Swal.fire("Low Stock", "Itna stock available nahi hai!", "error");
+        Swal.fire({
+            title: "Low Stock",
+            text: "Not much stock available!",
+            icon: "error",
+            target: panelTarget
+        });
         return;
     }
 
@@ -1666,32 +1683,37 @@ function processStockShare() {
         let senderName = (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin";
 
         const transferData = {
-            itemName: itemName,
-            branch: branch,
-            qty: sendQty,
-            unit: unit,
-            by: senderName, 
-            time: finalDateTime
+            itemName: itemName, branch: branch, qty: sendQty,
+            unit: unit, by: senderName, time: finalDateTime
         };
 
         return db.ref("transfers").push(transferData);
     }).then(() => {
-        Swal.fire({ title: "Sent Successfully!", icon: "success", timer: 1500, showConfirmButton: false });
+        // SUCCESS POP-UP
+        Swal.fire({ 
+            title: "Sent Successfully!", 
+            icon: "success", 
+            timer: 1500, 
+            showConfirmButton: false,
+            target: panelTarget 
+        });
 
-        // --- REFRESH LOGIC ADDED HERE ---
-        qtyInput.value = ""; // Quantity box khali
-        document.getElementById('shareBranch').value = ""; // Branch box khali
-        sel.value = ""; // Dropdown ko "Choose Item" par reset karein
-        
-        // Current Stock label ko 0 karein taaki purana stock na dikhe
+        qtyInput.value = "";
+        document.getElementById('shareBranch').value = "";
+        sel.value = "";
         document.getElementById('maxAvailable').innerText = "0"; 
         document.getElementById('shareUnitLabel').innerText = "Unit";
-
-        populateShareDropdown(); // List refresh karein
+        populateShareDropdown();
     }).catch(err => {
-        Swal.fire("Error", "Stock update nahi ho paya", "error");
+        Swal.fire({
+            title: "Error",
+            text: "Stock update failed",
+            icon: "error",
+            target: panelTarget
+        });
     });
 }
+
 
 // History loading function
 function loadTransferHistory() {
