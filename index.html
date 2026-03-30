@@ -325,6 +325,21 @@
    #catListArea span {
     color: #00bac3 !important; /* Force names to be white */
 }
+
+.filter-btn, .filter-select {
+    background: #1a1a1a;
+    color: white;
+    border: 1px solid #333;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    min-width: 80px;
+}
+.filter-btn:active {
+    background: var(--primary-color);
+}
+
      
     </style>
 </head>
@@ -1205,7 +1220,6 @@ function generateStockCardHtml(sId, s, cId) {
     </div>`;
 }
 
-
 function render() {
     // Categories logic
     db.ref("categories").on("value", snap => {
@@ -1222,14 +1236,13 @@ function render() {
         const stocks = stockSnap.val();
         
         // --- Get History first, then render everything ---
-        db.ref("transfers").limitToLast(5).once("value", transferSnap => {
+        db.ref("transfers").limitToLast(10).once("value", transferSnap => {
             const transfers = transferSnap.val();
             
             db.ref("categories").once("value", catSnap => {
                 const cats = catSnap.val() || {};
                 let html = "";
                 let lowStockItemsHtml = "";
-                let processedStockIds = new Set();
 
                 const gridStyle = isListView 
                     ? "display: flex; flex-direction: column; gap: 10px;" 
@@ -1246,36 +1259,33 @@ function render() {
                     }
                 }
 
-                // 2. History Section (Ab HTML mein join hoga)
+                // 2. History Section (FIXED TIME LOGIC)
                 let historyHtml = "";
+                if(transfers) {
+                    let rows = Object.keys(transfers).reverse().map(tId => {
+                        const t = transfers[tId]; 
+                        
+                        // FIX: Agar database mein time hai toh wahi dikhao, varna blank rakho
+                        // t.time format: "30/03/2026 12:44 AM"
+                        let displayTime = t.time ? t.time : "No Time";
 
-
-if(transfers) {
-    let rows = Object.keys(transfers).reverse().map(tId => {
-        const t = transfers[tId]; 
-        let d = t.time ? new Date(t.time.replace(/-/g, '/')) : new Date();
-        if (isNaN(d.getTime())) d = new Date();
-        const dateStr = d.toLocaleDateString('en-GB');
-        const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-        return `
-        <div onclick="openAndHighlight('${tId}')" style="flex:0 0 auto; width:95px; background:var(--panel); padding:8px; border-radius:12px; border:1px solid var(--border); text-align:center; cursor:pointer; transition:0.3s;">
-            <b style="color:var(--text-main); font-size:10px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.itemName}</b>
-            <div style="color:var(--danger); font-size:12px; font-weight:900; margin:2px 0;">-${t.qty} <small style="font-size:8px;">${t.unit || ''}</small></div>
-            <div style="color:var(--teal); font-size:8px; font-weight:700; overflow:hidden;">${t.branch}</div>
-            <div style="border-top:1px dashed var(--border); margin-top:4px; padding-top:4px; color:var(--text-dim); font-size:7px;">
-                ${dateStr}<br>${timeStr}
-            </div>
-        </div>`;
-    }).join('');
-    
-    historyHtml = `
-    <div style="margin-bottom:20px;">
-        <h3 style="font-size:11px; color:var(--text-dim); margin-bottom:8px; padding-left:10px; font-weight:800;">SENT HISTORY</h3>
-        <div style="display:flex; gap:8px; overflow-x:auto; padding:5px 10px; scrollbar-width:none;">${rows}</div>
-    </div>`;
-}
-
+                        return `
+                        <div onclick="openAndHighlight('${tId}')" style="flex:0 0 auto; width:100px; background:var(--panel); padding:8px; border-radius:15px; border:1px solid var(--border); text-align:center; cursor:pointer; transition:0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                            <b style="color:var(--text-main); font-size:10px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.itemName}</b>
+                            <div style="color:var(--danger); font-size:12px; font-weight:900; margin:2px 0;">-${t.qty} <small style="font-size:8px;">${t.unit || ''}</small></div>
+                            <div style="color:var(--teal); font-size:8px; font-weight:700; overflow:hidden;"><i class="fas fa-location-dot" style="font-size:7px;"></i> ${t.branch}</div>
+                            <div style="border-top:1px dashed var(--border); margin-top:5px; padding-top:5px; color:var(--text-dim); font-size:7px; line-height:1.2;">
+                                ${displayTime.replace(" ", "<br>")}
+                            </div>
+                        </div>`;
+                    }).join('');
+                    
+                    historyHtml = `
+                    <div style="margin-bottom:20px;">
+                        <h3 style="font-size:11px; color:var(--text-dim); margin-bottom:8px; padding-left:10px; font-weight:800; letter-spacing:0.5px;">RECENTLY SENT</h3>
+                        <div style="display:flex; gap:10px; overflow-x:auto; padding:5px 10px; scrollbar-width:none;">${rows}</div>
+                    </div>`;
+                }
 
                 // 3. Category/Stock Logic
                 for(let cId in cats) {
@@ -1283,21 +1293,18 @@ if(transfers) {
                     for(let sId in stocks) {
                         if(stocks[sId].catId === cId) {
                             itemsHtml += generateStockCardHtml(sId, stocks[sId], cId);
-                            processedStockIds.add(sId);
                         }
                     }
                     if(itemsHtml !== "") {
                         html += `<div class="cat-block" style="margin-bottom: 20px;">
-                                    <div class="category-header" style="padding: 10px; font-weight: 800; color: var(--teal); border-bottom: 1px solid var(--border); margin-bottom: 10px;">${cats[cId].name}</div>
+                                    <div class="category-header" style="padding: 10px; font-weight: 800; color: var(--teal); border-bottom: 1px solid var(--border); margin-bottom: 10px; font-size:13px;">${cats[cId].name}</div>
                                     <div class="stock-grid" style="${gridStyle}">${itemsHtml}</div>
                                  </div>`;
                     }
                 }
 
-                // Final Combine
-                let dashboardHtml = lowStockItemsHtml ? `<div style="margin-bottom:20px;"><h3 style="font-size:12px; color:#e11d48; margin-bottom:10px;">LOW STOCK</h3><div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">${lowStockItemsHtml}</div></div>` : "";
+                let dashboardHtml = lowStockItemsHtml ? `<div style="margin-bottom:20px;"><h3 style="font-size:11px; color:#e11d48; margin-bottom:10px; padding-left:10px; font-weight:800;">LOW STOCK ALERT</h3><div style="display:flex; gap:10px; overflow-x:auto; padding:5px 10px; scrollbar-width:none;">${lowStockItemsHtml}</div></div>` : "";
                 
-                // IS LINE PAR DEKHO: dashboard + history + main items
                 document.getElementById('contentArea').innerHTML = dashboardHtml + historyHtml + html;
                 
                 if(document.getElementById('search').value !== "") filter();
@@ -1305,6 +1312,7 @@ if(transfers) {
         });
     });
 }
+
 
 
 function filter() {
@@ -1566,6 +1574,9 @@ function toggleView() {
 
   // Share Panel Open/Close
 
+
+  // Share Panel Open/Close
+
 function openSharePanel() {
     const panel = document.getElementById('sharePanel');
     panel.style.display = 'flex';
@@ -1620,33 +1631,26 @@ function updateShareMaxQty() {
     document.getElementById('shareUnitLabel').innerText = opt.getAttribute('data-unit');
 }
 
-function processStockShare() {
+ function processStockShare() {
     const panelTarget = document.getElementById('sharePanel');
-
-    if(!isAdmin) {
-        Swal.fire({ title: "Access Denied", text: "Aap admin nahi hain!", icon: "error", target: panelTarget });
-        return;
-    }
-
     const sId = document.getElementById('shareItemSelect').value; 
     const branch = document.getElementById('shareBranch').value;
     const qtyInput = document.getElementById('shareQty');
     const sendQty = parseFloat(qtyInput.value);
-    
     const sel = document.getElementById('shareItemSelect');
     const opt = sel.options[sel.selectedIndex];
 
     if(!sId || !branch || isNaN(sendQty) || sendQty <= 0) {
-        Swal.fire({ title: "Error", text: "Enter the correct details!", icon: "error", target: panelTarget });
+        Swal.fire({ title: "Error", text: "Details sahi bharein!", icon: "error", target: panelTarget });
         return;
     }
 
     const currentQty = parseFloat(opt.getAttribute('data-qty'));
-    const unit = opt.getAttribute('data-unit');
     const itemName = opt.text;
+    const unit = opt.getAttribute('data-unit');
 
     if(sendQty > currentQty) {
-        Swal.fire({ title: "Low Stock", text: "Not much stock available!", icon: "error", target: panelTarget });
+        Swal.fire({ title: "Low Stock", icon: "error", target: panelTarget });
         return;
     }
 
@@ -1654,33 +1658,30 @@ function processStockShare() {
 
     db.ref(`stocks/${sId}`).update({ qty: newQty }).then(() => {
         const now = new Date();
+        // Time display ke liye: 30/03/2026 12:44 AM
         const finalDateTime = now.toLocaleDateString('en-GB') + " " + now.toLocaleTimeString('en-US', { hour12: true });
-
-        let senderName = (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin";
+        // Date filter ke liye: 30/03/2026
+        const simpleDate = now.toLocaleDateString('en-GB'); 
 
         const transferData = {
-            itemId: sId, 
-            itemName: itemName, 
-            branch: branch, 
+            itemId: sId,
+            itemName: itemName,
+            branch: branch, // Filter 'branch' dhoondega
             qty: sendQty,
-            unit: unit, 
-            by: senderName, 
-            time: finalDateTime
+            unit: unit,
+            by: (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin",
+            time: finalDateTime,
+            date: simpleDate // YE SABSE ZAROORI HAI
         };
 
         return db.ref("transfers").push(transferData);
     }).then(() => {
-        Swal.fire({ title: "Sent Successfully!", icon: "success", timer: 1500, showConfirmButton: false, target: panelTarget });
+        Swal.fire({ title: "Sent!", icon: "success", timer: 1000, showConfirmButton: false, target: panelTarget });
         qtyInput.value = "";
-        document.getElementById('shareBranch').value = "";
-        sel.value = "";
-        document.getElementById('maxAvailable').innerText = "0"; 
-        document.getElementById('shareUnitLabel').innerText = "Unit";
         populateShareDropdown();
-    }).catch(err => {
-        Swal.fire({ title: "Error", text: "Stock update failed", icon: "error", target: panelTarget });
     });
 }
+
 
 function loadTransferHistory() {
     db.ref("transfers").limitToLast(15).on("value", snap => {
@@ -1925,6 +1926,103 @@ function openAndHighlight(tId) {
 }
 
 
+// Global variable to keep track of active date filter
+let currentActiveDateFilter = 'all';
+
+function filterData(type) {
+    // Agar type branch nahi hai, toh usey date filter ki tarah save karein
+    if (type !== 'branch') {
+        currentActiveDateFilter = type;
+    }
+
+    // Reset Dropdowns if 'All' is clicked
+    if (type === 'all') {
+        document.getElementById('monthFilter').value = "";
+        document.getElementById('yearFilter').value = "";
+        document.getElementById('branchFilter').value = "";
+        document.getElementById('datePicker').value = "";
+        loadTransferHistory(); 
+        return;
+    }
+
+    const todayDate = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY
+    const selMonth = document.getElementById('monthFilter').value;
+    const selYear = document.getElementById('yearFilter').value;
+    const selBranch = document.getElementById('branchFilter').value;
+    
+    // Calendar/Custom Date logic
+    let customDate = "";
+    const dateInput = document.getElementById('datePicker').value;
+    if(dateInput) {
+        const d = dateInput.split('-');
+        customDate = `${d[2]}/${d[1]}/${d[0]}`; // Converts YYYY-MM-DD to DD/MM/YYYY
+    }
+
+    db.ref("transfers").once("value", snap => {
+        const data = snap.val();
+        const container = document.getElementById('transferHistory');
+        if (!data) return;
+
+        let html = "";
+        const keys = Object.keys(data).reverse();
+
+        keys.forEach(id => {
+            const t = data[id];
+            if (!t.date) return;
+
+            let dateMatch = false;
+            let branchMatch = false;
+
+            // --- 1. DATE FILTER LOGIC ---
+            if (currentActiveDateFilter === 'all') {
+                dateMatch = true;
+            } else if (currentActiveDateFilter === 'today' && t.date === todayDate) {
+                dateMatch = true;
+            } else if (currentActiveDateFilter === 'customDate' && t.date === customDate) {
+                dateMatch = true;
+            } else {
+                const parts = t.date.split('/'); // [DD, MM, YYYY]
+                if (currentActiveDateFilter === 'month' && parts[1] === selMonth) dateMatch = true;
+                if (currentActiveDateFilter === 'year' && parts[2] === selYear) dateMatch = true;
+            }
+
+            // --- 2. BRANCH FILTER LOGIC ---
+            if (selBranch === "" || (t.branch && t.branch.toLowerCase().trim() === selBranch.toLowerCase().trim())) {
+                branchMatch = true;
+            }
+
+            // --- 3. COMBINE BOTH (Show only if both match) ---
+            if (dateMatch && branchMatch) {
+                html += `
+                <div id="card-${id}" oncontextmenu="showTransferOptions('${id}'); return false;" style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; cursor:pointer;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="flex:1;">
+                            <b style="color:var(--text-main); font-size:14px;">${t.itemName}</b>
+                            <div style="color:var(--teal); font-size:10px; font-weight:700; margin-top:3px;">
+                                <i class="fas fa-location-dot"></i> To: ${t.branch}
+                            </div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="background:rgba(225, 29, 72, 0.1); color:var(--danger); padding:4px 10px; border-radius:12px; font-weight:900; font-size:13px;">
+                                -${t.qty} <small style="font-size:9px;">${t.unit}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size:10px; color:var(--text-main);">By: <b>${t.by || 'Admin'}</b></div>
+                        <div style="font-size:9px; color:var(--text-dim);">${t.time}</div>
+                    </div>
+                </div>`;
+            }
+        });
+
+        container.innerHTML = html || "<p style='text-align:center; padding:20px; color:gray;'>No records found for this combination.</p>";
+    });
+}
+
+
+
+
 </script>
 <div id="detailsModal" class="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:3000; flex-direction:column; animation: slideUp 0.3s ease;">
     <div style="padding:20px; display:flex; align-items:center; gap:15px; border-bottom:1px solid var(--border);">
@@ -1986,6 +2084,41 @@ function openAndHighlight(tId) {
             <button id="btnConfirmShare" onclick="processStockShare()" style="width:100%; padding:18px; border-radius:18px; background:var(--teal); color:#fff; border:none; font-weight:800; font-size:16px; box-shadow:0 10px 20px rgba(13, 148, 136, 0.3);">
                 <i class="fas fa-paper-plane"></i> SEND TO BRANCH
             </button>
+            
+<div class="filters-container" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; align-items: center;">
+    <button onclick="filterData('all')" class="filter-btn" style="background:var(--teal); color:white; min-width: 60px;">All</button>
+    
+    <button onclick="filterData('today')" class="filter-btn">Today</button>
+    <div style="position:relative; display:inline-block;">
+    <input type="date" id="datePicker" onchange="filterData('customDate')" class="filter-select" style="width:130px; background:var(--teal); color:white; border:none;">
+</div>
+
+    
+    <select id="monthFilter" onchange="filterData('month')" class="filter-select">
+        <option value="">Month</option>
+        <option value="01">Jan</option><option value="02">Feb</option>
+        <option value="03">Mar</option><option value="04">Apr</option>
+        <option value="05">May</option><option value="06">Jun</option>
+        <option value="07">Jul</option><option value="08">Aug</option>
+        <option value="09">Sep</option><option value="10">Oct</option>
+        <option value="11">Nov</option><option value="12">Dec</option>
+    </select>
+
+    <select id="yearFilter" onchange="filterData('year')" class="filter-select">
+        <option value="">Year</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+    </select>
+
+    <select id="branchFilter" onchange="filterData('branch')" class="filter-select">
+        <option value="">Branch</option>
+        <option value="Al hail">Al hail</option>
+        <option value="Al khuwair">Al khuwair</option>
+        <option value="Aa">Aa</option>
+    </select>
+</div>
+
+            
         </div>
 
         <hr style="border:0; border-top:1px solid var(--border); margin:10px 0;">
