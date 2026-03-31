@@ -507,30 +507,30 @@
 
 <div class="overlay" id="editModal">
     <div class="modal" style="max-width: 400px; padding: 20px; border-radius: 20px;">
-        <h2 style="color:var(--text-main); text-align:center; margin-bottom:15px;">Update Item</h2>
+        <h2 style="color:var(--text-main); text-align:center; margin-bottom:0px;">Update Item</h2>
         
         <div id="editPreviewContainer" style="text-align:center; display:none; margin-bottom:15px; background:var(--bg); padding:10px; border-radius:15px; border:1px dashed var(--accent);">
             <p style="font-size:10px; color:var(--accent); font-weight:600; margin-bottom:5px;">NEW PHOTO READY</p>
             <img id="editImgPreview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border:2px solid var(--accent);">
         </div>
 
-        <input type="text" id="editName" placeholder="Item Name" style="width:100%; margin-bottom:10px; padding:12px; border-radius:10px; border:1px solid var(--border);">
+        <input type="text" id="editName" placeholder="Item Name" style="width:100%; margin-bottom:0px; padding:12px; border-radius:10px; border:1px solid var(--border);">
 
-<input type="number" id="editQty" placeholder="Quantity" style="width:100%; margin-bottom:10px; padding:12px; border-radius:10px; border:1px solid var(--border);">
+<input type="number" id="editQty" placeholder="Quantity" style="width:100%; margin-bottom:0px; padding:12px; border-radius:10px; border:1px solid var(--border);">
 
-<select id="editItemUnit" style="width:100%; margin-bottom:10px; padding:12px; border-radius:10px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main);">
+<select id="editItemUnit" style="width:100%; margin-bottom:0px; padding:12px; border-radius:10px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main);">
     </select>
 
-<select id="editCatDropdown" style="width:100%; margin-bottom:15px; padding:12px; border-radius:10px; border:1px solid var(--border);"></select>
+<select id="editCatDropdown" style="width:100%; margin-bottom:0px; padding:12px; border-radius:10px; border:1px solid var(--border);"></select>
 
         
-        <label class="btn-file" style="display:block; background:var(--accent); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; margin-bottom:15px;">
+        <label class="btn-file" style="display:block; background:var(--accent); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; margin-bottom:0px;">
             <i class="fas fa-camera"></i> <span id="editFileName">Change Photo</span>
             <input type="file" accept="image/*" onchange="handleFileSelect(this, 'edit')" hidden>
         </label>
 
         <button class="btn-main" id="saveEditBtn" style="width:100%;">UPDATE INVENTORY</button>
-        <p onclick="closeModals()" style="color:var(--text-dim); cursor:pointer; text-align:center; margin-top:15px; font-weight:600;">Cancel</p>
+        <p onclick="closeModals()" style="color:var(--text-dim); cursor:pointer; text-align:center; margin-top:0px; font-weight:600;">Cancel</p>
     </div>
 </div>
 
@@ -2150,7 +2150,7 @@ window.onload = function() {
     <div style="flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:12px;">
         
 
-        <div id="shareInputSection" style="display: flex; flex-direction: column; gap: 12px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
+        <div id="shareInputSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
             <div class="input-group">
                 <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">SELECT ITEM</label>
                 <select id="shareItemSelect" onchange="updateShareMaxQty()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px;"></select>
@@ -2166,6 +2166,13 @@ window.onload = function() {
                     <input type="number" id="shareQty" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--teal); font-weight:700;">
                 </div>
             </div>
+            
+                    <div id="shareStockInfo" style="padding:0px; font-size:12px;
+                    margin-bottom:5px;
+                    color:var(--accent); font-weight:600;">
+            Current Stock: <span id="maxAvailable">0</span>
+        </div>
+
 
             <button id="btnConfirmShare" onclick="processStockShare()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px;">
                 SEND TO BRANCH
