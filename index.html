@@ -2040,10 +2040,15 @@ function filterData(type) {
 }
 
 // Jab app load ho, toh default 'all' data dikhane ke liye
+
 window.onload = function() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    document.getElementById('datePicker').value = `${yyyy}-${mm}-${dd}`;
     filterData('all'); 
 };
-
 
 
 
@@ -2111,21 +2116,10 @@ window.onload = function() {
     color: white !important;
     border-color: var(--teal) !important;
 }
-.f-input-date {
-    width: 36px;
-    padding: 0 2px;
-    color: transparent;
-}
 
-#monthFilter { width: 70px; }
-#yearFilter  { width: 70px; }
-#branchFilter { width: 85px; }
 
-.f-btn-active {
-    background: var(--teal) !important;
-    color: white !important;
-    border-color: var(--teal) !important;
-}
+
+
 
 .f-input-date {
     width: 36px;
@@ -2180,23 +2174,23 @@ window.onload = function() {
         
         
         
-        <div style="background:var(--panel);border-radius:12px;padding:5px 10px;border:1px solid var(--border);display:flex;flex-wrap:nowrap;
-        gap:5px;align-items:center;scrollbar-width:none;">
+
+<div style="background:var(--panel);border-radius:12px;padding:20px 5px;border:1px solid var(--border);display:flex;
+
+flex-wrap:nowrap;
+
+gap:5px;align-items:center;
+overflow-x:auto;
+scrollbar-width:none;">
     <button onclick="filterData('all')" class="f-item f-btn-active">All</button>
     <button onclick="filterData('today')" class="f-item">Today</button>
-    <input type="date" id="datePicker" onchange="filterData('customDate')" class="f-item f-input-date">
+    <input type="date" id="datePicker" onchange="filterData('customDate')" class="f-item f-input-date" style="width:95px;color:#1e3a5f;font-size:10px;">
     <select id="monthFilter" onchange="filterData('month')" class="f-item"><option value="">Mon</option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select>
     <select id="yearFilter" onchange="filterData('year')" class="f-item"><option value="">Year</option><option value="2025">2025</option><option value="2026">2026</option></select>
     <select id="branchFilter" onchange="filterData('branch')" class="f-item"><option value="">All Bra</option><option value="Al hail">Al hail</option><option value="Al khuwair">Al khuwair</option><option value="Mabela">Mabela</option><option value="Ruwi">Ruwi</option></select>
 </div>
+<div id="transferHistory" style="display:flex; flex-direction:column; gap:0px;"></div>
 
-
-<h3 style="font-size:14px; color:var(--text-main); margin-top: 0px; margin-bottom: 0px; font-weight:700;">
-    Recent Distributions
-</h3>
-
-
-        <div id="transferHistory" style="display:flex; flex-direction:column; gap:0px;"></div>
     </div>
 </div>
 
