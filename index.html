@@ -444,7 +444,8 @@
         <h2 style="margin:0; font-size:16px; color:var(--text-main);">Petrol Distribution</h2>
         
         
-        <button onclick="addNewCarName()" style="
+
+<button id="addCarBtn" onclick="addNewCarName()" style="
     background: linear-gradient(135deg, var(--teal), #008080);
     color: white;
     border: none;
@@ -452,7 +453,7 @@
     font-size: 15px;
     padding: 6px 12px;
     font-weight: 700;
-    display: flex;
+    display: none; /* Default hidden */
     align-items: center;
     gap: 5px;
     box-shadow: 0 4px 10px rgba(0, 128, 128, 0.2);
@@ -461,6 +462,7 @@
 ">
     <i class="fas fa-plus-circle"></i> ADD NEW CAR
 </button>
+
 
         
         
@@ -490,7 +492,7 @@
 
 
 
-<div style="margin-top:10px;">
+<div style="margin-top:0px;">
     <h3 style="font-size:11px; color:var(--text-dim); font-weight:700; padding-left:3px;">Search & Filters</h3>
     
     <style>
@@ -2199,12 +2201,23 @@ function openPetrolPanel() {
     const dateInput = document.getElementById('petrolDatePicker');
     if(dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
-    // Admin Check: Sirf Zamir ko input dikhega
+    // Admin Check logic
+    const isUserAdmin = (typeof isAdmin !== 'undefined' && isAdmin);
+
+    // Input Section control
     const inputSec = document.getElementById('petrolInputSection');
     if(inputSec) {
-        inputSec.style.display = (typeof isAdmin !== 'undefined' && isAdmin) ? 'flex' : 'none';
+        inputSec.style.display = isUserAdmin ? 'flex' : 'none';
+    }
+
+    // ADD NEW CAR Button control (Ab ye sirf admin ko dikhega)
+    const addCarBtn = document.getElementById('addCarBtn');
+    if(addCarBtn) {
+        addCarBtn.style.display = isUserAdmin ? 'flex' : 'none';
     }
     
+    // Initial data load
+    if(typeof syncCarDropDowns === 'function') syncCarDropDowns();
     loadPetrolHistory(); 
 }
 
