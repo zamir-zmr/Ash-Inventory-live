@@ -2165,7 +2165,8 @@ async function processStockPurchase() {
             unit: opt.getAttribute('data-unit'),
             type: 'purchase',
             time: finalDateTime,
-            date: now.toLocaleDateString('en-GB')
+            date: now.toLocaleDateString('en-GB'),
+            by: (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin"
         });
 
         Swal.fire({ title: "Stock Added!", icon: "success", timer: 1000, showConfirmButton: false });
@@ -2224,7 +2225,7 @@ function renderPurchaseCards(data, keys) {
                     By: <b>${p.by || 'Admin'}</b>
                 </div>
                 <div style="font-size:9px; color:var(--text-dim);">
-                    <i class="far fa-clock"></i> ${p.time}
+                    ${p.time}
                 </div>
             </div>
         </div>`;
@@ -2503,7 +2504,7 @@ function renderWasteCards(data, keys) {
                     <i class="fas fa-user-circle" style="color:var(--danger);"></i> By: <b>${w.by || 'Admin'}</b> 
                 </div>
                 <div style="font-size:9px; color:var(--text-dim);">
-                    <i class="far fa-clock"></i> ${w.time}
+                    ${w.time}
                 </div>
             </div>
         </div>`;
@@ -2570,7 +2571,7 @@ async function processStockWaste() {
             type: 'waste',
             time: finalDateTime,
             date: now.toLocaleDateString('en-GB'),
-            by: 'Admin'
+            by: (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin"
         });
 
         Swal.fire({ title: "Waste Recorded!", icon: "success", timer: 1000, showConfirmButton: false });
@@ -3349,7 +3350,7 @@ function savePetrolEntry() {
         amount: amount,
         date: new Date().toLocaleDateString('en-GB'), 
         time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-        addedBy: "Zamir",
+        addedBy: (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin",
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
@@ -3376,22 +3377,40 @@ function loadPetrolHistory() {
 
 function renderPetrolCards(data, keys) {
     const historyDiv = document.getElementById('petrolHistory');
+    if (!historyDiv) return;
     historyDiv.innerHTML = '';
-    
+
+    if (!keys || keys.length === 0) {
+        historyDiv.innerHTML = "<p style='text-align:center; color:var(--text-dim); padding:20px;'>No petrol history.</p>";
+        return;
+    }
+
     keys.forEach(key => {
         const item = data[key];
         const card = document.createElement('div');
         card.className = 'history-card';
-        card.style = "background:var(--panel); padding:12px; border-radius:12px; border:1px solid var(--border); margin-bottom:8px; user-select:none; transition: 0.2s;";
-        
+        card.id = 'petcard-' + key;
+        card.style = "background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; cursor:pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.03); user-select:none; transition: 0.2s;";
+
         card.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <b style="color:var(--text-main); font-size:14px;">${item.carNum}</b>
-                <b style="color:var(--teal); font-size:14px;">OMR ${parseFloat(item.amount).toFixed(3)}</b>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div style="flex:1;">
+                    <b style="color:var(--text-main); font-size:14px;">${item.carNum}</b>
+                    <div style="color:var(--teal); font-size:10px; font-weight:700; margin-top:3px;">
+                        <i class="fas fa-gas-pump"></i> Petrol
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="background:rgba(13,148,136,0.1); color:var(--teal); padding:4px 10px; border-radius:12px; font-weight:900; font-size:13px;">
+                        OMR ${parseFloat(item.amount).toFixed(3)}
+                    </div>
+                </div>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); margin-top:6px; border-top:1px dashed var(--border); padding-top:5px;">
-                <span><i class="far fa-calendar-alt"></i> ${item.date} | ${item.time}</span>
-                <span><i class="far fa-user"></i> By: ${item.addedBy}</span>
+            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:10px; color:var(--text-main);">
+                    <i class="fas fa-user-circle" style="color:var(--teal);"></i> By: <b>${item.addedBy || 'Admin'}</b>
+                </div>
+                <div style="font-size:9px; color:var(--text-dim);">${item.date} ${item.time}</div>
             </div>`;
 
         // LONG PRESS LOGIC
@@ -3404,6 +3423,7 @@ function renderPetrolCards(data, keys) {
             clearTimeout(timer);
             card.style.background = "var(--panel)";
         });
+        card.oncontextmenu = (e) => { e.preventDefault(); showPetrolOptions(key, item); };
 
         historyDiv.appendChild(card);
     });
