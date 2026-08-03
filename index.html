@@ -2098,8 +2098,16 @@ function closeSharePanel() {
 
 function openPurchasedPanel() {
     const panel = document.getElementById('purchasedPanel');
+    const inputSection = document.getElementById('purchaseInputSection');
     panel.style.display = 'flex';
-    populateDropdown('purchaseItemSelect');
+
+    if (typeof isAdmin !== 'undefined' && isAdmin) {
+        if (inputSection) inputSection.style.display = 'block';
+        populateDropdown('purchaseItemSelect');
+    } else {
+        if (inputSection) inputSection.style.display = 'none';
+    }
+
     populateBranchSelect('purchaseBranchFilter', 'All Branch');
     loadPurchaseHistory();
 }
@@ -2368,8 +2376,16 @@ async function askDeletePurchase(pId, refPath) {
 // 1. Waste Panel Open Function
 function openWastedPanel() {
     const panel = document.getElementById('wastedPanel');
+    const inputSection = document.getElementById('wasteInputSection');
     panel.style.display = 'flex';
-    populateDropdown('wasteItemSelect');
+
+    if (typeof isAdmin !== 'undefined' && isAdmin) {
+        if (inputSection) inputSection.style.display = 'flex';
+        populateDropdown('wasteItemSelect');
+    } else {
+        if (inputSection) inputSection.style.display = 'none';
+    }
+
     populateBranchSelect('wasteBranchFilter', 'All Branch');
     loadWasteHistory(); // Custom history function call
 }
