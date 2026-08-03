@@ -541,13 +541,8 @@
 
         <button id="petrolFilterMonth" onclick="filterPetrol('thisMonth')" class="f-item-petrol" style="min-width:0px;">This Month</button>
 
-        <button id="petrolFilterManual" onclick="toggleManualDate('petrolDatePicker'); filterPetrol('manually');" class="f-item-petrol" style="min-width:0px;">Manually</button>
+        <button id="petrolFilterManual" onclick="toggleManualDate('petrolManualBox')" class="f-item-petrol" style="min-width:0px;">Manually</button>
 
-        <input type="date" id="petrolDatePicker" onchange="filterPetrol('customDate')" class="f-item-petrol" style="display:none; width:97px; 
-        margin-top: 10px;
-                max-width:97px; 
-        padding:0 5px !important; color:var(--text-main);">
-        
         <select id="petrolCarFilter" onchange="filterPetrol('car')" class="f-item-petrol" style="min-width:75px; 
         margin-top: 10px;
         max-width:75px; 
@@ -556,6 +551,12 @@
             <option value="">All Cars</option>
         </select>
     </div>
+</div>
+<div id="petrolManualBox" style="display:none; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px; margin-top:8px;">
+    <input type="date" id="petrolFromDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+    <span style="color:var(--text-dim); font-size:11px;">to</span>
+    <input type="date" id="petrolToDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+    <button onclick="filterPetrol('manually')" style="background:var(--teal); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
 </div>
         
         
@@ -2232,11 +2233,12 @@ function filterPurchaseData(type) {
     else if (type === 'yesterday' && document.getElementById('purchaseFilterYesterday')) document.getElementById('purchaseFilterYesterday').classList.add('f-btn-active');
     else if (type === 'thisMonth' && document.getElementById('purchaseFilterMonth')) document.getElementById('purchaseFilterMonth').classList.add('f-btn-active');
     else if ((type === 'manually' || type === 'customDate') && document.getElementById('purchaseFilterManual')) document.getElementById('purchaseFilterManual').classList.add('f-btn-active');
-    if (type !== 'manually' && document.getElementById('purchaseDatePicker')) {
-        document.getElementById('purchaseDatePicker').style.display = 'none';
+    if (type !== 'manually' && document.getElementById('purchaseManualBox')) {
+        document.getElementById('purchaseManualBox').style.display = 'none';
     }
 
-    const datePick = document.getElementById('purchaseDatePicker').value;
+    const fromVal = document.getElementById('purchaseFromDate').value;
+    const toVal = document.getElementById('purchaseToDate').value;
     // Note: purchase records don't carry a branch field (purchases add to central stock),
     // so the Branch dropdown here is kept for UI consistency but doesn't filter records.
 
@@ -2261,9 +2263,8 @@ function filterPurchaseData(type) {
                 const p = data[id].date.split('/');
                 return p[1] === mm && p[2] === yyyy;
             });
-        } else if ((type === 'customDate' || type === 'manually') && datePick) {
-            const formatted = new Date(datePick).toLocaleDateString('en-GB');
-            filteredKeys = filteredKeys.filter(id => data[id].date === formatted);
+        } else if (type === 'manually') {
+            filteredKeys = filteredKeys.filter(id => isDateInRange(data[id].date, fromVal, toVal));
         }
 
         renderPurchaseCards(data, filteredKeys.reverse());
@@ -2410,11 +2411,12 @@ function filterWasteData(type) {
     else if (type === 'yesterday' && document.getElementById('wasteFilterYesterday')) document.getElementById('wasteFilterYesterday').classList.add('f-btn-active');
     else if (type === 'thisMonth' && document.getElementById('wasteFilterMonth')) document.getElementById('wasteFilterMonth').classList.add('f-btn-active');
     else if ((type === 'manually' || type === 'customDate') && document.getElementById('wasteFilterManual')) document.getElementById('wasteFilterManual').classList.add('f-btn-active');
-    if (type !== 'manually' && document.getElementById('wasteDatePicker')) {
-        document.getElementById('wasteDatePicker').style.display = 'none';
+    if (type !== 'manually' && document.getElementById('wasteManualBox')) {
+        document.getElementById('wasteManualBox').style.display = 'none';
     }
 
-    const datePick = document.getElementById('wasteDatePicker').value;
+    const fromVal = document.getElementById('wasteFromDate').value;
+    const toVal = document.getElementById('wasteToDate').value;
     // Note: waste records don't carry a branch field, so the Branch dropdown here
     // is kept for UI consistency with Distribution/Purchase but doesn't filter records.
 
@@ -2439,9 +2441,8 @@ function filterWasteData(type) {
                 const p = data[id].date.split('/');
                 return p[1] === mm && p[2] === yyyy;
             });
-        } else if ((type === 'customDate' || type === 'manually') && datePick) {
-            const formatted = new Date(datePick).toLocaleDateString('en-GB');
-            filteredKeys = filteredKeys.filter(id => data[id].date === formatted);
+        } else if (type === 'manually') {
+            filteredKeys = filteredKeys.filter(id => isDateInRange(data[id].date, fromVal, toVal));
         }
 
         renderWasteCards(data, filteredKeys.reverse());
@@ -3121,15 +3122,44 @@ function deleteItem(id, name) {
 
 let currentActiveDateFilter = 'all';
 
-// Reveals a hidden date-picker input and opens it, used by the "Manually" filter button
-function toggleManualDate(inputId) {
-    const el = document.getElementById(inputId);
+// Reveals the hidden "From / To / Apply" manual range box, used by the "Manually" filter button
+function toggleManualDate(boxId) {
+    const el = document.getElementById(boxId);
     if (!el) return;
-    el.style.display = (el.style.display === 'none' || !el.style.display) ? 'inline-block' : 'none';
-    if (el.style.display === 'inline-block') {
-        if (el.showPicker) { try { el.showPicker(); } catch(e) {} }
-        else { el.focus(); }
+    el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+}
+
+// Converts a "DD/MM/YYYY" string (as stored in the app's records) into a local Date object (midnight)
+function parseDMYDate(str) {
+    if (!str) return null;
+    const p = str.split('/');
+    return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+}
+
+// Converts a native <input type="date"> value ("YYYY-MM-DD") into a LOCAL Date object.
+// IMPORTANT: new Date("YYYY-MM-DD") parses as UTC midnight, which shifts to the previous/next
+// day once converted to local time (e.g. Oman is UTC+4) and silently breaks the range compare.
+// Parsing the parts manually keeps everything in local time, matching parseDMYDate() above.
+function parseISODate(str) {
+    if (!str) return null;
+    const p = str.split('-');
+    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+}
+
+// Checks whether a "DD/MM/YYYY" record date falls within the [from, to] range (both native <input type=date> values, inclusive)
+function isDateInRange(recordDateStr, fromVal, toVal) {
+    const recordDate = parseDMYDate(recordDateStr);
+    if (!recordDate) return false;
+    if (fromVal) {
+        const from = parseISODate(fromVal);
+        if (recordDate < from) return false;
     }
+    if (toVal) {
+        const to = parseISODate(toVal);
+        to.setHours(23, 59, 59, 999); // include the whole "to" day
+        if (recordDate > to) return false;
+    }
+    return true;
 }
 
 function filterData(type) {
@@ -3153,27 +3183,23 @@ function filterData(type) {
         else if (currentActiveDateFilter === 'thisMonth' && document.getElementById('distFilterMonth')) document.getElementById('distFilterMonth').classList.add('f-btn-active');
         else if (document.getElementById('distFilterManual')) document.getElementById('distFilterManual').classList.add('f-btn-active');
     }
-    if (type !== 'manually' && document.getElementById('datePicker')) {
-        document.getElementById('datePicker').style.display = 'none';
+    if (type !== 'manually' && document.getElementById('distManualBox')) {
+        document.getElementById('distManualBox').style.display = 'none';
     }
 
     // 3. "All" click karne par sab reset
     if (type === 'all') {
         document.getElementById('branchFilter').value = "";
-        document.getElementById('datePicker').value = "";
+        document.getElementById('distFromDate').value = "";
+        document.getElementById('distToDate').value = "";
         currentActiveDateFilter = 'all';
     }
 
     // 4. Filter ki values uthao
     const todayDate = new Date().toLocaleDateString('en-GB');
     const selBranch = document.getElementById('branchFilter').value;
-
-    let customDate = "";
-    const dateInputVal = document.getElementById('datePicker').value;
-    if(dateInputVal) {
-        const d = dateInputVal.split('-');
-        customDate = `${d[2]}/${d[1]}/${d[0]}`;
-    }
+    const distFrom = document.getElementById('distFromDate').value;
+    const distTo = document.getElementById('distToDate').value;
 
     // Database se data lena (Hamesha poora data filter hoga)
     db.ref("transfers").once("value", snap => {
@@ -3212,8 +3238,8 @@ function filterData(type) {
                 const now = new Date();
                 const dbParts = t.date.split('/');
                 if (dbParts[1] === String(now.getMonth() + 1).padStart(2, '0') && dbParts[2] === String(now.getFullYear())) dateMatch = true;
-            } else if (currentActiveDateFilter === 'manually' || currentActiveDateFilter === 'customDate') {
-                if (customDate && t.date === customDate) dateMatch = true;
+            } else if (currentActiveDateFilter === 'manually') {
+                if (isDateInRange(t.date, distFrom, distTo)) dateMatch = true;
             }
 
             // --- BRANCH FILTER LOGIC ---
@@ -3259,13 +3285,6 @@ function filterData(type) {
 
 // --- 1. WINDOW ONLOAD (Ismein date set ho rahi hai) ---
 window.onload = function() {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const dateField = document.getElementById('datePicker');
-    if(dateField) dateField.value = `${yyyy}-${mm}-${dd}`;
-    
     if(typeof filterData === 'function') filterData('all'); 
 };
 
@@ -3273,9 +3292,6 @@ window.onload = function() {
 function openPetrolPanel() {
     const panel = document.getElementById('petrolPanel');
     if(panel) panel.style.display = 'flex';
-    
-    const dateInput = document.getElementById('petrolDatePicker');
-    if(dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
     // Admin Check logic
     const isUserAdmin = (typeof isAdmin !== 'undefined' && isAdmin);
@@ -3387,24 +3403,27 @@ function filterPetrol(type) {
     const yesterdayBtn = document.getElementById('petrolFilterYesterday');
     const monthBtn = document.getElementById('petrolFilterMonth');
     const manualBtn = document.getElementById('petrolFilterManual');
-    const datePicker = document.getElementById('petrolDatePicker');
+    const manualBox = document.getElementById('petrolManualBox');
     const carFilter = document.getElementById('petrolCarFilter');
 
     // 1. UI: Active Button Highlight handle karein
     if (type !== 'car') {
         document.querySelectorAll('.f-item-petrol').forEach(btn => btn.classList.remove('f-btn-active'));
-        currentPetrolDateMode = type; // Mode save karlo (all, today, yesterday, thisMonth, manually, customDate)
+        currentPetrolDateMode = type; // Mode save karlo (all, today, yesterday, thisMonth, manually)
     }
 
     if (currentPetrolDateMode === 'all') allBtn.classList.add('f-btn-active');
     else if (currentPetrolDateMode === 'today') todayBtn.classList.add('f-btn-active');
     else if (currentPetrolDateMode === 'yesterday') yesterdayBtn.classList.add('f-btn-active');
     else if (currentPetrolDateMode === 'thisMonth') monthBtn.classList.add('f-btn-active');
-    else if (currentPetrolDateMode === 'manually' || currentPetrolDateMode === 'customDate') manualBtn.classList.add('f-btn-active');
+    else if (currentPetrolDateMode === 'manually') manualBtn.classList.add('f-btn-active');
 
-    if (type !== 'manually' && type !== 'customDate' && datePicker) {
-        datePicker.style.display = 'none';
+    if (type !== 'manually' && manualBox) {
+        manualBox.style.display = 'none';
     }
+
+    const fromVal = document.getElementById('petrolFromDate').value;
+    const toVal = document.getElementById('petrolToDate').value;
 
     // 2. Data Filtering Logic
     db.ref('petrolLogs').once('value', (snap) => {
@@ -3418,13 +3437,11 @@ function filterPetrol(type) {
         // --- STEP A: Date Filter ---
         if (currentPetrolDateMode === 'today') {
             keys = keys.filter(k => data[k].date === todayStr);
-            datePicker.value = '';
         }
         else if (currentPetrolDateMode === 'yesterday') {
             const yst = new Date(); yst.setDate(yst.getDate() - 1);
             const ystStr = yst.toLocaleDateString('en-GB');
             keys = keys.filter(k => data[k].date === ystStr);
-            datePicker.value = '';
         }
         else if (currentPetrolDateMode === 'thisMonth') {
             const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -3433,16 +3450,15 @@ function filterPetrol(type) {
                 const p = data[k].date.split('/');
                 return p[1] === mm && p[2] === yyyy;
             });
-            datePicker.value = '';
         }
-        else if ((currentPetrolDateMode === 'manually' || currentPetrolDateMode === 'customDate') && datePicker.value) {
-            const selectedDate = datePicker.value.split('-').reverse().join('/');
-            keys = keys.filter(k => data[k].date === selectedDate);
+        else if (currentPetrolDateMode === 'manually') {
+            keys = keys.filter(k => isDateInRange(data[k].date, fromVal, toVal));
         }
         else if (currentPetrolDateMode === 'all') {
             // 'All' mein koi date filter nahi lagega, sab dikhega
             if (type === 'all') {
-                datePicker.value = ''; 
+                document.getElementById('petrolFromDate').value = '';
+                document.getElementById('petrolToDate').value = '';
                 carFilter.value = ''; 
             }
         }
@@ -3841,12 +3857,15 @@ openPetrolPanel = function() {
     <button id="distFilterToday" onclick="filterData('today')" class="f-item-petrol" style="min-width:10px;">Today</button>
     <button id="distFilterYesterday" onclick="filterData('yesterday')" class="f-item-petrol" style="min-width:10px;">Yesterday</button>
     <button id="distFilterMonth" onclick="filterData('thisMonth')" class="f-item-petrol" style="min-width:10px;">This Month</button>
-    <button id="distFilterManual" onclick="toggleManualDate('datePicker'); filterData('manually');" class="f-item-petrol" style="min-width:10px;">Manually</button>
-    <input type="date" id="datePicker" onchange="filterData('customDate')" class="f-item-petrol" style="display:none; width:120px; max-width:97px; 
-    margin-top:10px;
-    padding:0 5px !important; color:var(--text-main);">
+    <button id="distFilterManual" onclick="toggleManualDate('distManualBox')" class="f-item-petrol" style="min-width:10px;">Manually</button>
     <select id="branchFilter" onchange="filterData('branch')" class="f-item-petrol" style="min-width:75px; max-width:75px; appearance:none; margin-top:10px;
     padding-right:20px !important; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23777%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 7px top 50%; background-size: 8px auto;"><option value="">All Branch</option></select>
+</div>
+<div id="distManualBox" style="display:none; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px; margin-top:8px;">
+    <input type="date" id="distFromDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+    <span style="color:var(--text-dim); font-size:11px;">to</span>
+    <input type="date" id="distToDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+    <button onclick="filterData('manually')" style="background:var(--teal); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
 </div>
 <div id="transferHistory" style="display:flex; flex-direction:column; gap:0px;"></div>
 
@@ -3879,13 +3898,16 @@ openPetrolPanel = function() {
             <button id="purchaseFilterToday" onclick="filterPurchaseData('today')" class="f-item-petrol" style="min-width:10px;">Today</button>
             <button id="purchaseFilterYesterday" onclick="filterPurchaseData('yesterday')" class="f-item-petrol" style="min-width:10px;">Yesterday</button>
             <button id="purchaseFilterMonth" onclick="filterPurchaseData('thisMonth')" class="f-item-petrol" style="min-width:10px;">This Month</button>
-            <button id="purchaseFilterManual" onclick="toggleManualDate('purchaseDatePicker'); filterPurchaseData('manually');" class="f-item-petrol" style="min-width:10px;">Manually</button>
-            <input type="date" id="purchaseDatePicker" onchange="filterPurchaseData('customDate')" class="f-item-petrol" style="display:none; width:97px; max-width:97px; 
-            margin-top:10px;
-            padding:0 5px !important; color:var(--text-main);">
+            <button id="purchaseFilterManual" onclick="toggleManualDate('purchaseManualBox')" class="f-item-petrol" style="min-width:10px;">Manually</button>
             <select id="purchaseBranchFilter" onchange="filterPurchaseData('branch')" class="f-item-petrol" style="min-width:75px; max-width:75px; appearance:none;
             margin-top:10px;
             padding-right:20px !important; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23777%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 7px top 50%; background-size: 8px auto;"><option value="">All Branch</option></select>
+        </div>
+        <div id="purchaseManualBox" style="display:none; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px; margin-bottom:12px;">
+            <input type="date" id="purchaseFromDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+            <span style="color:var(--text-dim); font-size:11px;">to</span>
+            <input type="date" id="purchaseToDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+            <button onclick="filterPurchaseData('manually')" style="background:var(--teal); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
         </div>
 
         <div id="purchaseHistory"></div>
@@ -3942,11 +3964,16 @@ openPetrolPanel = function() {
     <button id="wasteFilterToday" onclick="filterWasteData('today')" class="f-item-petrol" style="min-width:10px;">Today</button>
     <button id="wasteFilterYesterday" onclick="filterWasteData('yesterday')" class="f-item-petrol" style="min-width:10px;">Yesterday</button>
     <button id="wasteFilterMonth" onclick="filterWasteData('thisMonth')" class="f-item-petrol" style="min-width:10px;">This Month</button>
-    <button id="wasteFilterManual" onclick="toggleManualDate('wasteDatePicker'); filterWasteData('manually');" class="f-item-petrol" style="min-width:10px;">Manually</button>
-    <input type="date" id="wasteDatePicker" onchange="filterWasteData('customDate')" class="f-item-petrol" style="display:none; width:97px;margin-top:10px; max-width:97px; padding:0 5px !important; color:var(--text-main);">
+    <button id="wasteFilterManual" onclick="toggleManualDate('wasteManualBox')" class="f-item-petrol" style="min-width:10px;">Manually</button>
     <select id="wasteBranchFilter" onchange="filterWasteData('branch')" class="f-item-petrol" style="min-width:75px; max-width:75px;
     margin-top:10px;
     appearance:none; padding-right:20px !important; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23777%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 7px top 50%; background-size: 8px auto;"><option value="">All Branch</option></select>
+        </div>
+        <div id="wasteManualBox" style="display:none; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px; margin-bottom:8px;">
+            <input type="date" id="wasteFromDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+            <span style="color:var(--text-dim); font-size:11px;">to</span>
+            <input type="date" id="wasteToDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+            <button onclick="filterWasteData('manually')" style="background:var(--teal); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
         </div>
 
         <div id="wasteHistory" style="display:flex; flex-direction:column; gap:0px;"></div>
