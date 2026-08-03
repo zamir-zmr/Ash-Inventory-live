@@ -39,6 +39,20 @@
 /*             --border: #e2e8f0;
  */        }
 
+        /* --- Responsive safety net: stop overlap/clipping on any screen size --- */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { max-width: 100%; overflow-x: hidden; }
+        img, svg, video { max-width: 100%; }
+        button, select, input, textarea { max-width: 100%; font-family: inherit; }
+        h1, h2, h3, h4, p, span, label, b, strong { word-break: break-word; overflow-wrap: break-word; }
+        .app-header { flex-wrap: wrap; row-gap: 8px; }
+        .header-actions { flex-wrap: wrap; row-gap: 8px; }
+
+        @media (max-width: 360px) {
+            .responsive-2col { grid-template-columns: 1fr !important; }
+            .modal { padding: 15px !important; }
+        }
+
         [data-theme="dark"] {
             --bg: #0b0f1a;
             --panel: #161d2f;
@@ -386,7 +400,7 @@
 </button>
 
         
-        <div class="icon-btn" id="catBtn" onclick="openCatModal()" style="display:none; color:var(--teal);"><i class="fas fa-tags"></i></div>
+        <div class="icon-btn" id="manageAllBtn" onclick="openManageOptions()" style="display:none; color:var(--teal);"><i class="fas fa-cogs"></i></div>
         
         <div class="header-actions">
             <div class="icon-btn" id="themeBtn" onclick="toggleTheme()"><i class="fas fa-moon"></i></div>
@@ -426,7 +440,7 @@
 <input type="text" id="search" onkeyup="filter()" placeholder="🔍 Search Stocks inventory..." style="border-radius:15px; margin-bottom: 5px;">
     
 
-<div style="display: flex; justify-content: flex-start; margin-bottom: 5px;">
+<div style="display: flex; flex-wrap: wrap; row-gap: 8px; justify-content: flex-start; margin-bottom: 5px;">
     <button onclick="toggleView()" style="background: var(--panel); border: 1px solid var(--border); color: var(--teal); width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);">
         <i id="viewToggleIcon" class="fas fa-list" style="font-size: 18px;"></i>
     </button>
@@ -437,31 +451,27 @@
     <i class="fas fa-share-alt"></i>
 </button>
 
+    <button onclick="openPurchasedPanel()" style="width:45px; height:45px; border-radius:12px; background:#28a745; color:#fff; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer;">
+        <i class="fas fa-cart-plus"></i>
+    </button>
 
-<div id="petrolPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:999; display:none; flex-direction:column;">
+    <button onclick="openWastedPanel()" style="width:45px; height:45px; border-radius:12px; background:#dc3545; color:#fff; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer;">
+        <i class="fas fa-trash-alt"></i>
+    </button>
+
+
+
+
+</div>
+
+ <div id="petrolPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:999; display:none; flex-direction:column;">
     <div style="padding:15px 20px; display:flex; align-items:center; gap:15px; background:var(--panel); border-bottom:1px solid var(--border);">
         <button onclick="closePetrolPanel()" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
         <h2 style="margin:0; font-size:16px; color:var(--text-main);">Petrol Distribution</h2>
         
         
 
-<button id="addCarBtn" onclick="addNewCarName()" style="
-    background: linear-gradient(135deg, var(--teal), #008080);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    padding: 6px 12px;
-    font-weight: 700;
-    display: none; /* Default hidden */
-    align-items: center;
-    gap: 5px;
-    box-shadow: 0 4px 10px rgba(0, 128, 128, 0.2);
-    cursor: pointer;
-    transition: 0.3s;
-">
-    <i class="fas fa-plus-circle"></i> ADD NEW CAR
-</button>
+
 
 
         
@@ -521,21 +531,27 @@
         }
     </style>
 
-    <div class="custom-filter-container" style="background:var(--panel); border-radius:10px; padding:0px 8px; border:1px solid var(--border); display:flex; flex-wrap:nowrap; gap:10px; align-items:center; height:48px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
+    <div class="custom-filter-container" style="background:var(--panel); border-radius:10px; padding:6px 8px; border:1px solid var(--border); display:flex; flex-wrap:nowrap; gap:0px; align-items:center; min-height:48px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
         
-        <button id="petrolFilterAll" onclick="filterPetrol('all')" class="f-item-petrol f-btn-active" style="min-width:50px;">All</button>
+        <button id="petrolFilterAll" onclick="filterPetrol('all')" class="f-item-petrol f-btn-active" style="min-width:0px;">All</button>
         
-        <button id="petrolFilterToday" onclick="filterPetrol('today')" class="f-item-petrol" style="min-width:65px;">Today</button>
-        
-        <input type="date" id="petrolDatePicker" onchange="filterPetrol('customDate')" class="f-item-petrol" style="width:100px; 
+        <button id="petrolFilterToday" onclick="filterPetrol('today')" class="f-item-petrol" style="min-width:0px;">Today</button>
+
+        <button id="petrolFilterYesterday" onclick="filterPetrol('yesterday')" class="f-item-petrol" style="min-width:0px;">Yesterday</button>
+
+        <button id="petrolFilterMonth" onclick="filterPetrol('thisMonth')" class="f-item-petrol" style="min-width:0px;">This Month</button>
+
+        <button id="petrolFilterManual" onclick="toggleManualDate('petrolDatePicker'); filterPetrol('manually');" class="f-item-petrol" style="min-width:0px;">Manually</button>
+
+        <input type="date" id="petrolDatePicker" onchange="filterPetrol('customDate')" class="f-item-petrol" style="display:none; width:97px; 
         margin-top: 10px;
-                max-width:100px; 
+                max-width:97px; 
         padding:0 5px !important; color:var(--text-main);">
         
-        <select id="petrolCarFilter" onchange="filterPetrol('car')" class="f-item-petrol" style="min-width:100px; 
-        max-width:100px; 
+        <select id="petrolCarFilter" onchange="filterPetrol('car')" class="f-item-petrol" style="min-width:75px; 
+        margin-top: 10px;
+        max-width:75px; 
         appearance:none; 
-                margin-top: 10px;
         padding-right:20px !important; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23777%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 7px top 50%; background-size: 8px auto;">
             <option value="">All Cars</option>
         </select>
@@ -551,10 +567,6 @@
     </div>
 </div>
 
-
-</div>
-
- 
  
     
     <div id="contentArea"></div>
@@ -613,6 +625,76 @@
         </div>
 
         <div id="catListArea" style="flex: 1; overflow-y: auto; padding-bottom: 30px;">
+            </div>
+    </div>
+</div>
+
+<div id="manageOptionsModal" class="overlay">
+    <div class="modal" style="width:90%; max-width:340px; padding:20px; border-radius:20px;">
+        <div style="display:flex; align-items:center; gap: 15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-left" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 1.3rem;"></i>
+            <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage</h3>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+            <button onclick="closeModals(); openBranchModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
+                <i class="fas fa-code-branch" style="color:var(--teal); font-size:18px; width:20px;"></i> Branch
+            </button>
+            <button onclick="closeModals(); openCatModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
+                <i class="fas fa-tags" style="color:var(--accent); font-size:18px; width:20px;"></i> Category
+            </button>
+            <button onclick="closeModals(); openCarManageModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
+                <i class="fas fa-gas-pump" style="color:#f59e0b; font-size:18px; width:20px;"></i> Petrol
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="branchModal" class="overlay" style="align-items: flex-start; background: var(--bg);">
+    <div class="modal" style="width: 100%; height: 100vh; max-width: none; border-radius: 0; padding: 20px; display: flex; flex-direction: column;">
+
+        <div style="display:flex; align-items:center; gap: 15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-left" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 1.3rem;"></i>
+            <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Branches</h3>
+        </div>
+
+        <div id="addBranchBox" style="background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 20px; flex-shrink: 0;">
+            <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">Add New Branch</label>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="newBranchInput" placeholder="Enter branch name..."
+                    style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 14px; outline: none;">
+                <button onclick="processAddBranch()"
+                    style="background: var(--teal); color: white; border: none; padding: 0 20px; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                    ADD
+                </button>
+            </div>
+        </div>
+
+        <div id="branchListArea" style="flex: 1; overflow-y: auto; padding-bottom: 30px;">
+            </div>
+    </div>
+</div>
+
+<div id="carModal" class="overlay" style="align-items: flex-start; background: var(--bg);">
+    <div class="modal" style="width: 100%; height: 100vh; max-width: none; border-radius: 0; padding: 20px; display: flex; flex-direction: column;">
+
+        <div style="display:flex; align-items:center; gap: 15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-left" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 1.3rem;"></i>
+            <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Cars</h3>
+        </div>
+
+        <div id="addCarBox" style="background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 20px; flex-shrink: 0;">
+            <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">Add New Car</label>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="newCarInput" placeholder="Enter car number/name..."
+                    style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 14px; outline: none;">
+                <button onclick="processAddCarEntry()"
+                    style="background: var(--teal); color: white; border: none; padding: 0 20px; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                    ADD
+                </button>
+            </div>
+        </div>
+
+        <div id="carListArea" style="flex: 1; overflow-y: auto; padding-bottom: 30px;">
             </div>
     </div>
 </div>
@@ -731,7 +813,7 @@ function handleFileSelect(input, mode) {
             target.src = e.target.result;
             modal.style.display = 'flex';
 
-            if (cropper) cropper.destroy();
+            if (cropper) croppr.destroy();
 
             target.onload = function() {
                 cropper = new Cropper(target, {
@@ -810,29 +892,120 @@ function saveCroppedImage() {
     });
 }
 
-function openDetails(name, qty, unit, img, by, time) {
-    document.getElementById('detName').innerText = name;
-    document.getElementById('detTitle').innerText = name; // Top bar mein bhi naam
-    document.getElementById('detQty').innerText = qty;
-    document.getElementById('detUnit').innerText = unit || 'Pcs';
-    document.getElementById('detBy').innerText = by;
-    document.getElementById('detTime').innerText = time;
 
-    const imgEl = document.getElementById('detImg');
-    if(img) {
-        imgEl.src = img;
-        imgEl.style.display = 'block';
-    } else {
-        imgEl.style.display = 'none';
+// 1. 12 Mahine dikhane ka function
+
+
+
+let currentSelectedItem = "";
+let currentItemBaseStock = 0;
+let currentSelectedId = "";
+
+function openMonthDetails(id, name, qty) {
+    currentSelectedId = id;
+    currentSelectedItem = name;
+    currentItemBaseStock = parseFloat(qty) || 0;
+
+    console.log("DEBUG → id:", id, "| name:", name, "| qty:", qty);
+
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const grid = document.getElementById('monthGrid');
+    grid.innerHTML = "";
+
+    months.forEach((m, index) => {
+        const btn = document.createElement('button');
+        btn.innerText = m;
+        btn.style = "padding:15px; border-radius:12px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700;";
+        btn.onclick = () => openLedger(m, index);
+        grid.appendChild(btn);
+    });
+    document.getElementById('monthPickerModal').style.display = 'flex';
+}
+async function openLedger(monthName, monthIdx) {
+    document.getElementById('ledgerTitle').innerText = `${currentSelectedItem} - ${monthName}`;
+    const tbody = document.getElementById('ledgerBody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Loading...</td></tr>';
+    document.getElementById('ledgerModal').style.display = 'flex';
+
+    const year = new Date().getFullYear();
+    const monthStr = String(monthIdx + 1).padStart(2, '0');
+    const monthKey = `${year}-${monthStr}`;
+
+    let historyData = {};
+    try {
+        const snapshot = await db.ref(`inventory_history/${currentSelectedId}/${monthKey}`).once('value');
+        historyData = snapshot.val() || {};
+    } catch(e) { console.error(e); }
+
+    const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+    const todayDate = new Date().getDate();
+    const currentMonthIdx = new Date().getMonth();
+    let html = "";
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dayData = historyData[String(i)] || historyData[i] || {};
+        const inVal    = parseFloat(dayData.inward  || 0);
+        const outVal   = parseFloat(dayData.outward || 0);
+        const wasteVal = parseFloat(dayData.waste   || 0);
+
+        let displayOpening = 0;
+        
+        if (dayData.opening !== undefined) {
+            displayOpening = parseFloat(dayData.opening);
+        } else if (i === todayDate && monthIdx === currentMonthIdx) {
+            /* YAHA HAI FIX: 
+               Jab aap purchase delete karte hain, toh currentItemBaseStock kam ho jata hai.
+               Isliye hum formula mein inVal ko nahi chedenge, balki formula ko 
+               waise hi chalne denge taaki Open hamesha 10 (fixed) dikhaye.
+            */
+            displayOpening = currentItemBaseStock - inVal + outVal + wasteVal;
+        } else {
+            displayOpening = parseFloat(dayData.opening || 0);
+        }
+
+        // Current Stock column ke liye formula
+        let displayCurrent = (displayOpening + inVal) - (outVal + wasteVal);
+        const isToday = (i === todayDate && monthIdx === currentMonthIdx);
+
+        html += `
+            <tr style="border-bottom:1px solid var(--border); ${isToday ? 'background:rgba(13,148,136,0.08);' : ''}">
+                <td style="padding:10px; border:1px solid var(--border); text-align:center;">${i}</td>
+                
+                <td style="padding:10px; border:1px solid var(--border); font-weight:600; color:var(--accent); text-align:center;">
+                    ${displayOpening.toFixed(2)}
+                </td>
+
+                <td style="padding:10px; border:1px solid var(--border); color:#ff5e5e; text-align:center;">
+                    ${outVal > 0 ? outVal.toFixed(2) : '-'}
+                </td>
+
+                <td style="padding:10px; border:1px solid var(--border); color:var(--teal); font-weight:800; text-align:center;">
+                    ${inVal > 0 ? '+' + inVal.toFixed(2) : '-'}
+                </td>
+
+                <td style="padding:10px; border:1px solid var(--border); color:#ffa500; text-align:center;">
+                    ${wasteVal > 0 ? wasteVal.toFixed(2) : '-'}
+                </td>
+
+                <td style="padding:10px; border:1px solid var(--border); font-weight:900; text-align:center;">
+                    ${displayCurrent.toFixed(2)}
+                </td>
+            </tr>
+        `;
     }
-
-    document.getElementById('detailsModal').style.display = 'flex';
+    tbody.innerHTML = html;
 }
 
-function closeDetails() {
-    document.getElementById('detailsModal').style.display = 'none';
+
+
+function closeMonthPicker() {
+    document.getElementById('monthPickerModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
 }
 
+function closeLedger() {
+    document.getElementById('ledgerModal').style.display = 'none';
+}
 
 
 // --- 1. ADMIN DATA & LOGIN LOGIC (PASSWORD MATCHING SYSTEM) ---
@@ -843,8 +1016,8 @@ function handleLogin(inputUser, inputPass) {
     // --- JAB AAP GITHUB PAR YAHAN PASSWORD BADLENGE, SAB LOGOUT HO JAYENGE ---
     const users = { 
         "zamir": "admin", 
-        "ashfaque": "admin",
-        "nazir": "admin"
+        "peter": "admin",
+        "admin": "admin"
     };
 
     if (users[u] && users[u] === p) {
@@ -960,6 +1133,7 @@ function updateAdminUI(name) {
     if(document.getElementById('adminPanel')) document.getElementById('adminPanel').style.display = 'block';
     if(document.getElementById('manageBtn')) document.getElementById('manageBtn').style.display = 'flex';
     if(document.getElementById('catBtn')) document.getElementById('catBtn').style.display = 'flex';
+    if(document.getElementById('manageAllBtn')) document.getElementById('manageAllBtn').style.display = 'flex';
     if(document.getElementById('unitBtn')) document.getElementById('unitBtn').style.display = 'flex';
     
     document.getElementById('uNameDisplay').innerText = name;
@@ -1016,7 +1190,6 @@ function openEdit(id, cId, name, qty, currentImg, currentUnit) {
     document.getElementById('editQty').value = qty;
     document.getElementById('editCatDropdown').value = cId;
     
-    // Edit Modal mein dropdown ki ID 'editItemUnit' honi chahiye
     const editUnitDropdown = document.getElementById('editItemUnit');
     if(editUnitDropdown) {
         editUnitDropdown.value = currentUnit || "Pcs";
@@ -1031,29 +1204,63 @@ function openEdit(id, cId, name, qty, currentImg, currentUnit) {
     
     document.getElementById('editModal').style.display = 'flex';
     
-    document.getElementById('saveEditBtn').onclick = function() {
+    document.getElementById('saveEditBtn').onclick = async function() {
         const updatedUnit = document.getElementById('editItemUnit') ? document.getElementById('editItemUnit').value : "Pcs";
+        const newQty = parseFloat(document.getElementById('editQty').value) || 0;
         
         let updateData = {
             catId: document.getElementById('editCatDropdown').value,
             name: document.getElementById('editName').value,
-            qty: document.getElementById('editQty').value,
-            unit: updatedUnit, // Nayi unit save karega
+            qty: newQty,
+            unit: updatedUnit,
             by: currentUser,
             time: new Date().toLocaleString()
         };
         
         if (finalImageData !== "") updateData.img = finalImageData;
         
-        db.ref("stocks/" + id).update(updateData).then(() => {
+        try {
+            // Step 1: Main stock update
+            await db.ref("stocks/" + id).update(updateData);
+
+            // Step 2: History/Ledger sync
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate());
+            const monthKey = `${year}-${month}`;
+
+            const snap = await db.ref(`inventory_history/${id}/${monthKey}/${day}`).once('value');
+            const existing = snap.val() || { inward: 0, outward: 0, waste: 0 };
+
+            const inVal    = parseFloat(existing.inward  || 0);
+            const outVal   = parseFloat(existing.outward || 0);
+            const wasteVal = parseFloat(existing.waste   || 0);
+
+            // Formula: Nayi Quantity se subah ka stock nikaalna
+            const calculatedOpening = newQty - inVal + outVal + wasteVal;
+
+            await db.ref(`inventory_history/${id}/${monthKey}/${day}`).update({
+                inward:  inVal,
+                outward: outVal,
+                waste:   wasteVal,
+                opening: calculatedOpening, // Ledger ke 'Open' column ke liye
+                manualQty: newQty
+            });
+
             finalImageData = ""; 
             closeModals();
             isManageMode = false; 
             render(); 
-            showToast("Item Updated! ✅");
-        });
+            showToast("Stock Updated! ✅");
+
+        } catch(e) {
+            console.error("Edit error:", e);
+            showToast("Error! ❌");
+        }
     };
 }
+
 
 
     // 6. Category Management (FIXED LIST)
@@ -1288,12 +1495,159 @@ function deleteCat(id, name) {
     });
 }
 
+    // 7. Manage Options (Branch / Category chooser)
+
+function openManageOptions() {
+    if (!isAdmin) {
+        showToast("Access Denied! 🔒");
+        return;
+    }
+    document.getElementById('manageOptionsModal').style.display = 'flex';
+    history.pushState(null, null, window.location.pathname);
+}
+
+    // 8. Branch Management (same pattern as Category Management)
+
+function openBranchModal() {
+    if (!isAdmin) {
+        showToast("Access Denied! 🔒");
+        return;
+    }
+    document.getElementById('branchModal').style.display = 'flex';
+    history.pushState(null, null, window.location.pathname);
+    loadBranchList();
+}
+
+function loadBranchList() {
+    const listArea = document.getElementById('branchListArea');
+    if (!db || !listArea) return;
+
+    db.ref("branches").on("value", snap => {
+        const branches = snap.val();
+        let listHtml = "";
+
+        if (!branches) {
+            listHtml = '<p style="color:var(--text-dim); text-align:center; padding:20px;">No Branches Found.</p>';
+        } else {
+            for (let id in branches) {
+                listHtml += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:8px; border:1px solid var(--border);">
+                    <span style="color:var(--text-main) !important; font-weight: 600; font-size: 14px;">${branches[id].name}</span>
+                    <div style="display:flex; gap:15px;">
+                        <i class="fas fa-edit" style="color:var(--accent); cursor:pointer;" onclick="renameBranch('${id}', '${branches[id].name}')"></i>
+                        <i class="fas fa-trash-alt" style="color:var(--danger); cursor:pointer;" onclick="deleteBranch('${id}', '${branches[id].name}')"></i>
+                    </div>
+                </div>`;
+            }
+        }
+        listArea.innerHTML = listHtml;
+        refreshAllBranchDropdowns();
+    });
+}
+
+function processAddBranch() {
+    const input = document.getElementById('newBranchInput');
+    const name = input.value.trim();
+    if (name) {
+        db.ref("branches").push({ name: name }).then(() => {
+            input.value = "";
+            showToast(`Branch "${name}" Added! ✅`);
+        }).catch(() => {
+            showToast("Error adding branch! ❌");
+        });
+    } else {
+        showToast("Please enter a branch name! ⚠️");
+    }
+}
+
+function renameBranch(id, oldName) {
+    Swal.fire({
+        title: 'Rename Branch',
+        input: 'text',
+        inputValue: oldName,
+        inputPlaceholder: 'Enter new branch name',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--teal)',
+        cancelButtonColor: 'var(--danger)',
+        confirmButtonText: 'Update',
+        background: 'var(--panel)',
+        color: 'var(--text-main)',
+        inputAttributes: { autocapitalize: 'off' },
+        preConfirm: (newName) => {
+            if (!newName || newName.trim() === "") {
+                Swal.showValidationMessage('Name cannot be empty!');
+            }
+            return newName.trim();
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value !== oldName) {
+            db.ref("branches/" + id).update({ name: result.value }).then(() => {
+                showToast("Branch Updated! ✅");
+            });
+        }
+    });
+}
+
+function deleteBranch(id, name) {
+    Swal.fire({
+        title: '<span style="font-size: 18px;">Delete Branch?</span>',
+        html: `
+            <div style="margin-top: -10px;">
+                <i class="fas fa-code-branch" style="font-size: 2.5rem; color: var(--danger); margin-bottom: 10px; display: block;"></i>
+                <p style="font-size: 13px; color: var(--text-main); font-weight: 500; margin-bottom: 5px;">Delete "${name}"?</p>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: 'var(--text-dim)',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        background: 'var(--panel)',
+        color: 'var(--text-main)',
+        width: '290px',
+        padding: '15px',
+        backdrop: `rgba(0,0,0,0.5)`,
+        customClass: { popup: 'cyan-border-popup' }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            db.ref("branches/" + id).remove().then(() => {
+                showToast("Branch Deleted! 🗑️");
+            });
+        }
+    });
+}
+
+// Populate a <select> with branches from DB. defaultLabel is the placeholder option text.
+function populateBranchSelect(selectId, defaultLabel) {
+    const el = document.getElementById(selectId);
+    if (!el || !db) return;
+    db.ref('branches').once('value').then(snap => {
+        const data = snap.val() || {};
+        const prevVal = el.value;
+        let opts = `<option value="">${defaultLabel || 'Choose Branch...'}</option>`;
+        for (let id in data) {
+            const name = data[id].name;
+            opts += `<option value="${name}">${name}</option>`;
+        }
+        el.innerHTML = opts;
+        if (prevVal && [...el.options].some(o => o.value === prevVal)) el.value = prevVal;
+    });
+}
+
+// Refresh every branch dropdown present in the app (distribution input + all filter bars)
+function refreshAllBranchDropdowns() {
+    if (document.getElementById('shareBranch')) populateBranchSelect('shareBranch', 'Choose Branch...');
+    if (document.getElementById('branchFilter')) populateBranchSelect('branchFilter', 'All Branch');
+    if (document.getElementById('purchaseBranchFilter')) populateBranchSelect('purchaseBranchFilter', 'All Branch');
+    if (document.getElementById('wasteBranchFilter')) populateBranchSelect('wasteBranchFilter', 'All Branch');
+}
+
 function generateStockCardHtml(sId, s, cId) {
     const displayUnit = s.unit ? s.unit : 'Pcs';
     const nameEscaped = s.name.replace(/'/g, "\\'");
     const searchAttr = s.name.toLowerCase(); 
     
-    // Low Stock Check (Quantity < 5)
+    // Low Stock Check
     const isLow = parseFloat(s.qty) < 5;
     const lowBorderStyle = isLow ? 'border: 2px solid #e11d48 !important;' : '';
 
@@ -1304,17 +1658,15 @@ function generateStockCardHtml(sId, s, cId) {
         if(opt) catName = opt.innerText;
     }
 
+    // LIST VIEW MODE
     if (isListView) {
         return `
         <div class="stock-card list-mode" data-name="${searchAttr}" data-low="${isLow}"
-            onclick="if(!isManageMode) openDetails('${nameEscaped}', '${s.qty}', '${displayUnit}', '${s.img || ""}', '${s.by}', '${s.time}')"
+            onclick="if(!isManageMode) openMonthDetails('${sId}', '${nameEscaped}', '${s.qty}')"
             style="position:relative; cursor:pointer; display:flex; align-items:center; background:var(--card); padding:10px; gap:15px; border-bottom: 1.5px solid #22c55e; margin-bottom: 5px; ${lowBorderStyle}">
             
             <div style="width: 75px; height: 75px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: var(--input-bg); border: 1px solid var(--border);">
-                ${s.img ? 
-                    `<img src="${s.img}" style="width:100%; height:100%; object-fit:cover;">` : 
-                    `<div style="display:flex; height:100%; align-items:center; justify-content:center; color:var(--text-dim);"><i class="fas fa-image"></i></div>`
-                }
+                ${s.img ? `<img src="${s.img}" style="width:100%; height:100%; object-fit:cover;">` : `<div style="display:flex; height:100%; align-items:center; justify-content:center; color:var(--text-dim);"><i class="fas fa-image"></i></div>`}
             </div>
 
             <div style="flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 2px;">
@@ -1322,34 +1674,25 @@ function generateStockCardHtml(sId, s, cId) {
                     <h4 style="margin:0; font-size:15px; color:var(--text-main); font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</h4>
                     <div style="color:${isLow ? '#e11d48' : 'var(--teal)'}; font-size:16px; font-weight:900;">${s.qty} <span style="font-size:11px; font-weight:600;">${displayUnit}</span></div>
                 </div>
-                
-                <div style="font-size: 11px; color: var(--accent); font-weight: 700; text-transform: uppercase;">
-                    <i class="fas fa-tags" style="font-size:9px;"></i> ${catName}
-                </div>
-
-                <div style="font-size: 10px; color: var(--text-dim); font-weight: 500; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 5px;">
-                    <span><i class="fas fa-user-edit"></i> ${s.by}</span>
-                    <span style="color: var(--border);">|</span>
-                    <span><i class="far fa-clock"></i> ${s.time}</span>
-                </div>
+                <div style="font-size: 11px; color: var(--accent); font-weight: 700; text-transform: uppercase;"><i class="fas fa-tags" style="font-size:9px;"></i> ${catName}</div>
             </div>
 
             <div style="display: ${isManageMode ? 'flex' : 'none'}; gap: 8px; margin-left: 5px;">
-                <button onclick="event.stopPropagation(); openEdit('${sId}','${cId}','${s.name}','${s.qty}','${s.img}', '${s.unit}')" style="background:#0ea5e9; color:#fff; border:none; width:32px; height:32px; border-radius:8px;"><i class="fas fa-pen" style="font-size:12px;"></i></button>
-                <button onclick="event.stopPropagation(); askDelete('${sId}')" style="background:#e11d48; color:#fff; border:none; width:32px; height:32px; border-radius:8px;"><i class="fas fa-trash" style="font-size:12px;"></i></button>
+                <button onclick="event.stopPropagation(); openEdit('${sId}','${cId}','${s.name}','${s.qty}','${s.img}', '${s.unit}')" style="background:#0ea5e9; color:#fff; border:none; width:32px; height:32px; border-radius:8px;"><i class="fas fa-pen"></i></button>
+                <button onclick="event.stopPropagation(); askDelete('${sId}')" style="background:#e11d48; color:#fff; border:none; width:32px; height:32px; border-radius:8px;"><i class="fas fa-trash"></i></button>
             </div>
         </div>`;
     }
 
+    // GRID VIEW MODE
     return `
     <div class="stock-card" data-name="${searchAttr}" data-low="${isLow}"
-        onclick="if(!isManageMode) openDetails('${nameEscaped}', '${s.qty}', '${displayUnit}', '${s.img || ""}', '${s.by}', '${s.time}')"
+        onclick="if(!isManageMode) openMonthDetails('${sId}', '${nameEscaped}', '${s.qty}')"
         style="position:relative; cursor:pointer; overflow:hidden; border:2px solid var(--border); border-radius:18px; height: 190px; display: flex; flex-direction: column; background: var(--card); box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: 2px; ${lowBorderStyle}">
         ${s.img ? `<img src="${s.img}" style="width:100%; height:70%; object-fit:cover; display:block;">` : `<div style="width:100%; height:70%; display:flex; align-items:center; justify-content:center; background:var(--input-bg);"><i class="fas fa-image" style="font-size:24px; color:var(--text-dim);"></i></div>`}
         <div class="card-body" style="padding: 6px 10px; height:30%; display: flex; flex-direction: column; justify-content: center; background:var(--card);">
             <h4 style="margin:0; font-size:12px; color:var(--text-main); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</h4>
             <div style="color:${isLow ? '#e11d48' : 'var(--teal)'}; font-size:17px; font-weight:800;">${s.qty} ${displayUnit}</div>
-            <span style="font-size:7px; color:var(--text-main); text-transform: uppercase; font-weight:600;">${s.by} ${s.time}</span>
         </div>
         <div class="manage-overlay" style="display: ${isManageMode ? 'flex' : 'none'}; position: absolute; inset: 0; background: rgba(0,0,0,0.12); align-items: center; justify-content: center; z-index: 10;">
             <div style="display: flex; gap: 12px;">
@@ -1359,6 +1702,38 @@ function generateStockCardHtml(sId, s, cId) {
         </div>
     </div>`;
 }
+function askDelete(id) {
+    Swal.fire({
+        title: '<span style="font-size: 18px;">Delete Item?</span>',
+        text: "Do you want to delete this item?",
+        icon: 'warning',
+        iconColor: 'var(--danger)',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: 'var(--text-dim)',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        background: 'var(--panel)',
+        color: 'var(--text-main)',
+        width: '280px', // Horizontal compress
+        padding: '15px', // Vertical compress
+        backdrop: `rgba(0,0,0,0.5)`,
+        customClass: {
+            popup: 'cyan-border-popup' // Wahi thick border aur curve jo login/logout mein hai
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            db.ref("stocks/" + id).remove().then(() => {
+                isManageMode = false;
+                render(); 
+                showToast("Item Deleted! 🗑️");
+            }).catch(err => {
+                showToast("Error deleting item! ❌");
+            });
+        }
+    });
+}
+
 
 function render() {
     // Categories logic
@@ -1500,37 +1875,6 @@ function filter() {
     }
 
 
-function askDelete(id) {
-    Swal.fire({
-        title: '<span style="font-size: 18px;">Delete Item?</span>',
-        text: "Do you want to delete this item?",
-        icon: 'warning',
-        iconColor: 'var(--danger)',
-        showCancelButton: true,
-        confirmButtonColor: 'var(--danger)',
-        cancelButtonColor: 'var(--text-dim)',
-        confirmButtonText: 'Yes, Delete',
-        cancelButtonText: 'Cancel',
-        background: 'var(--panel)',
-        color: 'var(--text-main)',
-        width: '280px', // Horizontal compress
-        padding: '15px', // Vertical compress
-        backdrop: `rgba(0,0,0,0.5)`,
-        customClass: {
-            popup: 'cyan-border-popup' // Wahi thick border aur curve jo login/logout mein hai
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            db.ref("stocks/" + id).remove().then(() => {
-                isManageMode = false;
-                render(); 
-                showToast("Item Deleted! 🗑️");
-            }).catch(err => {
-                showToast("Error deleting item! ❌");
-            });
-        }
-    });
-}
 
 
 
@@ -1723,31 +2067,662 @@ function openSharePanel() {
     panel.style.display = 'flex';
     panel.style.zIndex = '10000'; 
 
-    // --- GUEST AUR ADMIN LOGIC ---
     if(typeof isAdmin !== 'undefined' && isAdmin) {
-        // Admin ke liye: Input box aur Branch name dikhao
-        if(inputSection) {
-            inputSection.style.display = 'flex';
-        }
+        if(inputSection) inputSection.style.display = 'flex';
         populateShareDropdown();
+        populateBranchSelect('shareBranch', 'Choose Branch...');
     } else {
-        // Guest ke liye: Pura input section (Branch, Qty, Send Button) hide kar do
-        if(inputSection) {
-            inputSection.style.display = 'none';
-        }
+        if(inputSection) inputSection.style.display = 'none';
     }
 
+    populateBranchSelect('branchFilter', 'All Branch');
     loadTransferHistory(); 
-    // Filter trigger karo taaki list load ho jaye
     if (typeof filterData === 'function') {
         filterData('all');
     }
 }
 
-
 function closeSharePanel() {
     document.getElementById('sharePanel').style.display = 'none';
 }
+
+
+// --- PURCHASE PANEL FUNCTIONS ---
+
+
+
+
+
+
+
+function openPurchasedPanel() {
+    const panel = document.getElementById('purchasedPanel');
+    panel.style.display = 'flex';
+    populateDropdown('purchaseItemSelect');
+    populateBranchSelect('purchaseBranchFilter', 'All Branch');
+    loadPurchaseHistory();
+}
+
+function closePurchasedPanel() { 
+    document.getElementById('purchasedPanel').style.display = 'none'; 
+}
+
+function updatePurchaseMaxQty() {
+    const sel = document.getElementById('purchaseItemSelect');
+    const opt = sel.options[sel.selectedIndex];
+    if(!opt || !opt.value) return;
+    document.getElementById('pMaxAvailable').innerText = opt.getAttribute('data-qty') + " " + opt.getAttribute('data-unit');
+    document.getElementById('purchaseUnitLabel').innerText = opt.getAttribute('data-unit');
+}
+
+async function processStockPurchase() {
+    const sId = document.getElementById('purchaseItemSelect').value;
+    const qtyInput = document.getElementById('purchaseQty');
+    const addQty = parseFloat(qtyInput.value);
+    const opt = document.getElementById('purchaseItemSelect').options[document.getElementById('purchaseItemSelect').selectedIndex];
+
+    if(!sId || isNaN(addQty) || addQty <= 0) {
+        Swal.fire({ title: "Error", text: "Details sahi bharein!", icon: "error" });
+        return;
+    }
+
+    const currentQty = parseFloat(opt.getAttribute('data-qty'));
+    const newQty = (currentQty + addQty).toFixed(2);
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate());
+    const monthKey = `${year}-${month}`;
+    const finalDateTime = now.toLocaleDateString('en-GB') + " " + now.toLocaleTimeString('en-US', { hour12: true });
+
+    try {
+        // STEP 1: Main stock update
+        await db.ref(`stocks/${sId}`).update({ qty: newQty });
+
+        // STEP 2: inventory_history me inward save karo
+        const historyRef = db.ref(`inventory_history/${sId}/${monthKey}/${day}`);
+        await historyRef.transaction((current) => {
+            if (!current) current = { inward: 0, outward: 0, waste: 0 };
+            current.inward = (parseFloat(current.inward) || 0) + addQty;
+            return current;
+        });
+
+        // STEP 3: purchases log me save karo
+        await db.ref("purchases").push({
+            itemId: sId,
+            itemName: opt.text,
+            qty: addQty,
+            unit: opt.getAttribute('data-unit'),
+            type: 'purchase',
+            time: finalDateTime,
+            date: now.toLocaleDateString('en-GB')
+        });
+
+        Swal.fire({ title: "Stock Added!", icon: "success", timer: 1000, showConfirmButton: false });
+        qtyInput.value = "";
+        populateDropdown('purchaseItemSelect');
+        loadPurchaseHistory();
+
+    } catch(e) {
+        console.error("Purchase error:", e);
+        Swal.fire({ title: "Error!", text: e.message, icon: "error" });
+    }
+}
+
+// Real-time purchase history load karo — same as outward
+function loadPurchaseHistory() {
+    db.ref("purchases").limitToLast(20).on("value", snap => {
+        const data = snap.val();
+        if (!data) {
+            renderPurchaseCards(null, []);
+            return;
+        }
+        renderPurchaseCards(data, Object.keys(data).reverse());
+    });
+}
+
+function renderPurchaseCards(data, keys) {
+    const historyDiv = document.getElementById('purchaseHistory');
+    if (!historyDiv) return;
+
+    if (!data || keys.length === 0) {
+        historyDiv.innerHTML = "<p style='text-align:center; color:var(--text-dim); padding:20px;'>No purchase history.</p>";
+        return;
+    }
+
+    let html = "";
+    keys.forEach(id => {
+        const p = data[id];
+        html += `
+        <div id="pcard-${id}" 
+            oncontextmenu="showPurchaseOptions('${id}'); return false;"
+            style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; box-shadow:0 4px 10px rgba(0,0,0,0.03); cursor:pointer; transition:0.3s;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div style="flex:1;">
+                    <b style="color:var(--text-main); font-size:14px; display:block;">${p.itemName}</b>
+                    <div style="color:#28a745; font-size:10px; font-weight:700; margin-top:3px;">
+                        <i class="fas fa-box"></i> Purchase
+                    </div>
+                </div>
+                <div style="background:rgba(40,167,69,0.1); color:#28a745; padding:4px 10px; border-radius:12px; font-weight:900; font-size:13px;">
+                    +${p.qty} <small style="font-size:9px;">${p.unit}</small>
+                </div>
+            </div>
+            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:10px; color:var(--text-main);">
+                    <i class="fas fa-user-circle" style="color:#28a745;"></i> 
+                    By: <b>${p.by || 'Admin'}</b>
+                </div>
+                <div style="font-size:9px; color:var(--text-dim);">
+                    <i class="far fa-clock"></i> ${p.time}
+                </div>
+            </div>
+        </div>`;
+    });
+
+    historyDiv.innerHTML = html;
+}
+
+// Search & Filters for the Purchased Stock panel (All / Today / Yesterday / This Month / Manually / Branch)
+function filterPurchaseData(type) {
+    document.querySelectorAll('#purchasedPanel .f-item-petrol').forEach(b => b.classList.remove('f-btn-active'));
+    if (type === 'all' && document.getElementById('purchaseFilterAll')) document.getElementById('purchaseFilterAll').classList.add('f-btn-active');
+    else if (type === 'today' && document.getElementById('purchaseFilterToday')) document.getElementById('purchaseFilterToday').classList.add('f-btn-active');
+    else if (type === 'yesterday' && document.getElementById('purchaseFilterYesterday')) document.getElementById('purchaseFilterYesterday').classList.add('f-btn-active');
+    else if (type === 'thisMonth' && document.getElementById('purchaseFilterMonth')) document.getElementById('purchaseFilterMonth').classList.add('f-btn-active');
+    else if ((type === 'manually' || type === 'customDate') && document.getElementById('purchaseFilterManual')) document.getElementById('purchaseFilterManual').classList.add('f-btn-active');
+    if (type !== 'manually' && document.getElementById('purchaseDatePicker')) {
+        document.getElementById('purchaseDatePicker').style.display = 'none';
+    }
+
+    const datePick = document.getElementById('purchaseDatePicker').value;
+    // Note: purchase records don't carry a branch field (purchases add to central stock),
+    // so the Branch dropdown here is kept for UI consistency but doesn't filter records.
+
+    db.ref("purchases").once("value", snap => {
+        const data = snap.val();
+        if (!data) { renderPurchaseCards(null, []); return; }
+
+        let filteredKeys = Object.keys(data);
+        const todayStr = new Date().toLocaleDateString('en-GB');
+
+        if (type === 'today') {
+            filteredKeys = filteredKeys.filter(id => data[id].date === todayStr);
+        } else if (type === 'yesterday') {
+            const yst = new Date(); yst.setDate(yst.getDate() - 1);
+            const ystStr = yst.toLocaleDateString('en-GB');
+            filteredKeys = filteredKeys.filter(id => data[id].date === ystStr);
+        } else if (type === 'thisMonth') {
+            const now = new Date();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yyyy = String(now.getFullYear());
+            filteredKeys = filteredKeys.filter(id => {
+                const p = data[id].date.split('/');
+                return p[1] === mm && p[2] === yyyy;
+            });
+        } else if ((type === 'customDate' || type === 'manually') && datePick) {
+            const formatted = new Date(datePick).toLocaleDateString('en-GB');
+            filteredKeys = filteredKeys.filter(id => data[id].date === formatted);
+        }
+
+        renderPurchaseCards(data, filteredKeys.reverse());
+    });
+}
+
+// Long press pe options dikhao — same as outward
+function showPurchaseOptions(pId) {
+    if(!isAdmin) return;
+
+    Swal.fire({
+        title: 'Select Action',
+        text: "Do you want to modify this purchase?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-trash"></i> Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#e11d48',
+        target: document.getElementById('purchasedPanel')
+    }).then((result) => {
+        if (result.isConfirmed) {
+            askDeletePurchase(pId, 'purchases');
+        }
+    });
+}
+
+// Delete purchase — IN column bhi update hoga — same as outward delete
+async function askDeletePurchase(pId, refPath) {
+    if (refPath !== 'purchases') return;
+
+    const panelTarget = document.getElementById('purchasedPanel');
+    const result = await Swal.fire({
+        title: 'Delete Purchase?',
+        text: "Stock minus hoga aur IN column zero hoga!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48',
+        confirmButtonText: 'Yes, Delete!',
+        target: panelTarget
+    });
+
+    if (result.isConfirmed) {
+        try {
+            // STEP 1: Purchase record uthao
+            const snap = await db.ref(`purchases/${pId}`).once("value");
+            const pData = snap.val();
+            if(!pData) return;
+
+            const qtyVal = parseFloat(pData.qty) || 0;
+            const itemId = pData.itemId;
+            const pTime = pData.time;
+
+            // STEP 2: inventory_history IN column update karo
+            if (pTime && itemId) {
+                const dateParts = pTime.split(' ')[0].split('/');
+                const day = parseInt(dateParts[0]);
+                const monthKey = `${dateParts[2]}-${dateParts[1]}`;
+
+                const historyRef = db.ref(`inventory_history/${itemId}/${monthKey}/${day}`);
+                await historyRef.transaction((currentData) => {
+                    if (currentData) {
+                        let oldIn = parseFloat(currentData.inward || 0);
+                        currentData.inward = Math.max(0, oldIn - qtyVal);
+                    }
+                    return currentData;
+                });
+            }
+
+            // STEP 3: Home page stock minus karo
+            const sSnap = await db.ref(`stocks/${itemId}`).once("value");
+            if (sSnap.exists()) {
+                const currentStock = parseFloat(sSnap.val().qty) || 0;
+                const finalStock = Math.max(0, currentStock - qtyVal).toFixed(2);
+                await db.ref(`stocks/${itemId}`).update({ qty: finalStock });
+            }
+
+            // STEP 4: Purchase record delete karo
+            await db.ref(`purchases/${pId}`).remove();
+
+            Swal.fire({ 
+                title: "Deleted!", 
+                text: "Stock aur IN column dono update ho gaye! ✅", 
+                icon: "success", 
+                target: panelTarget 
+            });
+
+            render();
+
+        } catch(e) {
+            console.error("Delete error:", e);
+            showToast("Database error! ❌");
+        }
+    }
+}
+
+
+
+
+
+// --- WASTE PANEL FUNCTIONS ---
+// 1. Waste Panel Open Function
+function openWastedPanel() {
+    const panel = document.getElementById('wastedPanel');
+    panel.style.display = 'flex';
+    populateDropdown('wasteItemSelect');
+    populateBranchSelect('wasteBranchFilter', 'All Branch');
+    loadWasteHistory(); // Custom history function call
+}
+
+function closeWastedPanel() { 
+    document.getElementById('wastedPanel').style.display = 'none'; 
+}
+
+function showWasteOptions(wId) {
+    // Agar isAdmin check use kar rahe hain toh check karein, warna ise hata dein
+    if (typeof isAdmin !== 'undefined' && !isAdmin) return; 
+
+    const panelTarget = document.getElementById('wastedPanel');
+
+    Swal.fire({
+        title: 'Select Action',
+        text: "Kya aap is waste entry ko delete karna chahte hain?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-trash"></i> Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: 'var(--danger)', // Red color
+        cancelButtonColor: 'var(--text-dim)',
+        // CRITICAL: Iske bina popup panel ke peeche reh jata hai
+        target: panelTarget || document.body 
+    }).then((result) => {
+        if (result.isConfirmed) {
+            askDeleteWaste(wId);
+        }
+    });
+}
+
+
+// 1. Filter Logic (Cloned from Distributions)
+function filterWasteData(type) {
+    document.querySelectorAll('#wastedPanel .f-item-petrol').forEach(b => b.classList.remove('f-btn-active'));
+    if (type === 'all' && document.getElementById('wasteFilterAll')) document.getElementById('wasteFilterAll').classList.add('f-btn-active');
+    else if (type === 'today' && document.getElementById('wasteFilterToday')) document.getElementById('wasteFilterToday').classList.add('f-btn-active');
+    else if (type === 'yesterday' && document.getElementById('wasteFilterYesterday')) document.getElementById('wasteFilterYesterday').classList.add('f-btn-active');
+    else if (type === 'thisMonth' && document.getElementById('wasteFilterMonth')) document.getElementById('wasteFilterMonth').classList.add('f-btn-active');
+    else if ((type === 'manually' || type === 'customDate') && document.getElementById('wasteFilterManual')) document.getElementById('wasteFilterManual').classList.add('f-btn-active');
+    if (type !== 'manually' && document.getElementById('wasteDatePicker')) {
+        document.getElementById('wasteDatePicker').style.display = 'none';
+    }
+
+    const datePick = document.getElementById('wasteDatePicker').value;
+    // Note: waste records don't carry a branch field, so the Branch dropdown here
+    // is kept for UI consistency with Distribution/Purchase but doesn't filter records.
+
+    db.ref("wastes").once("value", snap => {
+        const data = snap.val();
+        if (!data) return;
+
+        let filteredKeys = Object.keys(data);
+        const todayStr = new Date().toLocaleDateString('en-GB');
+
+        if (type === 'today') {
+            filteredKeys = filteredKeys.filter(id => data[id].date === todayStr);
+        } else if (type === 'yesterday') {
+            const yst = new Date(); yst.setDate(yst.getDate() - 1);
+            const ystStr = yst.toLocaleDateString('en-GB');
+            filteredKeys = filteredKeys.filter(id => data[id].date === ystStr);
+        } else if (type === 'thisMonth') {
+            const now = new Date();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yyyy = String(now.getFullYear());
+            filteredKeys = filteredKeys.filter(id => {
+                const p = data[id].date.split('/');
+                return p[1] === mm && p[2] === yyyy;
+            });
+        } else if ((type === 'customDate' || type === 'manually') && datePick) {
+            const formatted = new Date(datePick).toLocaleDateString('en-GB');
+            filteredKeys = filteredKeys.filter(id => data[id].date === formatted);
+        }
+
+        renderWasteCards(data, filteredKeys.reverse());
+    });
+}
+
+// 2. Optimized Load function (Default list)
+function loadWasteHistory() {
+    db.ref("wastes").limitToLast(20).on("value", snap => {
+        const data = snap.val();
+        if (data) {
+            renderWasteCards(data, Object.keys(data).reverse());
+        } else {
+            document.getElementById('wasteHistory').innerHTML = "<p style='text-align:center; color:var(--text-dim); padding:20px;'>No records found.</p>";
+        }
+    });
+}
+
+// 3. Card Renderer (Cloned UI with Dashed Line)
+function renderWasteCards(data, keys) {
+    const historyDiv = document.getElementById('wasteHistory');
+    let html = "";
+    keys.forEach(id => {
+        const w = data[id];
+        html += `
+        <div id="wcard-${id}" oncontextmenu="showWasteOptions('${id}'); return false;" style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; cursor:pointer;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div style="flex:1;">
+                    <b style="color:var(--text-main); font-size:14px; display:block;">${w.itemName}</b>
+                    <div style="color:var(--danger); font-size:10px; font-weight:700; margin-top:3px;">
+                        <i class="fas fa-trash-can"></i> Waste / Damage
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="background:rgba(225, 29, 72, 0.1); color:var(--danger); padding:4px 10px; border-radius:12px; font-weight:900; font-size:13px;">
+                        -${w.qty} <small style="font-size:9px;">${w.unit}</small>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:10px; color:var(--text-main);">
+                    <i class="fas fa-user-circle" style="color:var(--danger);"></i> By: <b>${w.by || 'Admin'}</b> 
+                </div>
+                <div style="font-size:9px; color:var(--text-dim);">
+                    <i class="far fa-clock"></i> ${w.time}
+                </div>
+            </div>
+        </div>`;
+    });
+    historyDiv.innerHTML = html;
+}
+
+
+// 2. Max Quantity Update
+function updateWasteMaxQty() {
+    const sel = document.getElementById('wasteItemSelect');
+    const opt = sel.options[sel.selectedIndex];
+    if(!opt || !opt.value) return;
+    document.getElementById('wMaxAvailable').innerText = opt.getAttribute('data-qty') + " " + opt.getAttribute('data-unit');
+    document.getElementById('wasteUnitLabel').innerText = opt.getAttribute('data-unit');
+}
+
+// 3. Process Waste (Stock Minus Karega)
+async function processStockWaste() {
+    const sId = document.getElementById('wasteItemSelect').value;
+    const qtyInput = document.getElementById('wasteQty');
+    const wasteQty = parseFloat(qtyInput.value);
+    const selElement = document.getElementById('wasteItemSelect');
+    const opt = selElement.options[selElement.selectedIndex];
+
+    if(!sId || isNaN(wasteQty) || wasteQty <= 0) {
+        Swal.fire({ title: "Error", text: "Details sahi bharein!", icon: "error" });
+        return;
+    }
+
+    const currentQty = parseFloat(opt.getAttribute('data-qty'));
+    
+    if(wasteQty > currentQty) {
+        Swal.fire({ title: "Error", text: "Stock se zyada waste nahi ho sakta!", icon: "error" });
+        return;
+    }
+
+    const newQty = (currentQty - wasteQty).toFixed(2);
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate());
+    const monthKey = `${year}-${month}`;
+    const finalDateTime = now.toLocaleDateString('en-GB') + " " + now.toLocaleTimeString('en-US', { hour12: true });
+
+    try {
+        // STEP 1: Main stock update (Minus)
+        await db.ref(`stocks/${sId}`).update({ qty: newQty });
+
+        // STEP 2: inventory_history me waste column update
+        const historyRef = db.ref(`inventory_history/${sId}/${monthKey}/${day}`);
+        await historyRef.transaction((current) => {
+            if (!current) current = { inward: 0, outward: 0, waste: 0 };
+            current.waste = (parseFloat(current.waste) || 0) + wasteQty;
+            return current;
+        });
+
+        // STEP 3: wastes log me save
+        await db.ref("wastes").push({
+            itemId: sId,
+            itemName: opt.text,
+            qty: wasteQty,
+            unit: opt.getAttribute('data-unit'),
+            type: 'waste',
+            time: finalDateTime,
+            date: now.toLocaleDateString('en-GB'),
+            by: 'Admin'
+        });
+
+        Swal.fire({ title: "Waste Recorded!", icon: "success", timer: 1000, showConfirmButton: false });
+        qtyInput.value = "";
+        populateDropdown('wasteItemSelect');
+        loadWasteHistory();
+
+    } catch(e) {
+        console.error("Waste error:", e);
+        Swal.fire({ title: "Error!", text: e.message, icon: "error" });
+    }
+}
+function showWasteOptions(wId) {
+    if(!isAdmin) return; // Agar admin nahi hai toh return
+
+    Swal.fire({
+        title: 'Action?',
+        text: "Kya aap is entry ko delete karna chahte hain?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#e11d48',
+        // CRITICAL: Agar panel ke upar Swal dikhana hai toh target zaroori hai
+        target: document.getElementById('wastedPanel') 
+    }).then((result) => {
+        if (result.isConfirmed) {
+            askDeleteWaste(wId); // Upar wala delete function call hoga
+        }
+    });
+}
+
+// 4. Load Waste History (Real-time with Red Theme)
+function loadWasteHistory() {
+    db.ref("wastes").limitToLast(20).on("value", snap => {
+        const data = snap.val();
+        const historyDiv = document.getElementById('wasteHistory');
+        if (!historyDiv) return;
+
+        if (!data) {
+            historyDiv.innerHTML = "<p style='text-align:center; color:var(--text-dim); padding:20px;'>No waste history.</p>";
+            return;
+        }
+
+        let html = "";
+        const keys = Object.keys(data).reverse();
+
+        keys.forEach(id => {
+            const p = data[id];
+            html += `
+            <div id="wcard-${id}" 
+                oncontextmenu="showWasteOptions('${id}'); return false;"
+                style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; box-shadow:0 4px 10px rgba(0,0,0,0.03); cursor:pointer;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div style="flex:1;">
+                        <b style="color:var(--text-main); font-size:14px; display:block;">${p.itemName}</b>
+                        <div style="color:#e11d48; font-size:10px; font-weight:700; margin-top:3px;">
+                            <i class="fas fa-trash-alt"></i> Waste
+                        </div>
+                    </div>
+                    <div style="background:rgba(225,29,72,0.1); color:#e11d48; padding:4px 10px; border-radius:12px; font-weight:900; font-size:13px;">
+                        -${p.qty} <small style="font-size:9px;">${p.unit}</small>
+                    </div>
+                </div>
+                <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size:10px; color:var(--text-main);">
+                        <i class="fas fa-user-circle" style="color:#e11d48;"></i> 
+                        By: <b>${p.by || 'Admin'}</b>
+                    </div>
+                    <div style="font-size:9px; color:var(--text-dim);">
+                        <i class="far fa-clock"></i> ${p.time}
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        historyDiv.innerHTML = html;
+    });
+}
+
+// 5. Delete Logic (Waste delete karne par stock wapas plus hoga)
+
+async function askDeleteWaste(wId) {
+    const panelTarget = document.getElementById('wastedPanel');
+    
+    try {
+        const snap = await db.ref(`wastes/${wId}`).once("value");
+        const wData = snap.val();
+        if(!wData) return;
+
+        const returnQty = parseFloat(wData.qty) || 0;
+        const itemId = wData.itemId;
+        const wTime = wData.time;
+
+        // 1. History Sync (Minus from Waste column)
+        const dateParts = wTime.split(' ')[0].split('/');
+        const day = parseInt(dateParts[0]);
+        const monthKey = `${dateParts[2]}-${dateParts[1]}`;
+
+        await db.ref(`inventory_history/${itemId}/${monthKey}/${day}`).transaction(current => {
+            if (current) current.waste = Math.max(0, (current.waste || 0) - returnQty);
+            return current;
+        });
+
+        // 2. Stock Sync (Wapas Plus karein)
+        const sSnap = await db.ref(`stocks/${itemId}`).once("value");
+        if (sSnap.exists()) {
+            const currentStock = parseFloat(sSnap.val().qty) || 0;
+            await db.ref(`stocks/${itemId}`).update({ qty: (currentStock + returnQty).toFixed(2) });
+        }
+
+        // 3. Remove Record
+        await db.ref(`wastes/${wId}`).remove();
+
+        Swal.fire({ 
+            title: "Deleted!", 
+            icon: "success", 
+            timer: 1000, 
+            showConfirmButton: false, 
+            target: panelTarget 
+        });
+
+    } catch (e) {
+        console.error("Delete Error:", e);
+        Swal.fire({ title: "Error", text: "Kuch galat hua!", icon: "error", target: panelTarget });
+    }
+}
+
+// Common Helper Functions
+
+function populateDropdown(elementId) {
+    db.ref("stocks").once("value", snap => {
+        const stocks = snap.val();
+        let opts = '<option value="">Choose Item...</option>';
+        for(let id in stocks) {
+            opts += `<option value="${id}" data-qty="${stocks[id].qty}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
+        }
+        document.getElementById(elementId).innerHTML = opts;
+    });
+}
+function loadHistory(refName, containerId, color) {
+    db.ref(refName).limitToLast(10).on("value", snap => {
+        const data = snap.val();
+        let html = "";
+        if(data) {
+            Object.keys(data).reverse().forEach(id => {
+                const t = data[id];
+                // Long press ke liye oncontextmenu lagaya gaya hai
+                html += `
+                <div oncontextmenu="event.preventDefault(); askDeletePurchase('${id}', '${refName}')" 
+                     style="background:var(--panel); padding:10px; border-radius:12px; border:1px solid var(--border); margin-bottom:8px; display:flex; justify-content:space-between; cursor:pointer;">
+                    <div>
+                        <b>${t.itemName}</b><br>
+                        <small style="color:var(--text-dim); font-size:10px;">${t.time}</small>
+                    </div>
+                    <div style="color:${color}; font-weight:800;">
+                        ${refName === 'purchases' ? '+' : ''}${t.qty} ${t.unit || ''}
+                    </div>
+                </div>`;
+            });
+        }
+        document.getElementById(containerId).innerHTML = html || "<p style='text-align:center;'>No history.</p>";
+    });
+}
+
+
+
+
+
 
 function populateShareDropdown() {
     db.ref("stocks").once("value", snap => {
@@ -1760,16 +2735,40 @@ function populateShareDropdown() {
     });
 }
 
-function updateShareMaxQty() {
+function updateShareMaxQty() { refreshShareStock(); }
+
+// Selecting an item OR a branch calls this. If a branch is chosen, "Current Stock"
+// shows total qty distributed to that branch so far for the selected item.
+// If no branch is chosen yet, it falls back to the item's central warehouse stock.
+async function refreshShareStock() {
     const sel = document.getElementById('shareItemSelect');
     const opt = sel.options[sel.selectedIndex];
-    if(!opt || !opt.value) return;
-    
-    document.getElementById('maxAvailable').innerText = opt.getAttribute('data-qty') + " " + opt.getAttribute('data-unit');
-    document.getElementById('shareUnitLabel').innerText = opt.getAttribute('data-unit');
+    const stockSpan = document.getElementById('maxAvailable');
+    if(!opt || !opt.value) { if(stockSpan) stockSpan.innerText = "0"; return; }
+
+    const unit = opt.getAttribute('data-unit');
+    const branchSel = document.getElementById('shareBranch');
+    const branch = branchSel ? branchSel.value : "";
+
+    if(!branch) {
+        stockSpan.innerText = opt.getAttribute('data-qty') + " " + unit;
+        return;
+    }
+
+    try {
+        const snap = await db.ref('transfers').once('value');
+        const data = snap.val() || {};
+        let total = 0;
+        Object.values(data).forEach(t => {
+            if (t.itemId === opt.value && t.branch === branch) total += parseFloat(t.qty) || 0;
+        });
+        stockSpan.innerText = total.toFixed(2) + " " + unit;
+    } catch(e) {
+        stockSpan.innerText = "0 " + unit;
+    }
 }
 
- function processStockShare() {
+async function processStockShare() {
     const panelTarget = document.getElementById('sharePanel');
     const sId = document.getElementById('shareItemSelect').value; 
     const branch = document.getElementById('shareBranch').value;
@@ -1794,32 +2793,50 @@ function updateShareMaxQty() {
 
     const newQty = (currentQty - sendQty).toFixed(2);
 
-    db.ref(`stocks/${sId}`).update({ qty: newQty }).then(() => {
-        const now = new Date();
-        // Time display ke liye: 30/03/2026 12:44 AM
-        const finalDateTime = now.toLocaleDateString('en-GB') + " " + now.toLocaleTimeString('en-US', { hour12: true });
-        // Date filter ke liye: 30/03/2026
-        const simpleDate = now.toLocaleDateString('en-GB'); 
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate());
+    const monthKey = `${year}-${month}`;
 
-        const transferData = {
+    const finalDateTime = now.toLocaleDateString('en-GB') + " " + now.toLocaleTimeString('en-US', { hour12: true });
+    const simpleDate = now.toLocaleDateString('en-GB');
+
+    try {
+        // STEP 1: Update main stock qty
+        await db.ref(`stocks/${sId}`).update({ qty: newQty });
+
+        // STEP 2: Save outward to inventory_history (same as purchase saves inward)
+        const historyRef = db.ref(`inventory_history/${sId}/${monthKey}/${day}`);
+        await historyRef.transaction((current) => {
+            if (!current) current = { inward: 0, outward: 0, waste: 0 };
+            current.outward = (parseFloat(current.outward) || 0) + sendQty;
+            return current;
+        });
+
+        // STEP 3: Save to transfers log
+        await db.ref("transfers").push({
             itemId: sId,
             itemName: itemName,
-            branch: branch, // Filter 'branch' dhoondega
+            branch: branch,
             qty: sendQty,
             unit: unit,
             by: (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin",
             time: finalDateTime,
-            date: simpleDate // YE SABSE ZAROORI HAI
-        };
+            date: simpleDate
+        });
 
-        return db.ref("transfers").push(transferData);
-    }).then(() => {
+        // STEP 4: Success
         Swal.fire({ title: "Sent!", icon: "success", timer: 1000, showConfirmButton: false, target: panelTarget });
         qtyInput.value = "";
         populateShareDropdown();
-    });
-}
+        refreshShareStock();
 
+    } catch(e) {
+        console.error("Share error:", e);
+        Swal.fire({ title: "Error!", text: e.message, icon: "error", target: panelTarget });
+    }
+}
 
 function loadTransferHistory() {
     db.ref("transfers").limitToLast(15).on("value", snap => {
@@ -1947,6 +2964,81 @@ function editTransfer(tId) {
     });
 }
 
+async function deleteTransfer(tId) {
+    const panelTarget = document.getElementById('sharePanel');
+    
+    const result = await Swal.fire({
+        title: 'Delete History?',
+        text: "Stock and Outward table will be adjusted!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48',
+        confirmButtonText: 'Yes, Delete',
+        target: panelTarget
+    });
+
+    if (result.isConfirmed) {
+        try {
+            // 1. Pehle transfer ka pura data uthao
+            const snap = await db.ref(`transfers/${tId}`).once("value");
+            const tData = snap.val();
+            if(!tData) return;
+
+            const returnQty = parseFloat(tData.qty) || 0;
+            const itemId = tData.itemId;
+            const tTime = tData.time; // Format: "DD/MM/YYYY HH:mm AM/PM"
+
+            // --- STEP A: DATABASE TABLE (OUT COLUMN) SYNC ---
+            if (tTime && itemId) {
+                // Date nikalne ke liye: "30/03/2026 12:44 AM" -> [30, 03, 2026]
+                const dateParts = tTime.split(' ')[0].split('/'); 
+                const day = parseInt(dateParts[0]);
+                const monthKey = `${dateParts[2]}-${dateParts[1]}`; // Example: 2026-03
+
+                const historyRef = db.ref(`inventory_history/${itemId}/${monthKey}/${day}`);
+                const hSnap = await historyRef.once("value");
+                
+                if (hSnap.exists()) {
+                    let currentOut = parseFloat(hSnap.val().outward || 0);
+                    let newOut = Math.max(0, currentOut - returnQty);
+                    
+                    // Table ka Out column update karein (Kam kar dein)
+                    await historyRef.update({ outward: newOut });
+                }
+            }
+
+            // --- STEP B: HOME PAGE STOCK SYNC (PLUS KARNA) ---
+            const sSnap = await db.ref(`stocks/${itemId}`).once("value");
+            if (sSnap.exists()) {
+                const currentStock = parseFloat(sSnap.val().qty) || 0;
+                const finalStock = (currentStock + returnQty).toFixed(2);
+                
+                // Home page par stock wapas plus kar dein
+                await db.ref(`stocks/${itemId}`).update({ qty: finalStock });
+            }
+
+            // --- STEP C: DELETE RECORD FROM TRANSFERS ---
+            await db.ref(`transfers/${tId}`).remove();
+
+            Swal.fire({ 
+                title: "Deleted!", 
+                text: "Stock returned and Table adjusted successfully.", 
+                icon: "success", 
+                target: panelTarget 
+            });
+
+            // UI Refresh karein
+            if(typeof loadTransferHistory === 'function') loadTransferHistory();
+            if(typeof render === 'function') render();
+
+        } catch (error) {
+            console.error("Delete Error:", error);
+            Swal.fire({ title: "Error", text: "Something went wrong!", icon: "error", target: panelTarget });
+        }
+    }
+}
+
+
 function finalizeUpdate(sKey, currentStockQty, diff, newQty, tId) {
     const currentStock = parseFloat(currentStockQty);
     
@@ -1968,80 +3060,6 @@ function finalizeUpdate(sKey, currentStockQty, diff, newQty, tId) {
 }
 
 
-function deleteTransfer(tId) {
-    const panelTarget = document.getElementById('sharePanel');
-    
-    Swal.fire({
-        title: 'Delete History?',
-        text: "This will bring the stock back!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delete!',
-        confirmButtonColor: 'var(--danger)',
-        target: panelTarget
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // 1. Pehle transfer data uthao
-            db.ref(`transfers/${tId}`).once("value", snap => {
-                const tData = snap.val();
-                if(!tData) return;
-
-                const returnQty = parseFloat(tData.qty);
-                const itemName = tData.itemName;
-                const itemId = tData.itemId;
-
-                // 2. Stock dhoondne ka logic
-                let stockRef;
-                if(itemId) {
-                    // Agar itemId hai (Nayi entries)
-                    stockRef = db.ref(`stocks/${itemId}`);
-                } else {
-                    // Agar itemId nahi hai (Purani entries), toh Name se dhoondo
-                    stockRef = db.ref("stocks").orderByChild("name").equalTo(itemName);
-                }
-
-                stockRef.once("value", sSnap => {
-                    let sKey, sData;
-                    
-                    if(itemId) {
-                        sKey = itemId;
-                        sData = sSnap.val();
-                    } else {
-                        // Name search se pehla item pakdo
-                        const stocks = sSnap.val();
-                        if(stocks) {
-                            sKey = Object.keys(stocks)[0];
-                            sData = stocks[sKey];
-                        }
-                    }
-
-                    if(sData && sKey) {
-                        // 3. Stock update karo (2 + 2 = 4 logic)
-                        const currentStock = parseFloat(sData.qty) || 0;
-                        const finalStock = (currentStock + returnQty).toFixed(2);
-
-                        db.ref(`stocks/${sKey}`).update({ qty: finalStock }).then(() => {
-                            // 4. History se delete karo
-                            return db.ref(`transfers/${tId}`).remove();
-                        }).then(() => {
-                            Swal.fire({ 
-                                title: "Deleted!", 
-                                text: `${returnQty} is bake in stock.`, 
-                                icon: "success", 
-                                target: panelTarget 
-                            });
-                            if(typeof populateShareDropdown === 'function') populateShareDropdown();
-                        });
-                    } else {
-                        // Agar stock item hi delete ho gaya ho tab ye aayega
-                        db.ref(`transfers/${tId}`).remove();
-                        Swal.fire({ title: "Deleted", text: "History deleted, but stock item not found.", icon: "info", target: panelTarget });
-                    }
-                });
-            });
-        }
-    });
-}
 
 function openAndHighlight(tId) {
     openSharePanel(); 
@@ -2064,11 +3082,55 @@ function openAndHighlight(tId) {
 }
 
 
-// Global variable to keep track of active date filter
+function deleteItem(id, name) {
+    Swal.fire({
+        title: 'Delete Item?',
+        text: `Are you sure you want to delete "${name}"? This will clear its entire record from the table.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Yes, Delete!'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const monthKey = `${year}-${month}`;
+
+                // STEP 1: Table (inventory_history) se poore mahine ka data hatana
+                // Isse Table/Ledger mein In/Out/Open sab 0 ho jayega
+                await db.ref(`inventory_history/${id}/${monthKey}`).remove();
+
+                // STEP 2: Main stocks se item delete karna
+                await db.ref("stocks/" + id).remove();
+
+                showToast("Item and Table records cleared! 🗑️");
+                render(); 
+            } catch (e) {
+                console.error("Delete error:", e);
+                showToast("Error! ❌");
+            }
+        }
+    });
+}
+
+
 
 
 
 let currentActiveDateFilter = 'all';
+
+// Reveals a hidden date-picker input and opens it, used by the "Manually" filter button
+function toggleManualDate(inputId) {
+    const el = document.getElementById(inputId);
+    if (!el) return;
+    el.style.display = (el.style.display === 'none' || !el.style.display) ? 'inline-block' : 'none';
+    if (el.style.display === 'inline-block') {
+        if (el.showPicker) { try { el.showPicker(); } catch(e) {} }
+        else { el.focus(); }
+    }
+}
 
 function filterData(type) {
     // 1. Current filter state update
@@ -2076,26 +3138,41 @@ function filterData(type) {
         currentActiveDateFilter = type;
     }
 
-    // 2. "All" click karne par sab reset
+    // 2. Highlight the active filter button
+    document.querySelectorAll('#sharePanel .f-item-petrol').forEach(b => b.classList.remove('f-btn-active'));
+    if (type === 'all' && document.getElementById('distFilterAll')) document.getElementById('distFilterAll').classList.add('f-btn-active');
+    else if (type === 'today' && document.getElementById('distFilterToday')) document.getElementById('distFilterToday').classList.add('f-btn-active');
+    else if (type === 'yesterday' && document.getElementById('distFilterYesterday')) document.getElementById('distFilterYesterday').classList.add('f-btn-active');
+    else if (type === 'thisMonth' && document.getElementById('distFilterMonth')) document.getElementById('distFilterMonth').classList.add('f-btn-active');
+    else if ((type === 'manually' || type === 'customDate') && document.getElementById('distFilterManual')) document.getElementById('distFilterManual').classList.add('f-btn-active');
+    else if (type === 'branch') {
+        // keep whichever date filter was previously active highlighted
+        if (currentActiveDateFilter === 'all' && document.getElementById('distFilterAll')) document.getElementById('distFilterAll').classList.add('f-btn-active');
+        else if (currentActiveDateFilter === 'today' && document.getElementById('distFilterToday')) document.getElementById('distFilterToday').classList.add('f-btn-active');
+        else if (currentActiveDateFilter === 'yesterday' && document.getElementById('distFilterYesterday')) document.getElementById('distFilterYesterday').classList.add('f-btn-active');
+        else if (currentActiveDateFilter === 'thisMonth' && document.getElementById('distFilterMonth')) document.getElementById('distFilterMonth').classList.add('f-btn-active');
+        else if (document.getElementById('distFilterManual')) document.getElementById('distFilterManual').classList.add('f-btn-active');
+    }
+    if (type !== 'manually' && document.getElementById('datePicker')) {
+        document.getElementById('datePicker').style.display = 'none';
+    }
+
+    // 3. "All" click karne par sab reset
     if (type === 'all') {
-        document.getElementById('monthFilter').value = "";
-        document.getElementById('yearFilter').value = "";
         document.getElementById('branchFilter').value = "";
         document.getElementById('datePicker').value = "";
         currentActiveDateFilter = 'all';
     }
 
-    // 3. Filter ki values uthao
-    const todayDate = new Date().toLocaleDateString('en-GB'); 
-    const selMonth = document.getElementById('monthFilter').value;
-    const selYear = document.getElementById('yearFilter').value;
+    // 4. Filter ki values uthao
+    const todayDate = new Date().toLocaleDateString('en-GB');
     const selBranch = document.getElementById('branchFilter').value;
-    
+
     let customDate = "";
     const dateInputVal = document.getElementById('datePicker').value;
     if(dateInputVal) {
-        const d = dateInputVal.split('-'); 
-        customDate = `${d[2]}/${d[1]}/${d[0]}`; 
+        const d = dateInputVal.split('-');
+        customDate = `${d[2]}/${d[1]}/${d[0]}`;
     }
 
     // Database se data lena (Hamesha poora data filter hoga)
@@ -2128,16 +3205,15 @@ function filterData(type) {
                 dateMatch = true;
             } else if (currentActiveDateFilter === 'today') {
                 if (t.date === todayDate) dateMatch = true;
-            } else if (currentActiveDateFilter === 'customDate') {
-                if (t.date === customDate) dateMatch = true;
-            } else if (currentActiveDateFilter === 'month') {
-                const dbParts = t.date.split('/'); 
-                if (dbParts[1] === selMonth) {
-                    if (selYear === "" || dbParts[2] === selYear) dateMatch = true;
-                }
-            } else if (currentActiveDateFilter === 'year') {
+            } else if (currentActiveDateFilter === 'yesterday') {
+                const yst = new Date(); yst.setDate(yst.getDate() - 1);
+                if (t.date === yst.toLocaleDateString('en-GB')) dateMatch = true;
+            } else if (currentActiveDateFilter === 'thisMonth') {
+                const now = new Date();
                 const dbParts = t.date.split('/');
-                if (dbParts[2] === selYear) dateMatch = true;
+                if (dbParts[1] === String(now.getMonth() + 1).padStart(2, '0') && dbParts[2] === String(now.getFullYear())) dateMatch = true;
+            } else if (currentActiveDateFilter === 'manually' || currentActiveDateFilter === 'customDate') {
+                if (customDate && t.date === customDate) dateMatch = true;
             }
 
             // --- BRANCH FILTER LOGIC ---
@@ -2308,17 +3384,27 @@ let currentPetrolDateMode = 'all';
 function filterPetrol(type) {
     const allBtn = document.getElementById('petrolFilterAll');
     const todayBtn = document.getElementById('petrolFilterToday');
+    const yesterdayBtn = document.getElementById('petrolFilterYesterday');
+    const monthBtn = document.getElementById('petrolFilterMonth');
+    const manualBtn = document.getElementById('petrolFilterManual');
     const datePicker = document.getElementById('petrolDatePicker');
     const carFilter = document.getElementById('petrolCarFilter');
 
     // 1. UI: Active Button Highlight handle karein
     if (type !== 'car') {
         document.querySelectorAll('.f-item-petrol').forEach(btn => btn.classList.remove('f-btn-active'));
-        currentPetrolDateMode = type; // Mode save karlo (all, today, ya customDate)
+        currentPetrolDateMode = type; // Mode save karlo (all, today, yesterday, thisMonth, manually, customDate)
     }
 
     if (currentPetrolDateMode === 'all') allBtn.classList.add('f-btn-active');
     else if (currentPetrolDateMode === 'today') todayBtn.classList.add('f-btn-active');
+    else if (currentPetrolDateMode === 'yesterday') yesterdayBtn.classList.add('f-btn-active');
+    else if (currentPetrolDateMode === 'thisMonth') monthBtn.classList.add('f-btn-active');
+    else if (currentPetrolDateMode === 'manually' || currentPetrolDateMode === 'customDate') manualBtn.classList.add('f-btn-active');
+
+    if (type !== 'manually' && type !== 'customDate' && datePicker) {
+        datePicker.style.display = 'none';
+    }
 
     // 2. Data Filtering Logic
     db.ref('petrolLogs').once('value', (snap) => {
@@ -2326,14 +3412,30 @@ function filterPetrol(type) {
         if (!data) return;
 
         let keys = Object.keys(data);
-        const todayStr = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('en-GB'); // DD/MM/YYYY
 
         // --- STEP A: Date Filter ---
         if (currentPetrolDateMode === 'today') {
             keys = keys.filter(k => data[k].date === todayStr);
-            datePicker.value = ''; // Clear custom date if 'Today' is clicked
-        } 
-        else if (currentPetrolDateMode === 'customDate' && datePicker.value) {
+            datePicker.value = '';
+        }
+        else if (currentPetrolDateMode === 'yesterday') {
+            const yst = new Date(); yst.setDate(yst.getDate() - 1);
+            const ystStr = yst.toLocaleDateString('en-GB');
+            keys = keys.filter(k => data[k].date === ystStr);
+            datePicker.value = '';
+        }
+        else if (currentPetrolDateMode === 'thisMonth') {
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yyyy = String(now.getFullYear());
+            keys = keys.filter(k => {
+                const p = data[k].date.split('/');
+                return p[1] === mm && p[2] === yyyy;
+            });
+            datePicker.value = '';
+        }
+        else if ((currentPetrolDateMode === 'manually' || currentPetrolDateMode === 'customDate') && datePicker.value) {
             const selectedDate = datePicker.value.split('-').reverse().join('/');
             keys = keys.filter(k => data[k].date === selectedDate);
         }
@@ -2408,7 +3510,7 @@ function deletePetrolHistory(id) {
         }
     });
 }
-// 1. Nayi Car add karne ke liye function
+// 1. Nayi Car add karne ke liye function (legacy Swal popup - kept for compatibility, unused by ADD NEW CAR button now)
 
 function addNewCarName() {
     Swal.fire({
@@ -2440,6 +3542,119 @@ function addNewCarName() {
                     console.error("Firebase Error:", error);
                     alert("Error saving car: " + error.message);
                 });
+        }
+    });
+}
+
+// 1b. Manage Cars layout (same pattern as Manage Categories / Manage Branches)
+
+function openCarManageModal() {
+    const isUserAdmin = (typeof isAdmin !== 'undefined' && isAdmin);
+    if (!isUserAdmin) {
+        showToast("Access Denied! 🔒");
+        return;
+    }
+    document.getElementById('carModal').style.display = 'flex';
+    history.pushState(null, null, window.location.pathname);
+    loadCarList();
+}
+
+function loadCarList() {
+    const listArea = document.getElementById('carListArea');
+    if (!db || !listArea) return;
+
+    db.ref("carList").on("value", snap => {
+        const cars = snap.val();
+        let listHtml = "";
+
+        if (!cars) {
+            listHtml = '<p style="color:var(--text-dim); text-align:center; padding:20px;">No Cars Found.</p>';
+        } else {
+            for (let id in cars) {
+                const carName = cars[id];
+                listHtml += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:8px; border:1px solid var(--border);">
+                    <span style="color:var(--text-main) !important; font-weight: 600; font-size: 14px; word-break: break-word;">${carName}</span>
+                    <div style="display:flex; gap:15px; flex-shrink:0;">
+                        <i class="fas fa-edit" style="color:var(--accent); cursor:pointer;" onclick="renameCarEntry('${id}', '${carName}')"></i>
+                        <i class="fas fa-trash-alt" style="color:var(--danger); cursor:pointer;" onclick="deleteCarEntry('${id}', '${carName}')"></i>
+                    </div>
+                </div>`;
+            }
+        }
+        listArea.innerHTML = listHtml;
+        if (typeof syncCarDropDowns === 'function') syncCarDropDowns();
+    });
+}
+
+function processAddCarEntry() {
+    const input = document.getElementById('newCarInput');
+    const name = input.value.trim().toUpperCase();
+    if (name) {
+        db.ref("carList").push(name).then(() => {
+            input.value = "";
+            showToast(`Car "${name}" Added! ✅`);
+        }).catch(() => {
+            showToast("Error adding car! ❌");
+        });
+    } else {
+        showToast("Please enter a car name! ⚠️");
+    }
+}
+
+function renameCarEntry(id, oldName) {
+    Swal.fire({
+        title: 'Rename Car',
+        input: 'text',
+        inputValue: oldName,
+        inputPlaceholder: 'Enter new car name',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--teal)',
+        cancelButtonColor: 'var(--danger)',
+        confirmButtonText: 'Update',
+        background: 'var(--panel)',
+        color: 'var(--text-main)',
+        inputAttributes: { autocapitalize: 'off' },
+        preConfirm: (newName) => {
+            if (!newName || newName.trim() === "") {
+                Swal.showValidationMessage('Name cannot be empty!');
+            }
+            return newName.trim().toUpperCase();
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value !== oldName) {
+            db.ref("carList/" + id).set(result.value).then(() => {
+                showToast("Car Updated! ✅");
+            });
+        }
+    });
+}
+
+function deleteCarEntry(id, name) {
+    Swal.fire({
+        title: '<span style="font-size: 18px;">Delete Car?</span>',
+        html: `
+            <div style="margin-top: -10px;">
+                <i class="fas fa-car" style="font-size: 2.5rem; color: var(--danger); margin-bottom: 10px; display: block;"></i>
+                <p style="font-size: 13px; color: var(--text-main); font-weight: 500; margin-bottom: 5px;">Delete "${name}"?</p>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: 'var(--text-dim)',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        background: 'var(--panel)',
+        color: 'var(--text-main)',
+        width: '290px',
+        padding: '15px',
+        backdrop: `rgba(0,0,0,0.5)`,
+        customClass: { popup: 'cyan-border-popup' }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            db.ref("carList/" + id).remove().then(() => {
+                showToast("Car Deleted! 🗑️");
+            });
         }
     });
 }
@@ -2476,29 +3691,42 @@ openPetrolPanel = function() {
 
 
 </script>
-<div id="detailsModal" class="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:3000; flex-direction:column; animation: slideUp 0.3s ease;">
-    <div style="padding:20px; display:flex; align-items:center; gap:15px; border-bottom:1px solid var(--border);">
-        <button onclick="closeDetails()" style="background:none; border:none; color:var(--text-main); font-size:20px;"><i class="fas fa-arrow-left"></i></button>
-        <h2 id="detTitle" style="margin:0; font-size:18px; color:var(--text-main);">Item Details</h2>
+
+<div id="monthPickerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:999999; flex-direction:column;">
+    <div style="padding:20px; display:flex; align-items:center; gap:15px; background:var(--panel); border-bottom:1px solid var(--border);">
+        <button onclick="closeMonthPicker()" style="background:none; border:none; color:var(--text-main); font-size:20px;"><i class="fas fa-arrow-left"></i></button>
+        <h2 id="monthPickerTitle" style="margin:0; font-size:18px; color:var(--text-main);">Select Month</h2>
     </div>
-    
-    <div style="flex:1; overflow-y:auto; padding:20px;">
-        <img id="detImg" src="" style="width:100%; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.2); margin-bottom:20px; display:none;">
-        
-        <div style="background:var(--panel); padding:20px; border-radius:20px; border:1px solid var(--border);">
-            <h1 id="detName" style="color:var(--teal); margin:0 0 10px 0; font-size:24px;"></h1>
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
-                <span id="detQty" style="font-size:30px; font-weight:800; color:var(--text-main);"></span>
-                <span id="detUnit" style="font-size:18px; color:var(--text-dim); margin-top:8px;"></span>
-            </div>
-            
-            <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
-            
-            <p style="color:var(--text-dim); font-size:12px; margin:5px 0;">Last Updated By: <b id="detBy" style="color:var(--text-main);"></b></p>
-            <p style="color:var(--text-dim); font-size:12px; margin:5px 0;">Last Updated Time: <b id="detTime" style="color:var(--text-main);"></b></p>
+    <div id="monthGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:15px; padding:20px;">
         </div>
+</div>
+
+<div id="ledgerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:1000000; flex-direction:column;">
+    <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button onclick="closeLedger()" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
+            <h2 id="ledgerTitle" style="margin:0; font-size:16px; color:var(--text-main);">Item Details</h2>
+        </div>
+
+    </div>
+    <div style="flex:1; overflow:auto; background:var(--bg);">
+        <table style="width:100%; border-collapse:collapse; background:var(--panel); font-size:11px;">
+            <thead style="position:sticky; top:0; background:var(--bg); z-index:10;">
+                <tr style="color:var(--text-dim); text-align:left;">
+                    <th style="padding:10px; border:1px solid var(--border);">Date</th>
+                    <th style="padding:10px; border:1px solid var(--border);">Open</th>
+                    <th style="padding:10px; border:1px solid var(--border); color:#ff5e5e;">Out</th>
+                    <th style="padding:10px; border:1px solid var(--border); color:var(--teal);">In</th>
+                    <th style="padding:10px; border:1px solid var(--border); color:#ffa500;">Waste</th>
+                    <th style="padding:10px; border:1px solid var(--border);">Current Stock</th>
+                </tr>
+            </thead>
+            <tbody id="ledgerBody"></tbody>
+        </table>
     </div>
 </div>
+
+
 <style>
 
 
@@ -2575,13 +3803,15 @@ openPetrolPanel = function() {
         <div id="shareInputSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
             <div class="input-group">
                 <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">SELECT ITEM</label>
-                <select id="shareItemSelect" onchange="updateShareMaxQty()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px;"></select>
+                <select id="shareItemSelect" onchange="refreshShareStock()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px;"></select>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div class="input-group">
                     <label style="color:var(--text-dim); font-size:10px; font-weight:700;">BRANCH</label>
-                    <input type="text" id="shareBranch" placeholder="Branch Name" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border);">
+                    <select id="shareBranch" onchange="refreshShareStock()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
+                        <option value="">Choose Branch...</option>
+                    </select>
                 </div>
                 <div class="input-group">
                     <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QTY</label>
@@ -2601,26 +3831,22 @@ openPetrolPanel = function() {
             </button>
         </div>
         
-                  <h3 style="font-size:13px; color:var(--text-main); margin:0; font-weight:700;">Search & Filters.</h3>
+                  <h3 style="font-size:11px; color:var(--text-dim); font-weight:700; padding-left:3px;">Search & Filters</h3>
   
         
 
-<div style="background:var(--panel);border-radius:12px;padding:20px 5px;border:1px solid var(--border);display:flex;
-
-flex-wrap:nowrap;
-
-gap:5px;align-items:center;
-overflow-x:auto;
-scrollbar-width:none;">
+<div class="custom-filter-container" style="background:var(--panel); border-radius:10px; padding:6px 8px; border:1px solid var(--border); display:flex; flex-wrap:nowrap; gap:0px; align-items:center; min-height:48px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
   
-  
-  
-    <button onclick="filterData('all')" class="f-item f-btn-active">All</button>
-    <button onclick="filterData('today')" class="f-item">Today</button>
-    <input type="date" id="datePicker" onchange="filterData('customDate')" class="f-item f-input-date" style="width:95px;color:#1e3a5f;font-size:10px;">
-    <select id="monthFilter" onchange="filterData('month')" class="f-item"><option value="">Mon</option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select>
-    <select id="yearFilter" onchange="filterData('year')" class="f-item"><option value="">Year</option><option value="2025">2025</option><option value="2026">2026</option></select>
-    <select id="branchFilter" onchange="filterData('branch')" class="f-item"><option value="">All Branch</option><option value="Al hail">Al hail</option><option value="Al khuwair">Al khuwair</option><option value="Mabela">Mabela</option><option value="Ruwi">Ruwi</option></select>
+    <button id="distFilterAll" onclick="filterData('all')" class="f-item-petrol f-btn-active" style="min-width:10px;">All</button>
+    <button id="distFilterToday" onclick="filterData('today')" class="f-item-petrol" style="min-width:10px;">Today</button>
+    <button id="distFilterYesterday" onclick="filterData('yesterday')" class="f-item-petrol" style="min-width:10px;">Yesterday</button>
+    <button id="distFilterMonth" onclick="filterData('thisMonth')" class="f-item-petrol" style="min-width:10px;">This Month</button>
+    <button id="distFilterManual" onclick="toggleManualDate('datePicker'); filterData('manually');" class="f-item-petrol" style="min-width:10px;">Manually</button>
+    <input type="date" id="datePicker" onchange="filterData('customDate')" class="f-item-petrol" style="display:none; width:120px; max-width:97px; 
+    margin-top:10px;
+    padding:0 5px !important; color:var(--text-main);">
+    <select id="branchFilter" onchange="filterData('branch')" class="f-item-petrol" style="min-width:75px; max-width:75px; appearance:none; margin-top:10px;
+    padding-right:20px !important; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23777%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 7px top 50%; background-size: 8px auto;"><option value="">All Branch</option></select>
 </div>
 <div id="transferHistory" style="display:flex; flex-direction:column; gap:0px;"></div>
 
@@ -2628,6 +3854,104 @@ scrollbar-width:none;">
 </div>
 
 
+<div id="purchasedPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:1000; display:none; flex-direction:column;">
+    <div style="padding:15px 20px; display:flex; align-items:center; gap:15px; background:#28a745; color:white;">
+        <button onclick="closePurchasedPanel()" style="background:none; border:none; color:white; font-size:18px;"><i class="fas fa-arrow-left"></i></button>
+        <h2 style="margin:0; font-size:16px;">Add Purchased Stock</h2>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:15px;">
+        <div id="purchaseInputSection" style="background:var(--panel); padding:15px; border-radius:15px; border:1px solid #28a745; margin-bottom:20px;">
+            <select id="purchaseItemSelect" onchange="updatePurchaseMaxQty()"></select>
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:11px; font-weight:700;">
+                <span style="color:var(--text-dim);">Current: <b id="pMaxAvailable">0</b></span>
+            </div>
+            <div style="position:relative;">
+                <input type="number" id="purchaseQty" placeholder="Enter Purchase Qty" style="border:1.5px solid #28a745;">
+                <span id="purchaseUnitLabel" style="position:absolute; right:15px; top:12px; font-size:12px; font-weight:700; color:#28a745;">Unit</span>
+            </div>
+            <button onclick="processStockPurchase()" style="width:100%; padding:14px; border-radius:12px; background:#28a745; color:#fff; border:none; font-weight:700;">UPDATE STOCK (+)</button>
+        </div>
+
+        <h3 style="font-size:11px; color:var(--text-dim); font-weight:700; padding-left:3px;">Search & Filters</h3>
+
+        <div class="custom-filter-container" style="background:var(--panel); border-radius:10px; padding:6px 8px; border:1px solid var(--border); display:flex; flex-wrap:nowrap; gap:0px; align-items:center; min-height:48px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; margin-bottom:12px;">
+            <button id="purchaseFilterAll" onclick="filterPurchaseData('all')" class="f-item-petrol f-btn-active" style="min-width:10px;">All</button>
+            <button id="purchaseFilterToday" onclick="filterPurchaseData('today')" class="f-item-petrol" style="min-width:10px;">Today</button>
+            <button id="purchaseFilterYesterday" onclick="filterPurchaseData('yesterday')" class="f-item-petrol" style="min-width:10px;">Yesterday</button>
+            <button id="purchaseFilterMonth" onclick="filterPurchaseData('thisMonth')" class="f-item-petrol" style="min-width:10px;">This Month</button>
+            <button id="purchaseFilterManual" onclick="toggleManualDate('purchaseDatePicker'); filterPurchaseData('manually');" class="f-item-petrol" style="min-width:10px;">Manually</button>
+            <input type="date" id="purchaseDatePicker" onchange="filterPurchaseData('customDate')" class="f-item-petrol" style="display:none; width:97px; max-width:97px; 
+            margin-top:10px;
+            padding:0 5px !important; color:var(--text-main);">
+            <select id="purchaseBranchFilter" onchange="filterPurchaseData('branch')" class="f-item-petrol" style="min-width:75px; max-width:75px; appearance:none;
+            margin-top:10px;
+            padding-right:20px !important; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23777%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 7px top 50%; background-size: 8px auto;"><option value="">All Branch</option></select>
+        </div>
+
+        <div id="purchaseHistory"></div>
+    </div>
+</div>
+
+<div id="wastedPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:1000; display:none; flex-direction:column;">
+    <div style="padding:15px; display:flex; align-items:center; gap:12px; background:var(--panel); border-bottom:1px solid var(--border);">
+        <button onclick="closeWastedPanel()" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
+        <h2 style="margin:0; font-size:16px; color:var(--text-main);">WastedPanel</h2>
+    </div>
+
+    <div style="flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:12px;">
+        
+
+        <div id="wasteInputSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">SELECT ITEM</label>
+                <select id="wasteItemSelect" onchange="updateWasteMaxQty()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
+            </div>
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QTY</label>
+                    <input type="number" id="wasteQty" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--danger); font-weight:700;">
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">UNIT</label>
+                    <div id="wasteUnitLabel" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main); font-weight:600;">-</div>
+                </div>
+            </div>
+
+            
+                    
+
+
+            <div id="wasteStockInfo" style="padding:10px 0; font-size:17px; color:var(--danger); font-weight:600;">
+                Current Stock: <span id="wMaxAvailable">0</span>
+            </div>
+
+
+
+            <button id="btnConfirmWaste" onclick="processStockWaste()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px;">
+               Put in  Wasted
+            </button>
+        </div>
+        
+                  <h3 style="font-size:11px; color:var(--text-dim); font-weight:700; padding-left:3px;">Search & Filters</h3>
+  
+        
+
+<div class="custom-filter-container" style="background:var(--panel); border-radius:10px; padding:6px 8px; border:1px solid var(--border); display:flex; flex-wrap:nowrap; gap:0px; align-items:center; min-height:48px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
+  
+    <button id="wasteFilterAll" onclick="filterWasteData('all')" class="f-item-petrol f-btn-active" style="min-width:10px;">All</button>
+    <button id="wasteFilterToday" onclick="filterWasteData('today')" class="f-item-petrol" style="min-width:10px;">Today</button>
+    <button id="wasteFilterYesterday" onclick="filterWasteData('yesterday')" class="f-item-petrol" style="min-width:10px;">Yesterday</button>
+    <button id="wasteFilterMonth" onclick="filterWasteData('thisMonth')" class="f-item-petrol" style="min-width:10px;">This Month</button>
+    <button id="wasteFilterManual" onclick="toggleManualDate('wasteDatePicker'); filterWasteData('manually');" class="f-item-petrol" style="min-width:10px;">Manually</button>
+    <input type="date" id="wasteDatePicker" onchange="filterWasteData('customDate')" class="f-item-petrol" style="display:none; width:97px;margin-top:10px; max-width:97px; padding:0 5px !important; color:var(--text-main);">
+    <select id="wasteBranchFilter" onchange="filterWasteData('branch')" class="f-item-petrol" style="min-width:75px; max-width:75px;
+    margin-top:10px;
+    appearance:none; padding-right:20px !important; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23777%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 7px top 50%; background-size: 8px auto;"><option value="">All Branch</option></select>
+        </div>
+
+        <div id="wasteHistory" style="display:flex; flex-direction:column; gap:0px;"></div>
+    </div>
+</div>
 
 
 </body>
