@@ -79,8 +79,43 @@
         /* --- Landscape: home page should fill the full screen width, same as the
            full-page petrol/distribution panels (which use position:fixed; inset:0) --- */
         @media (orientation: landscape) {
-            .container { max-width: 100%; }
-            body { padding-left: 20px; padding-right: 20px; }
+            .container { width: 100%; max-width: 100%; margin: 0; padding: 0 10px; }
+            body { padding: 0; margin: 0; }
+            .app-header { padding: 8px 15px; }
+        }
+        
+        .current-date { 
+            font-size: 11px; 
+            color: var(--text-dim); 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            display: block;
+            margin-top: 2px;
+        }
+        
+        @media (orientation: landscape) {
+            #ledgerModal { 
+                padding: 0 !important; 
+                inset: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+            }
+            #ledgerModal > div:first-child { 
+                padding: 10px 15px; 
+                width: 100%;
+            }
+            #ledgerModal > div:nth-child(2) {
+                width: 100%;
+                overflow-x: auto;
+            }
+            #ledgerModal table { 
+                font-size: 13px;
+                width: 100%;
+            }
+            #ledgerModal th, #ledgerModal td { 
+                padding: 10px 8px !important;
+            }
         }
 
         /* --- Header --- */
@@ -284,6 +319,16 @@
 
         /* --- Modals --- */
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
+        
+        @media (orientation: landscape) {
+            .overlay#ledgerModal { 
+                justify-content: flex-start;
+                align-items: stretch;
+                background: var(--bg) !important;
+                backdrop-filter: none !important;
+            }
+        }
+        
         .modal { background: var(--panel); padding: 25px; border-radius: 24px; width: 90%; max-width: 360px; border: 1px solid var(--border); color: var(--text-main); }
         
         /* Cropping Modal UI */
@@ -395,6 +440,7 @@
             <div class="header-text">
                 <span id="roleLabel">VIEWER MODE</span>
                 <strong id="uNameDisplay">Guest User</strong>
+                <span class="current-date" id="currentDateDisplay"></span>
             </div>
         </div>
         
@@ -964,12 +1010,22 @@ async function openLedger(monthName, monthIdx) {
     const todayDate = new Date().getDate();
     const currentMonthIdx = new Date().getMonth();
     let html = "";
+    
+    let totalOpening = 0;
+    let totalOut = 0;
+    let totalIn = 0;
+    let totalWaste = 0;
+    let totalCurrent = 0;
 
     for (let i = 1; i <= daysInMonth; i++) {
         const dayData = historyData[String(i)] || historyData[i] || {};
         const inVal    = parseFloat(dayData.inward  || 0);
         const outVal   = parseFloat(dayData.outward || 0);
         const wasteVal = parseFloat(dayData.waste   || 0);
+        
+        totalOut += outVal;
+        totalIn += inVal;
+        totalWaste += wasteVal;
 
         let displayOpening = 0;
         
@@ -989,33 +1045,64 @@ async function openLedger(monthName, monthIdx) {
         // Current Stock column ke liye formula
         let displayCurrent = (displayOpening + inVal) - (outVal + wasteVal);
         const isToday = (i === todayDate && monthIdx === currentMonthIdx);
+        const isEvenRow = (i % 2 === 0);
+        
+        totalOpening += displayOpening;
+        totalCurrent = displayCurrent;
 
         html += `
-            <tr style="border-bottom:1px solid var(--border); ${isToday ? 'background:rgba(13,148,136,0.08);' : ''}">
-                <td style="padding:10px; border:1px solid var(--border); text-align:center;">${i}</td>
+            <tr style="border-bottom:1px solid var(--border); ${isToday ? 'background:linear-gradient(90deg, rgba(13,148,136,0.12), transparent);' : isEvenRow ? 'background:rgba(0,0,0,0.02);' : 'background:var(--panel);'}">
+                <td style="padding:12px 10px; border:1px solid var(--border); text-align:center; font-weight:700; color:var(--text-main);">${i}</td>
                 
-                <td style="padding:10px; border:1px solid var(--border); font-weight:600; color:var(--accent); text-align:center;">
+                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:600; color:var(--accent); text-align:center;">
                     ${displayOpening.toFixed(2)}
                 </td>
 
-                <td style="padding:10px; border:1px solid var(--border); color:#ff5e5e; text-align:center;">
+                <td style="padding:12px 10px; border:1px solid var(--border); color:#ff5e5e; text-align:center; font-weight:600;">
                     ${outVal > 0 ? outVal.toFixed(2) : '-'}
                 </td>
 
-                <td style="padding:10px; border:1px solid var(--border); color:var(--teal); font-weight:800; text-align:center;">
+                <td style="padding:12px 10px; border:1px solid var(--border); color:var(--teal); font-weight:800; text-align:center;">
                     ${inVal > 0 ? '+' + inVal.toFixed(2) : '-'}
                 </td>
 
-                <td style="padding:10px; border:1px solid var(--border); color:#ffa500; text-align:center;">
+                <td style="padding:12px 10px; border:1px solid var(--border); color:#ffa500; text-align:center; font-weight:600;">
                     ${wasteVal > 0 ? wasteVal.toFixed(2) : '-'}
                 </td>
 
-                <td style="padding:10px; border:1px solid var(--border); font-weight:900; text-align:center;">
+                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:900; text-align:center; background:${displayCurrent > 0 ? 'rgba(6,183,79,0.08)' : 'rgba(225,29,72,0.08)'}; color:${displayCurrent > 0 ? '#06b74f' : '#e11d48'};">
                     ${displayCurrent.toFixed(2)}
                 </td>
             </tr>
         `;
     }
+    
+    html += `
+        <tr style="border-top:2px solid var(--accent); border-bottom:2px solid var(--accent); background:linear-gradient(90deg, rgba(14,165,233,0.15), rgba(13,148,136,0.15)); font-weight:900; font-size:13px;">
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:var(--accent); font-weight:900;">TOTAL</td>
+            
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:var(--accent); font-weight:900;">
+                ${totalOpening.toFixed(2)}
+            </td>
+
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:#ff5e5e; font-weight:900;">
+                ${totalOut > 0 ? totalOut.toFixed(2) : '0.00'}
+            </td>
+
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:var(--teal); font-weight:900;">
+                ${totalIn > 0 ? '+' + totalIn.toFixed(2) : '0.00'}
+            </td>
+
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:#ffa500; font-weight:900;">
+                ${totalWaste > 0 ? totalWaste.toFixed(2) : '0.00'}
+            </td>
+
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; background:linear-gradient(90deg, rgba(6,183,79,0.2), rgba(13,148,136,0.2)); color:var(--teal); font-weight:900;">
+                ${totalCurrent.toFixed(2)}
+            </td>
+        </tr>
+    `;
+    
     tbody.innerHTML = html;
 }
 
@@ -1119,7 +1206,16 @@ function openLogin() {
 }
 
 // --- 3. AUTO-LOGOUT & WELCOME LOGIC (JAB APP REFRESH HO) ---
+function updateCurrentDate() {
+    const today = new Date();
+    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+    const dateStr = today.toLocaleDateString('en-US', options);
+    const dateElem = document.getElementById('currentDateDisplay');
+    if (dateElem) dateElem.textContent = dateStr;
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+    updateCurrentDate();
     const savedUser = localStorage.getItem("user");
     const savedPass = localStorage.getItem("userKey");
 
@@ -3858,11 +3954,60 @@ async function editPurchase(id) {
 
 // Saves the edited purchase, correctly reversing the old item's stock/IN-column entry
 // and re-applying the new item/quantity, even if the item was changed — not just the quantity.
+
+// ========================================
+// FIXED: Cascade-update opening balances for all subsequent days
+// ========================================
+async function cascadeUpdateOpeningBalances(itemId, editedDay, editedMonth, quantityDelta) {
+    try {
+        const monthKey = editedMonth;
+        const [year, month] = monthKey.split('-');
+        const daysInMonth = new Date(year, parseInt(month), 0).getDate();
+        
+        console.log(`Cascading update: ${itemId}, Day ${editedDay}, Delta: ${quantityDelta}`);
+        
+        for (let day = editedDay + 1; day <= daysInMonth; day++) {
+            const dayRef = db.ref(`inventory_history/${itemId}/${monthKey}/${day}`);
+            
+            await dayRef.transaction((dayData) => {
+                if (!dayData) return dayData;
+                
+                const currentOpening = parseFloat(dayData.opening || 0);
+                const newOpening = currentOpening + quantityDelta;
+                
+                dayData.opening = Math.max(0, newOpening).toFixed(2);
+                
+                const inVal = parseFloat(dayData.inward || 0);
+                const outVal = parseFloat(dayData.outward || 0);
+                const wasteVal = parseFloat(dayData.waste || 0);
+                const closing = (parseFloat(dayData.opening) + inVal) - (outVal + wasteVal);
+                
+                dayData.closing = Math.max(0, closing).toFixed(2);
+                
+                console.log(`Day ${day}: opening=${dayData.opening}, closing=${dayData.closing}`);
+                return dayData;
+            });
+        }
+        
+        console.log("Cascade update completed successfully");
+        return true;
+    } catch (error) {
+        console.error("Cascade update failed:", error);
+        return false;
+    }
+}
+
+// Saves the edited purchase, correctly reversing the old item's stock/IN-column entry
+// and re-applying the new item/quantity, even if the item was changed — not just the quantity.
 async function saveEditPurchase() {
     const panelTarget = document.getElementById('editPurchaseModal');
     const pId = currentEditingPurchaseId;
     const oldData = currentEditingPurchaseOldData;
-    if (!pId || !oldData) return;
+    
+    if (!pId || !oldData) {
+        Swal.fire({ title: "Error", text: "No purchase data found!", icon: "error", target: panelTarget });
+        return;
+    }
 
     const itemSel = document.getElementById('editPurchaseItemSelect');
     const newItemId = itemSel.value;
@@ -3881,47 +4026,65 @@ async function saveEditPurchase() {
         const oldItemId = oldData.itemId;
         const oldQty = parseFloat(oldData.qty) || 0;
         const pTime = oldData.time;
+        
+        let editedDay = null;
+        let editedMonth = null;
+        if (pTime) {
+            const dateParts = pTime.split(' ')[0].split('/');
+            editedDay = parseInt(dateParts[0]);
+            const monthStr = dateParts[1].padStart(2, '0');
+            const year = dateParts[2];
+            editedMonth = `${year}-${monthStr}`;
+        }
 
-        // STEP 1: Reverse the old item's stock and inventory_history IN column
+        // STEP 1: Reverse the old item's stock
         if (oldItemId) {
             const oldStockSnap = await db.ref(`stocks/${oldItemId}`).once("value");
             const oldStockQty = parseFloat((oldStockSnap.val() || {}).qty) || 0;
-            await db.ref(`stocks/${oldItemId}`).update({ qty: Math.max(0, oldStockQty - oldQty).toFixed(2) });
+            const reversedQty = Math.max(0, oldStockQty - oldQty).toFixed(2);
+            
+            await db.ref(`stocks/${oldItemId}`).update({ qty: reversedQty });
+            console.log(`Old item ${oldItemId}: qty ${oldStockQty} - ${oldQty} = ${reversedQty}`);
 
-            if (pTime) {
-                const dateParts = pTime.split(' ')[0].split('/');
-                const day = parseInt(dateParts[0]);
-                const monthKey = `${dateParts[2]}-${dateParts[1]}`;
-                const historyRef = db.ref(`inventory_history/${oldItemId}/${monthKey}/${day}`);
+            if (pTime && editedDay && editedMonth) {
+                const historyRef = db.ref(`inventory_history/${oldItemId}/${editedMonth}/${editedDay}`);
                 await historyRef.transaction((current) => {
                     if (current) {
-                        current.inward = Math.max(0, (parseFloat(current.inward) || 0) - oldQty);
+                        current.inward = Math.max(0, (parseFloat(current.inward) || 0) - oldQty).toFixed(2);
                     }
                     return current;
                 });
+                
+                const reverseQtyDelta = -oldQty;
+                await cascadeUpdateOpeningBalances(oldItemId, editedDay, editedMonth, reverseQtyDelta);
             }
         }
 
-        // STEP 2: Apply the (possibly new) item's stock and inventory_history IN column
+        // STEP 2: Apply the new item's stock
         const newStockSnap = await db.ref(`stocks/${newItemId}`).once("value");
         const newStockData = newStockSnap.val();
+        
         if (!newStockData) {
             Swal.fire({ title: "Error", text: "Item stock not found!", icon: "error", target: panelTarget });
             return;
         }
-        const currentQty = parseFloat(newStockData.qty) || 0;
-        await db.ref(`stocks/${newItemId}`).update({ qty: (currentQty + newQty).toFixed(2) });
 
-        if (pTime) {
-            const dateParts = pTime.split(' ')[0].split('/');
-            const day = parseInt(dateParts[0]);
-            const monthKey = `${dateParts[2]}-${dateParts[1]}`;
-            const historyRef = db.ref(`inventory_history/${newItemId}/${monthKey}/${day}`);
+        const currentQty = parseFloat(newStockData.qty) || 0;
+        const newStockQty = (currentQty + newQty).toFixed(2);
+        
+        await db.ref(`stocks/${newItemId}`).update({ qty: newStockQty });
+        console.log(`New item ${newItemId}: qty ${currentQty} + ${newQty} = ${newStockQty}`);
+
+        if (pTime && editedDay && editedMonth) {
+            const historyRef = db.ref(`inventory_history/${newItemId}/${editedMonth}/${editedDay}`);
             await historyRef.transaction((current) => {
                 if (!current) current = { inward: 0, outward: 0, waste: 0 };
                 current.inward = (parseFloat(current.inward) || 0) + newQty;
                 return current;
             });
+            
+            const forwardQtyDelta = newQty;
+            await cascadeUpdateOpeningBalances(newItemId, editedDay, editedMonth, forwardQtyDelta);
         }
 
         // STEP 3: Save the updated purchase record
@@ -3929,21 +4092,69 @@ async function saveEditPurchase() {
             itemId: newItemId,
             itemName: newItemName,
             unit: newUnit,
-            qty: newQty,
+            qty: newQty.toFixed(2),
             comment: comment
         });
 
+        console.log("Purchase record updated successfully");
         showToast("Purchase updated ✓");
         loadPurchaseHistory();
         closeEditModal('editPurchaseModal');
+        
     } catch (e) {
         console.error("Edit Purchase error:", e);
         Swal.fire({ title: "Error", text: "Something went wrong!", icon: "error", target: panelTarget });
     }
 }
 
+// ========================================
+// VERIFICATION: Check balance consistency
+// ========================================
+async function verifyInventoryBalance(itemId, month) {
+    try {
+        const snapshot = await db.ref(`inventory_history/${itemId}/${month}`).once("value");
+        const historyData = snapshot.val() || {};
+        
+        let runningBalance = 0;
+        let errors = [];
+        
+        for (let day = 1; day <= 31; day++) {
+            const dayData = historyData[day];
+            if (!dayData) continue;
+            
+            const opening = parseFloat(dayData.opening || 0);
+            const inVal = parseFloat(dayData.inward || 0);
+            const outVal = parseFloat(dayData.outward || 0);
+            const wasteVal = parseFloat(dayData.waste || 0);
+            const closing = parseFloat(dayData.closing || 0);
+            
+            const calculatedClosing = opening + inVal - (outVal + wasteVal);
+            
+            if (Math.abs(closing - calculatedClosing) > 0.01) {
+                errors.push(`Day ${day}: Closing mismatch (stored=${closing}, calc=${calculatedClosing})`);
+            }
+            
+            runningBalance = calculatedClosing;
+        }
+        
+        if (errors.length > 0) {
+            console.error("Balance verification failed:", errors);
+            return { valid: false, errors };
+        }
+        
+        console.log("✓ All balances verified correctly");
+        return { valid: true, errors: [] };
+    } catch (error) {
+        console.error("Verification failed:", error);
+        return { valid: false, errors: [error.message] };
+    }
+}
+
+
 // Delete Purchase Item
-function deletePurchase(id) {
+
+// Delete Purchase Item - WITH INVENTORY HISTORY CLEANUP
+async function deletePurchase(id) {
     Swal.fire({
         title: 'Delete Purchase Record?',
         text: "This action cannot be undone!",
@@ -3951,16 +4162,64 @@ function deletePurchase(id) {
         showCancelButton: true,
         confirmButtonText: 'Yes, Delete',
         confirmButtonColor: '#e11d48'
-    }).then((result) => {
+    }).then(async (result) => {
         if (result.isConfirmed) {
-            db.ref(`purchases/${id}`).remove()
-                .then(() => {
-                    showToast("Deleted! ✓");
-                    loadPurchaseHistory();
-                });
+            try {
+                // STEP 1: Get purchase data
+                const snap = await db.ref(`purchases/${id}`).once("value");
+                const purchaseData = snap.val();
+                if (!purchaseData) return;
+
+                const itemId = purchaseData.itemId;
+                const qty = parseFloat(purchaseData.qty) || 0;
+                const pTime = purchaseData.time;
+
+                let deleteDay = null;
+                let deleteMonth = null;
+                if (pTime) {
+                    const dateParts = pTime.split(' ')[0].split('/');
+                    deleteDay = parseInt(dateParts[0]);
+                    const monthStr = dateParts[1].padStart(2, '0');
+                    const year = dateParts[2];
+                    deleteMonth = `${year}-${monthStr}`;
+                }
+
+                // STEP 2: Reverse stock quantity
+                if (itemId) {
+                    const stockSnap = await db.ref(`stocks/${itemId}`).once("value");
+                    const stockQty = parseFloat((stockSnap.val() || {}).qty) || 0;
+                    const reversedQty = Math.max(0, stockQty - qty).toFixed(2);
+                    await db.ref(`stocks/${itemId}`).update({ qty: reversedQty });
+                    console.log(`Delete: ${itemId} qty ${stockQty} - ${qty} = ${reversedQty}`);
+                }
+
+                // STEP 3: Delete inventory_history inward entry and cascade
+                if (pTime && deleteDay && deleteMonth && itemId) {
+                    const historyRef = db.ref(`inventory_history/${itemId}/${deleteMonth}/${deleteDay}`);
+                    await historyRef.transaction((current) => {
+                        if (current) {
+                            current.inward = 0;
+                        }
+                        return current;
+                    });
+                    
+                    // CASCADE: Update all subsequent days
+                    await cascadeUpdateOpeningBalances(itemId, deleteDay, deleteMonth, -qty);
+                }
+
+                // STEP 4: Delete purchase record
+                await db.ref(`purchases/${id}`).remove();
+
+                showToast("Deleted! ✓");
+                loadPurchaseHistory();
+            } catch (e) {
+                console.error("Delete Purchase error:", e);
+                showToast("Error deleting ❌");
+            }
         }
     });
 }
+
 
 // Edit Waste Item
 // Edit Waste Item - Open Modal Form
@@ -4297,23 +4556,23 @@ openPetrolPanel = function() {
 </div>
 
 <div id="ledgerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:1000000; flex-direction:column;">
-    <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
+    <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, var(--accent), var(--teal)); border-bottom:2px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,0.1);">
         <div style="display:flex; align-items:center; gap:10px;">
-            <button onclick="closeLedger()" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
-            <h2 id="ledgerTitle" style="margin:0; font-size:16px; color:var(--text-main);">Item Details</h2>
+            <button onclick="closeLedger()" style="background:none; border:none; color:#fff; font-size:20px; cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
+            <h2 id="ledgerTitle" style="margin:0; font-size:18px; color:#fff; font-weight:800;">📊 Inventory Ledger</h2>
         </div>
 
     </div>
     <div style="flex:1; overflow:auto; background:var(--bg);">
-        <table style="width:100%; border-collapse:collapse; background:var(--panel); font-size:11px;">
-            <thead style="position:sticky; top:0; background:var(--bg); z-index:10;">
-                <tr style="color:var(--text-dim); text-align:left;">
-                    <th style="padding:10px; border:1px solid var(--border);">Date</th>
-                    <th style="padding:10px; border:1px solid var(--border);">Open</th>
-                    <th style="padding:10px; border:1px solid var(--border); color:#ff5e5e;">Out</th>
-                    <th style="padding:10px; border:1px solid var(--border); color:var(--teal);">In</th>
-                    <th style="padding:10px; border:1px solid var(--border); color:#ffa500;">Waste</th>
-                    <th style="padding:10px; border:1px solid var(--border);">Current Stock</th>
+        <table style="width:100%; border-collapse:collapse; background:var(--panel); font-size:12px; font-weight:500;">
+            <thead style="position:sticky; top:0; background:linear-gradient(135deg, var(--accent), var(--teal)); z-index:10; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                <tr style="color:#fff; text-align:center; font-weight:700;">
+                    <th style="padding:12px 10px; border:1px solid rgba(255,255,255,0.2);">Date</th>
+                    <th style="padding:12px 10px; border:1px solid rgba(255,255,255,0.2);">Open</th>
+                    <th style="padding:12px 10px; border:1px solid rgba(255,255,255,0.2);">Out</th>
+                    <th style="padding:12px 10px; border:1px solid rgba(255,255,255,0.2);">In</th>
+                    <th style="padding:12px 10px; border:1px solid rgba(255,255,255,0.2);">Waste</th>
+                    <th style="padding:12px 10px; border:1px solid rgba(255,255,255,0.2);">Current</th>
                 </tr>
             </thead>
             <tbody id="ledgerBody"></tbody>
