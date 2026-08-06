@@ -76,6 +76,13 @@
 
         .container { width: 100%; max-width: 500px; margin: auto; }
 
+        /* --- Landscape: home page should fill the full screen width, same as the
+           full-page petrol/distribution panels (which use position:fixed; inset:0) --- */
+        @media (orientation: landscape) {
+            .container { max-width: 100%; }
+            body { padding-left: 20px; padding-right: 20px; }
+        }
+
         /* --- Header --- */
         .app-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 5px 20px 5px; }
         .user-profile { display: flex; align-items: center; gap: 12px; }
@@ -497,6 +504,10 @@
                 <label style="color:var(--text-dim); font-size:10px; font-weight:700;">AMOUNT (OMR)</label>
                 <input type="number" id="petrolAmount" placeholder="0.000" step="0.001" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1.5px solid var(--border); color:var(--teal); font-weight:700;">
             </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
+                <input type="text" id="petrolComment" placeholder="Add a comment..." style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1.5px solid var(--border); color:var(--text-main);">
+            </div>
             <button onclick="savePetrolEntry()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px;">SAVE LOG</button>
         </div>
 
@@ -783,6 +794,17 @@
 
     let isAdmin = false, isManageMode = false, currentUser = "Guest";
     let cropperInstance = null, currentFileMode = "new", finalImageData = "";
+
+    // Small helper to safely render free-text comments inside HTML templates
+    function escapeHtml(str) {
+        if (str === undefined || str === null) return "";
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 
     // 2. Theme Logic
     function toggleTheme() {
@@ -1128,6 +1150,73 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// Long-press detection for history cards
+let longPressTimer = null;
+const LONG_PRESS_DURATION = 600; // milliseconds
+
+document.addEventListener('touchstart', function(e) {
+    const card = e.target.closest('.history-card');
+    if (!card) return;
+    
+    longPressTimer = setTimeout(() => {
+        const id = card.getAttribute('data-id');
+        const type = card.getAttribute('data-type');
+        if (id && type) {
+            showHistoryContextMenu(id, type);
+        }
+    }, LONG_PRESS_DURATION);
+}, false);
+
+document.addEventListener('touchend', function(e) {
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+}, false);
+
+document.addEventListener('touchmove', function(e) {
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+}, false);
+
+// Context menu for history items
+function showHistoryContextMenu(id, type) {
+    if (!isAdmin) {
+        showToast("Only admin can edit/delete ⚠️");
+        return;
+    }
+
+    const actionMap = {
+        'transfer': { editFunc: 'editTransfer', deleteFunc: 'deleteTransfer' },
+        'purchase': { editFunc: 'editPurchase', deleteFunc: 'deletePurchase' },
+        'waste': { editFunc: 'editWaste', deleteFunc: 'deleteWaste' },
+        'petrol': { editFunc: 'editPetrol', deleteFunc: 'deletePetrol' }
+    };
+
+    const actions = actionMap[type] || actionMap['transfer'];
+    
+    Swal.fire({
+        title: 'Actions',
+        text: "What would you like to do?",
+        icon: 'question',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: '<i class="fas fa-edit"></i> Edit',
+        denyButtonText: '<i class="fas fa-trash"></i> Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: 'var(--teal)',
+        denyButtonColor: 'var(--danger)'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window[actions.editFunc](id);
+        } else if (result.isDenied) {
+            window[actions.deleteFunc](id);
+        }
+    });
+}
 
 // Helper function: UI update
 function updateAdminUI(name) {
@@ -2129,6 +2218,8 @@ async function processStockPurchase() {
     const qtyInput = document.getElementById('purchaseQty');
     const addQty = parseFloat(qtyInput.value);
     const opt = document.getElementById('purchaseItemSelect').options[document.getElementById('purchaseItemSelect').selectedIndex];
+    const commentInput = document.getElementById('purchaseComment');
+    const comment = commentInput ? commentInput.value.trim() : "";
 
     if(!sId || isNaN(addQty) || addQty <= 0) {
         Swal.fire({ title: "Error", text: "Details sahi bharein!", icon: "error" });
@@ -2163,6 +2254,7 @@ async function processStockPurchase() {
             itemName: opt.text,
             qty: addQty,
             unit: opt.getAttribute('data-unit'),
+            comment: comment,
             type: 'purchase',
             time: finalDateTime,
             date: now.toLocaleDateString('en-GB'),
@@ -2171,6 +2263,7 @@ async function processStockPurchase() {
 
         Swal.fire({ title: "Stock Added!", icon: "success", timer: 1000, showConfirmButton: false });
         qtyInput.value = "";
+        if (commentInput) commentInput.value = "";
         populateDropdown('purchaseItemSelect');
         loadPurchaseHistory();
 
@@ -2206,8 +2299,11 @@ function renderPurchaseCards(data, keys) {
         const p = data[id];
         html += `
         <div id="pcard-${id}" 
+            class="history-card"
+            data-id="${id}"
+            data-type="purchase"
             oncontextmenu="showPurchaseOptions('${id}'); return false;"
-            style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; box-shadow:0 4px 10px rgba(0,0,0,0.03); cursor:pointer; transition:0.3s;">
+            style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; box-shadow:0 4px 10px rgba(0,0,0,0.03); cursor:pointer; transition:0.3s; user-select:none;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                 <div style="flex:1;">
                     <b style="color:var(--text-main); font-size:14px; display:block;">${p.itemName}</b>
@@ -2219,6 +2315,7 @@ function renderPurchaseCards(data, keys) {
                     +${p.qty} <small style="font-size:9px;">${p.unit}</small>
                 </div>
             </div>
+            ${p.comment ? `<div class="comment-box"><i class="fas fa-comment-dots" style="margin-right:4px;"></i>${escapeHtml(p.comment)}</div>` : ''}
             <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
                 <div style="font-size:10px; color:var(--text-main);">
                     <i class="fas fa-user-circle" style="color:#28a745;"></i> 
@@ -2395,31 +2492,6 @@ function closeWastedPanel() {
     document.getElementById('wastedPanel').style.display = 'none'; 
 }
 
-function showWasteOptions(wId) {
-    // Agar isAdmin check use kar rahe hain toh check karein, warna ise hata dein
-    if (typeof isAdmin !== 'undefined' && !isAdmin) return; 
-
-    const panelTarget = document.getElementById('wastedPanel');
-
-    Swal.fire({
-        title: 'Select Action',
-        text: "Kya aap is waste entry ko delete karna chahte hain?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: '<i class="fas fa-trash"></i> Delete',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: 'var(--danger)', // Red color
-        cancelButtonColor: 'var(--text-dim)',
-        // CRITICAL: Iske bina popup panel ke peeche reh jata hai
-        target: panelTarget || document.body 
-    }).then((result) => {
-        if (result.isConfirmed) {
-            askDeleteWaste(wId);
-        }
-    });
-}
-
-
 // 1. Filter Logic (Cloned from Distributions)
 function filterWasteData(type) {
     document.querySelectorAll('#wastedPanel .f-item-petrol').forEach(b => b.classList.remove('f-btn-active'));
@@ -2485,7 +2557,12 @@ function renderWasteCards(data, keys) {
     keys.forEach(id => {
         const w = data[id];
         html += `
-        <div id="wcard-${id}" oncontextmenu="showWasteOptions('${id}'); return false;" style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; cursor:pointer;">
+        <div id="wcard-${id}" 
+            class="history-card"
+            data-id="${id}"
+            data-type="waste"
+            oncontextmenu="showWasteOptions('${id}'); return false;" 
+            style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; cursor:pointer; user-select:none;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                 <div style="flex:1;">
                     <b style="color:var(--text-main); font-size:14px; display:block;">${w.itemName}</b>
@@ -2499,6 +2576,7 @@ function renderWasteCards(data, keys) {
                     </div>
                 </div>
             </div>
+            ${w.comment ? `<div class="comment-box"><i class="fas fa-comment-dots" style="margin-right:4px;"></i>${escapeHtml(w.comment)}</div>` : ''}
             <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
                 <div style="font-size:10px; color:var(--text-main);">
                     <i class="fas fa-user-circle" style="color:var(--danger);"></i> By: <b>${w.by || 'Admin'}</b> 
@@ -2529,6 +2607,8 @@ async function processStockWaste() {
     const wasteQty = parseFloat(qtyInput.value);
     const selElement = document.getElementById('wasteItemSelect');
     const opt = selElement.options[selElement.selectedIndex];
+    const commentInput = document.getElementById('wasteComment');
+    const comment = commentInput ? commentInput.value.trim() : "";
 
     if(!sId || isNaN(wasteQty) || wasteQty <= 0) {
         Swal.fire({ title: "Error", text: "Details sahi bharein!", icon: "error" });
@@ -2568,6 +2648,7 @@ async function processStockWaste() {
             itemName: opt.text,
             qty: wasteQty,
             unit: opt.getAttribute('data-unit'),
+            comment: comment,
             type: 'waste',
             time: finalDateTime,
             date: now.toLocaleDateString('en-GB'),
@@ -2576,6 +2657,7 @@ async function processStockWaste() {
 
         Swal.fire({ title: "Waste Recorded!", icon: "success", timer: 1000, showConfirmButton: false });
         qtyInput.value = "";
+        if (commentInput) commentInput.value = "";
         populateDropdown('wasteItemSelect');
         loadWasteHistory();
 
@@ -2585,70 +2667,28 @@ async function processStockWaste() {
     }
 }
 function showWasteOptions(wId) {
-    if(!isAdmin) return; // Agar admin nahi hai toh return
+    if(!isAdmin) {
+        showToast("Only admin can edit/delete ⚠️");
+        return;
+    }
 
     Swal.fire({
-        title: 'Action?',
-        text: "Kya aap is entry ko delete karna chahte hain?",
-        icon: 'warning',
+        title: 'Actions',
+        text: "What would you like to do?",
+        icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Delete',
+        showDenyButton: true,
+        confirmButtonText: '<i class="fas fa-edit"></i> Edit',
+        denyButtonText: '<i class="fas fa-trash"></i> Delete',
         cancelButtonText: 'Cancel',
         confirmButtonColor: '#e11d48',
-        // CRITICAL: Agar panel ke upar Swal dikhana hai toh target zaroori hai
-        target: document.getElementById('wastedPanel') 
+        denyButtonColor: '#e11d48'
     }).then((result) => {
         if (result.isConfirmed) {
-            askDeleteWaste(wId); // Upar wala delete function call hoga
+            editWaste(wId);
+        } else if (result.isDenied) {
+            askDeleteWaste(wId);
         }
-    });
-}
-
-// 4. Load Waste History (Real-time with Red Theme)
-function loadWasteHistory() {
-    db.ref("wastes").limitToLast(20).on("value", snap => {
-        const data = snap.val();
-        const historyDiv = document.getElementById('wasteHistory');
-        if (!historyDiv) return;
-
-        if (!data) {
-            historyDiv.innerHTML = "<p style='text-align:center; color:var(--text-dim); padding:20px;'>No waste history.</p>";
-            return;
-        }
-
-        let html = "";
-        const keys = Object.keys(data).reverse();
-
-        keys.forEach(id => {
-            const p = data[id];
-            html += `
-            <div id="wcard-${id}" 
-                oncontextmenu="showWasteOptions('${id}'); return false;"
-                style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; box-shadow:0 4px 10px rgba(0,0,0,0.03); cursor:pointer;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div style="flex:1;">
-                        <b style="color:var(--text-main); font-size:14px; display:block;">${p.itemName}</b>
-                        <div style="color:#e11d48; font-size:10px; font-weight:700; margin-top:3px;">
-                            <i class="fas fa-trash-alt"></i> Waste
-                        </div>
-                    </div>
-                    <div style="background:rgba(225,29,72,0.1); color:#e11d48; padding:4px 10px; border-radius:12px; font-weight:900; font-size:13px;">
-                        -${p.qty} <small style="font-size:9px;">${p.unit}</small>
-                    </div>
-                </div>
-                <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
-                    <div style="font-size:10px; color:var(--text-main);">
-                        <i class="fas fa-user-circle" style="color:#e11d48;"></i> 
-                        By: <b>${p.by || 'Admin'}</b>
-                    </div>
-                    <div style="font-size:9px; color:var(--text-dim);">
-                        <i class="far fa-clock"></i> ${p.time}
-                    </div>
-                </div>
-            </div>`;
-        });
-
-        historyDiv.innerHTML = html;
     });
 }
 
@@ -2803,6 +2843,8 @@ async function processStockShare() {
     const currentQty = parseFloat(opt.getAttribute('data-qty'));
     const itemName = opt.text;
     const unit = opt.getAttribute('data-unit');
+    const commentInput = document.getElementById('shareComment');
+    const comment = commentInput ? commentInput.value.trim() : "";
 
     if(sendQty > currentQty) {
         Swal.fire({ title: "Low Stock", icon: "error", target: panelTarget });
@@ -2839,6 +2881,9 @@ async function processStockShare() {
             branch: branch,
             qty: sendQty,
             unit: unit,
+            comment: comment,
+            received: false,
+            receivedBy: "",
             by: (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin",
             time: finalDateTime,
             date: simpleDate
@@ -2847,6 +2892,7 @@ async function processStockShare() {
         // STEP 4: Success
         Swal.fire({ title: "Sent!", icon: "success", timer: 1000, showConfirmButton: false, target: panelTarget });
         qtyInput.value = "";
+        if (commentInput) commentInput.value = "";
         populateShareDropdown();
         refreshShareStock();
 
@@ -2872,10 +2918,13 @@ function loadTransferHistory() {
         let html = "";
         const keys = Object.keys(data).reverse();
         
+        const isUserAdmin = (typeof isAdmin !== 'undefined' && isAdmin);
+
         keys.forEach(id => {
             const t = data[id];
+            const received = !!t.received;
             html += `
-            <div id="card-${id}" oncontextmenu="showTransferOptions('${id}'); return false;" style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); cursor:pointer; position:relative; transition:0.3s;">
+            <div id="card-${id}" class="history-card" data-id="${id}" data-type="transfer" oncontextmenu="showTransferOptions('${id}'); return false;" style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); cursor:pointer; position:relative; transition:0.3s; user-select:none;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <div style="flex:1;">
                         <b style="color:var(--text-main); font-size:14px; display:block;">${t.itemName}</b>
@@ -2889,7 +2938,7 @@ function loadTransferHistory() {
                         </div>
                     </div>
                 </div>
-                
+                ${t.comment ? `<div class="comment-box"><i class="fas fa-comment-dots" style="margin-right:4px;"></i>${escapeHtml(t.comment)}</div>` : ''}
                 <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
                     <div style="font-size:10px; color:var(--text-main);">
                         <i class="fas fa-user-circle" style="color:var(--teal);"></i> 
@@ -2899,6 +2948,14 @@ function loadTransferHistory() {
                         <i class="far fa-clock"></i> ${t.time}
                     </div>
                 </div>
+                <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation();">
+                    <div id="tick-${id}" class="receive-tick ${received ? 'received' : ''}" onclick="toggleReceived('${id}')" style="cursor:pointer;">
+                        ${received ? '<i class="fas fa-check" style="color:#fff; font-size:11px;"></i>' : ''}
+                    </div>
+                    <span id="tick-label-${id}" style="font-size:10px; font-weight:700; color:${received ? '#16a34a' : 'var(--text-dim)'};">
+                        ${received ? `Received by: ${escapeHtml(t.receivedBy || 'Admin')}` : 'Not received yet'}
+                    </span>
+                </div>
             </div>`;
         });
 
@@ -2907,79 +2964,230 @@ function loadTransferHistory() {
     });
 }
 
+// Any user can mark a distribution as "Received" with a green tick + animation
+async function toggleReceived(id) {
+    const tickEl = document.getElementById(`tick-${id}`);
+    if (tickEl && tickEl.classList.contains('received')) {
+        showToast("Already received ✓");
+        return;
+    }
+
+    const userName = currentUser || "Guest";
+    
+    // Optimistic UI feedback with pop animation
+    const labelEl = document.getElementById(`tick-label-${id}`);
+    if (tickEl) {
+        tickEl.classList.add('received', 'tick-animate');
+        tickEl.innerHTML = '<i class="fas fa-check" style="color:#fff; font-size:11px;"></i>';
+    }
+    if (labelEl) {
+        labelEl.style.color = '#16a34a';
+        labelEl.innerText = `Received by: ${userName}`;
+    }
+
+    try {
+        await db.ref(`transfers/${id}`).update({
+            received: true,
+            receivedBy: userName,
+            receivedTime: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        });
+        showToast("Marked as received ✓");
+    } catch(e) {
+        console.error("Receive update error:", e);
+        showToast("Error updating ❌");
+        // revert optimistic UI on failure
+        if (tickEl) {
+            tickEl.classList.remove('received', 'tick-animate');
+            tickEl.innerHTML = '';
+        }
+        if (labelEl) {
+            labelEl.style.color = 'var(--text-dim)';
+            labelEl.innerText = 'Not received yet';
+        }
+    }
+}
+
 function showTransferOptions(tId) {
-    if(!isAdmin) return; 
+    if(!isAdmin) {
+        showToast("Only admin can edit/delete ⚠️");
+        return;
+    }
 
     Swal.fire({
         title: 'Select Action',
         text: "Do you want to modify this distribution?",
         icon: 'question',
         showCancelButton: true,
+        showDenyButton: true,
         confirmButtonText: '<i class="fas fa-edit"></i> Edit',
-        cancelButtonText: '<i class="fas fa-trash"></i> Delete',
+        denyButtonText: '<i class="fas fa-trash"></i> Delete',
+        cancelButtonText: 'Cancel',
         confirmButtonColor: 'var(--teal)',
-        cancelButtonColor: 'var(--danger)',
+        denyButtonColor: 'var(--danger)',
         target: document.getElementById('sharePanel')
     }).then((result) => {
         if (result.isConfirmed) {
             editTransfer(tId);
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
+        } else if (result.isDenied) {
             deleteTransfer(tId);
         }
     });
 }
 
-// FIX: Edit function jo stock ko sahi se adjust karta hai
-function editTransfer(tId) {
-    const panelTarget = document.getElementById('sharePanel');
+// Edit Distribution - Open full-screen modal (mirrors editWaste / editPetrol pattern)
+let currentEditingDistId = null;
+let currentEditingDistOldData = null;
 
-    db.ref(`transfers/${tId}`).once("value", snap => {
-        const oldData = snap.val();
-        if(!oldData) return;
+async function populateEditDistItemSelect(selectedId) {
+    const snap = await db.ref("stocks").once("value");
+    const stocks = snap.val() || {};
+    let opts = '<option value="">Choose Item...</option>';
+    for (let id in stocks) {
+        opts += `<option value="${id}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
+    }
+    const sel = document.getElementById('editDistItemSelect');
+    sel.innerHTML = opts;
+    if (selectedId) sel.value = selectedId;
+}
 
-        Swal.fire({
-            title: 'Update Quantity',
-            input: 'number',
-            inputValue: oldData.qty,
-            showCancelButton: true,
-            confirmButtonText: 'Update Stock',
-            confirmButtonColor: 'var(--teal)',
-            target: panelTarget,
-            inputValidator: (value) => {
-                if (!value || value <= 0) return 'Enter the correct quantity!'
-            }
-        }).then((res) => {
-            if(res.isConfirmed) {
-                const newQty = parseFloat(res.value);
-                const oldQty = parseFloat(oldData.qty);
-                const diff = newQty - oldQty; 
+async function populateEditDistBranchSelect(selectedBranch) {
+    const snap = await db.ref('branches').once('value');
+    const data = snap.val() || {};
+    let opts = '<option value="">Choose Branch...</option>';
+    for (let id in data) {
+        opts += `<option value="${data[id].name}">${data[id].name}</option>`;
+    }
+    const sel = document.getElementById('editDistBranch');
+    sel.innerHTML = opts;
+    if (selectedBranch) sel.value = selectedBranch;
+}
 
-                const stockId = oldData.itemId; 
-                
-                if(!stockId) {
-                    // Agar itemId nahi hai, toh name se search karo (for old data)
-                    db.ref("stocks").orderByChild("name").equalTo(oldData.itemName).once("value", sSnap => {
-                        const stocks = sSnap.val();
-                        if(!stocks) {
-                            Swal.fire({ title: "Error", text: "Item nahi mila!", icon: "error", target: panelTarget });
-                            return;
-                        }
-                        const sKey = Object.keys(stocks)[0];
-                        finalizeUpdate(sKey, stocks[sKey].qty, diff, newQty, tId);
-                    });
-                } else {
-                    db.ref(`stocks/${stockId}`).once("value", sSnap => {
-                        const sData = sSnap.val();
-                        if(!sData) {
-                            Swal.fire({ title: "Error", text: "Stock item missing!", icon: "error", target: panelTarget });
-                            return;
-                        }
-                        finalizeUpdate(stockId, sData.qty, diff, newQty, tId);
-                    });
+async function editTransfer(tId) {
+    const snap = await db.ref(`transfers/${tId}`).once("value");
+    const oldData = snap.val();
+    if (!oldData) return;
+
+    currentEditingDistId = tId;
+    currentEditingDistOldData = oldData;
+
+    await populateEditDistItemSelect(oldData.itemId);
+    await populateEditDistBranchSelect(oldData.branch);
+
+    document.getElementById('editDistQty').value = oldData.qty || '';
+    document.getElementById('editDistComment').value = oldData.comment || '';
+
+    document.getElementById('editDistModal').style.display = 'flex';
+}
+
+// Saves the edited distribution, correctly returning old stock and deducting new stock
+// even if the item or branch was changed, not just the quantity — and keeps the
+// inventory_history OUT column in sync the same way deleteTransfer() does.
+async function saveEditDist() {
+    const panelTarget = document.getElementById('editDistModal');
+    const tId = currentEditingDistId;
+    const oldData = currentEditingDistOldData;
+    if (!tId || !oldData) return;
+
+    const itemSel = document.getElementById('editDistItemSelect');
+    const newItemId = itemSel.value;
+    const newItemName = itemSel.options[itemSel.selectedIndex] ? itemSel.options[itemSel.selectedIndex].text : '';
+    const newBranch = document.getElementById('editDistBranch').value;
+    const newQty = parseFloat(document.getElementById('editDistQty').value);
+    const comment = document.getElementById('editDistComment').value.trim();
+
+    if (!newItemId || !newBranch || isNaN(newQty) || newQty <= 0) {
+        Swal.fire({ title: "Error", text: "Please fill all fields correctly!", icon: "error", target: panelTarget });
+        return;
+    }
+
+    try {
+        const oldItemId = oldData.itemId;
+        const oldQty = parseFloat(oldData.qty) || 0;
+        const tTime = oldData.time; // Format: "DD/MM/YYYY HH:mm AM/PM"
+
+        // STEP 1: Return old quantity back to the old item's stock + OUT column
+        if (oldItemId) {
+            const oldStockSnap = await db.ref(`stocks/${oldItemId}`).once("value");
+            const oldStockQty = parseFloat((oldStockSnap.val() || {}).qty) || 0;
+            await db.ref(`stocks/${oldItemId}`).update({ qty: (oldStockQty + oldQty).toFixed(2) });
+
+            if (tTime) {
+                const dateParts = tTime.split(' ')[0].split('/');
+                const day = parseInt(dateParts[0]);
+                const monthKey = `${dateParts[2]}-${dateParts[1]}`;
+                const historyRef = db.ref(`inventory_history/${oldItemId}/${monthKey}/${day}`);
+                const hSnap = await historyRef.once("value");
+                if (hSnap.exists()) {
+                    const currentOut = parseFloat(hSnap.val().outward || 0);
+                    await historyRef.update({ outward: Math.max(0, currentOut - oldQty) });
                 }
             }
+        }
+
+        // STEP 2: Check availability and deduct new quantity from the (possibly new) item's stock
+        const newStockSnap = await db.ref(`stocks/${newItemId}`).once("value");
+        const newStockData = newStockSnap.val();
+        if (!newStockData) {
+            Swal.fire({ title: "Error", text: "Item stock not found!", icon: "error", target: panelTarget });
+            return;
+        }
+        const availableQty = parseFloat(newStockData.qty) || 0;
+
+        if (newQty > availableQty) {
+            // Revert the step-1 return since we're aborting the update
+            if (oldItemId) {
+                const revertSnap = await db.ref(`stocks/${oldItemId}`).once("value");
+                const revertQty = parseFloat((revertSnap.val() || {}).qty) || 0;
+                await db.ref(`stocks/${oldItemId}`).update({ qty: (revertQty - oldQty).toFixed(2) });
+
+                if (tTime) {
+                    const dateParts = tTime.split(' ')[0].split('/');
+                    const day = parseInt(dateParts[0]);
+                    const monthKey = `${dateParts[2]}-${dateParts[1]}`;
+                    const historyRef = db.ref(`inventory_history/${oldItemId}/${monthKey}/${day}`);
+                    const hSnap = await historyRef.once("value");
+                    if (hSnap.exists()) {
+                        const currentOut = parseFloat(hSnap.val().outward || 0);
+                        await historyRef.update({ outward: currentOut + oldQty });
+                    }
+                }
+            }
+            Swal.fire({ title: "Low Stock!", text: `In stock ${availableQty} left only`, icon: "error", target: panelTarget });
+            return;
+        }
+
+        await db.ref(`stocks/${newItemId}`).update({ qty: (availableQty - newQty).toFixed(2) });
+
+        // STEP 2b: Add the new quantity to the (possibly new) item's OUT column
+        if (tTime) {
+            const dateParts = tTime.split(' ')[0].split('/');
+            const day = parseInt(dateParts[0]);
+            const monthKey = `${dateParts[2]}-${dateParts[1]}`;
+            const historyRef = db.ref(`inventory_history/${newItemId}/${monthKey}/${day}`);
+            await historyRef.transaction((current) => {
+                if (!current) current = { inward: 0, outward: 0, waste: 0 };
+                current.outward = (parseFloat(current.outward) || 0) + newQty;
+                return current;
+            });
+        }
+
+        // STEP 3: Save the updated distribution record
+        await db.ref(`transfers/${tId}`).update({
+            itemId: newItemId,
+            itemName: newItemName,
+            branch: newBranch,
+            qty: newQty,
+            comment: comment
         });
-    });
+
+        showToast("Distribution updated ✓");
+        if (typeof loadTransferHistory === 'function') loadTransferHistory();
+        if (typeof populateShareDropdown === 'function') populateShareDropdown();
+        closeEditModal('editDistModal');
+    } catch (e) {
+        console.error("Edit Distribution error:", e);
+        Swal.fire({ title: "Error", text: "Something went wrong!", icon: "error", target: panelTarget });
+    }
 }
 
 async function deleteTransfer(tId) {
@@ -3055,28 +3263,6 @@ async function deleteTransfer(tId) {
         }
     }
 }
-
-
-function finalizeUpdate(sKey, currentStockQty, diff, newQty, tId) {
-    const currentStock = parseFloat(currentStockQty);
-    
-    // Check if we have enough stock if quantity is increased
-    if(diff > currentStock) {
-        Swal.fire({ title: "Low Stock!", text: `In stock ${currentStock} left only`, icon: "error", target: document.getElementById('sharePanel') });
-        return;
-    }
-
-    const finalStock = (currentStock - diff).toFixed(2);
-    const updates = {};
-    updates[`/stocks/${sKey}/qty`] = finalStock;
-    updates[`/transfers/${tId}/qty`] = newQty;
-
-    db.ref().update(updates).then(() => {
-        Swal.fire({ title: "Updated!", icon: "success", timer: 1000, showConfirmButton: false, target: document.getElementById('sharePanel') });
-        populateShareDropdown(); // Dropdown refresh karein
-    });
-}
-
 
 
 function openAndHighlight(tId) {
@@ -3339,6 +3525,8 @@ function closePetrolPanel() {
 function savePetrolEntry() {
     const carNum = document.getElementById('petrolCarNum').value.trim().toUpperCase();
     const amount = document.getElementById('petrolAmount').value;
+    const commentInput = document.getElementById('petrolComment');
+    const comment = commentInput ? commentInput.value.trim() : "";
     
     if(!carNum || !amount) {
         showToast("Car Number aur Amount bhariye!");
@@ -3348,6 +3536,7 @@ function savePetrolEntry() {
     const newLog = {
         carNum: carNum,
         amount: amount,
+        comment: comment,
         date: new Date().toLocaleDateString('en-GB'), 
         time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
         addedBy: (typeof currentUser !== 'undefined' && currentUser !== "") ? currentUser : "Admin",
@@ -3358,6 +3547,7 @@ function savePetrolEntry() {
         showToast("Saved!");
         document.getElementById('petrolCarNum').value = '';
         document.getElementById('petrolAmount').value = '';
+        if (commentInput) commentInput.value = '';
     });
 }
 
@@ -3390,6 +3580,8 @@ function renderPetrolCards(data, keys) {
         const card = document.createElement('div');
         card.className = 'history-card';
         card.id = 'petcard-' + key;
+        card.setAttribute('data-id', key);
+        card.setAttribute('data-type', 'petrol');
         card.style = "background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; cursor:pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.03); user-select:none; transition: 0.2s;";
 
         card.innerHTML = `
@@ -3406,6 +3598,7 @@ function renderPetrolCards(data, keys) {
                     </div>
                 </div>
             </div>
+            ${item.comment ? `<div class="comment-box"><i class="fas fa-comment-dots" style="margin-right:4px;"></i>${escapeHtml(item.comment)}</div>` : ''}
             <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
                 <div style="font-size:10px; color:var(--text-main);">
                     <i class="fas fa-user-circle" style="color:var(--teal);"></i> By: <b>${item.addedBy || 'Admin'}</b>
@@ -3512,20 +3705,24 @@ function filterPetrol(type) {
 
 // --- 6. EDIT & DELETE ---
 function showPetrolOptions(id, item) {
-    if (typeof isAdmin === 'undefined' || !isAdmin) return;
+    if (typeof isAdmin === 'undefined' || !isAdmin) {
+        showToast("Only admin can edit/delete ⚠️");
+        return;
+    }
 
     Swal.fire({
-        title: 'Manage Entry',
-        text: `${item.carNum} - OMR ${item.amount}`,
+        title: 'Actions',
+        text: `${item.carNum} - OMR ${parseFloat(item.amount).toFixed(3)}`,
         showDenyButton: true,
         showCancelButton: true,
-        confirmButtonText: 'Edit Rial',
-        denyButtonText: 'Delete',
+        confirmButtonText: '<i class="fas fa-edit"></i> Edit',
+        denyButtonText: '<i class="fas fa-trash"></i> Delete',
+        cancelButtonText: 'Cancel',
         confirmButtonColor: 'var(--teal)',
         denyButtonColor: '#d33'
     }).then((result) => {
         if (result.isConfirmed) {
-            editPetrolRial(id, item.amount);
+            editPetrol(id);
         } else if (result.isDenied) {
             deletePetrolHistory(id);
         }
@@ -3561,6 +3758,352 @@ function deletePetrolHistory(id) {
                 .then(() => showToast("Deleted!"));
         }
     });
+}
+
+// Wrapper function for petrol edit (used by long-press handler)
+// Edit Petrol - Open Modal Form
+let currentEditingPetrolId = null;
+
+function editPetrol(id) {
+    db.ref(`petrolLogs/${id}`).once("value", snap => {
+        const data = snap.val();
+        if (!data) return;
+        
+        currentEditingPetrolId = id;
+        
+        // Pre-populate the edit form
+        document.getElementById('editPetrolCar').value = data.carNum || '';
+        document.getElementById('editPetrolAmount').value = data.amount || '';
+        document.getElementById('editPetrolComment').value = data.comment || '';
+        
+        // Open modal
+        document.getElementById('editPetrolModal').style.display = 'flex';
+    });
+}
+
+async function saveEditPetrol() {
+    const id = currentEditingPetrolId;
+    if (!id) return;
+
+    const amount = parseFloat(document.getElementById('editPetrolAmount').value);
+    const comment = document.getElementById('editPetrolComment').value.trim();
+
+    if (isNaN(amount) || amount < 0) {
+        showToast("Invalid amount ❌");
+        return;
+    }
+
+    try {
+        await db.ref(`petrolLogs/${id}`).update({
+            amount: amount,
+            comment: comment
+        });
+        showToast("Petrol entry updated ✓");
+        loadPetrolHistory();
+        closeEditModal('editPetrolModal');
+    } catch (e) {
+        showToast("Error updating ❌");
+        console.error(e);
+    }
+}
+
+// Close Edit Modal Helper Function
+function closeEditModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    // Clear all editing IDs
+    currentEditingPetrolId = null;
+    currentEditingWasteId = null;
+    currentEditingDistId = null;
+    currentEditingDistOldData = null;
+    currentEditingPurchaseId = null;
+    currentEditingPurchaseOldData = null;
+}
+
+// Wrapper function for petrol delete (used by long-press handler)
+function deletePetrol(id) {
+    deletePetrolHistory(id);
+}
+
+// Edit Purchase - Open full-screen modal (same treatment as Edit Distribution)
+let currentEditingPurchaseId = null;
+let currentEditingPurchaseOldData = null;
+
+async function populateEditPurchaseItemSelect(selectedId) {
+    const snap = await db.ref("stocks").once("value");
+    const stocks = snap.val() || {};
+    let opts = '<option value="">Choose Item...</option>';
+    for (let id in stocks) {
+        opts += `<option value="${id}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
+    }
+    const sel = document.getElementById('editPurchaseItemSelect');
+    sel.innerHTML = opts;
+    if (selectedId) sel.value = selectedId;
+}
+
+async function editPurchase(id) {
+    const snap = await db.ref(`purchases/${id}`).once("value");
+    const oldData = snap.val();
+    if (!oldData) return;
+
+    currentEditingPurchaseId = id;
+    currentEditingPurchaseOldData = oldData;
+
+    await populateEditPurchaseItemSelect(oldData.itemId);
+
+    document.getElementById('editPurchaseQty').value = oldData.qty || '';
+    document.getElementById('editPurchaseComment').value = oldData.comment || '';
+
+    document.getElementById('editPurchaseModal').style.display = 'flex';
+}
+
+// Saves the edited purchase, correctly reversing the old item's stock/IN-column entry
+// and re-applying the new item/quantity, even if the item was changed — not just the quantity.
+async function saveEditPurchase() {
+    const panelTarget = document.getElementById('editPurchaseModal');
+    const pId = currentEditingPurchaseId;
+    const oldData = currentEditingPurchaseOldData;
+    if (!pId || !oldData) return;
+
+    const itemSel = document.getElementById('editPurchaseItemSelect');
+    const newItemId = itemSel.value;
+    const selOpt = itemSel.options[itemSel.selectedIndex];
+    const newItemName = selOpt ? selOpt.text : '';
+    const newUnit = selOpt ? selOpt.getAttribute('data-unit') : '';
+    const newQty = parseFloat(document.getElementById('editPurchaseQty').value);
+    const comment = document.getElementById('editPurchaseComment').value.trim();
+
+    if (!newItemId || isNaN(newQty) || newQty <= 0) {
+        Swal.fire({ title: "Error", text: "Please fill all fields correctly!", icon: "error", target: panelTarget });
+        return;
+    }
+
+    try {
+        const oldItemId = oldData.itemId;
+        const oldQty = parseFloat(oldData.qty) || 0;
+        const pTime = oldData.time;
+
+        // STEP 1: Reverse the old item's stock and inventory_history IN column
+        if (oldItemId) {
+            const oldStockSnap = await db.ref(`stocks/${oldItemId}`).once("value");
+            const oldStockQty = parseFloat((oldStockSnap.val() || {}).qty) || 0;
+            await db.ref(`stocks/${oldItemId}`).update({ qty: Math.max(0, oldStockQty - oldQty).toFixed(2) });
+
+            if (pTime) {
+                const dateParts = pTime.split(' ')[0].split('/');
+                const day = parseInt(dateParts[0]);
+                const monthKey = `${dateParts[2]}-${dateParts[1]}`;
+                const historyRef = db.ref(`inventory_history/${oldItemId}/${monthKey}/${day}`);
+                await historyRef.transaction((current) => {
+                    if (current) {
+                        current.inward = Math.max(0, (parseFloat(current.inward) || 0) - oldQty);
+                    }
+                    return current;
+                });
+            }
+        }
+
+        // STEP 2: Apply the (possibly new) item's stock and inventory_history IN column
+        const newStockSnap = await db.ref(`stocks/${newItemId}`).once("value");
+        const newStockData = newStockSnap.val();
+        if (!newStockData) {
+            Swal.fire({ title: "Error", text: "Item stock not found!", icon: "error", target: panelTarget });
+            return;
+        }
+        const currentQty = parseFloat(newStockData.qty) || 0;
+        await db.ref(`stocks/${newItemId}`).update({ qty: (currentQty + newQty).toFixed(2) });
+
+        if (pTime) {
+            const dateParts = pTime.split(' ')[0].split('/');
+            const day = parseInt(dateParts[0]);
+            const monthKey = `${dateParts[2]}-${dateParts[1]}`;
+            const historyRef = db.ref(`inventory_history/${newItemId}/${monthKey}/${day}`);
+            await historyRef.transaction((current) => {
+                if (!current) current = { inward: 0, outward: 0, waste: 0 };
+                current.inward = (parseFloat(current.inward) || 0) + newQty;
+                return current;
+            });
+        }
+
+        // STEP 3: Save the updated purchase record
+        await db.ref(`purchases/${pId}`).update({
+            itemId: newItemId,
+            itemName: newItemName,
+            unit: newUnit,
+            qty: newQty,
+            comment: comment
+        });
+
+        showToast("Purchase updated ✓");
+        loadPurchaseHistory();
+        closeEditModal('editPurchaseModal');
+    } catch (e) {
+        console.error("Edit Purchase error:", e);
+        Swal.fire({ title: "Error", text: "Something went wrong!", icon: "error", target: panelTarget });
+    }
+}
+
+// Delete Purchase Item
+function deletePurchase(id) {
+    Swal.fire({
+        title: 'Delete Purchase Record?',
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete',
+        confirmButtonColor: '#e11d48'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            db.ref(`purchases/${id}`).remove()
+                .then(() => {
+                    showToast("Deleted! ✓");
+                    loadPurchaseHistory();
+                });
+        }
+    });
+}
+
+// Edit Waste Item
+// Edit Waste Item - Open Modal Form
+let currentEditingWasteId = null;
+
+function editWaste(id) {
+    db.ref(`wastes/${id}`).once("value", snap => {
+        const data = snap.val();
+        if (!data) return;
+        
+        currentEditingWasteId = id;
+        
+        // Pre-populate the edit form
+        document.getElementById('editWasteItem').value = data.itemName || '';
+        document.getElementById('editWasteQty').value = data.qty || '';
+        document.getElementById('editWasteUnit').value = data.unit || '';
+        document.getElementById('editWasteComment').value = data.comment || '';
+        
+        // Open modal
+        document.getElementById('editWasteModal').style.display = 'flex';
+    });
+}
+
+// Saves the edited waste record, correctly returning the old quantity to stock and
+// deducting the new quantity — and keeps the inventory_history WASTE column in sync.
+async function saveEditWaste() {
+    const id = currentEditingWasteId;
+    if (!id) return;
+
+    const newQty = parseFloat(document.getElementById('editWasteQty').value);
+    const comment = document.getElementById('editWasteComment').value.trim();
+
+    if (isNaN(newQty) || newQty <= 0) {
+        showToast("Invalid quantity ❌");
+        return;
+    }
+
+    try {
+        const snap = await db.ref(`wastes/${id}`).once("value");
+        const oldData = snap.val();
+        if (!oldData) return;
+
+        const itemId = oldData.itemId;
+        const oldQty = parseFloat(oldData.qty) || 0;
+        const wTime = oldData.time;
+
+        if (itemId) {
+            // STEP 1: Return old qty, then deduct new qty from main stock
+            const stockSnap = await db.ref(`stocks/${itemId}`).once("value");
+            const currentStock = parseFloat((stockSnap.val() || {}).qty) || 0;
+            const availableForWaste = currentStock + oldQty; // stock as if this waste hadn't happened
+
+            if (newQty > availableForWaste) {
+                showToast(`Low stock! Only ${availableForWaste} left ❌`);
+                return;
+            }
+
+            await db.ref(`stocks/${itemId}`).update({ qty: (availableForWaste - newQty).toFixed(2) });
+
+            // STEP 2: Adjust inventory_history WASTE column by the difference
+            if (wTime) {
+                const dateParts = wTime.split(' ')[0].split('/');
+                const day = parseInt(dateParts[0]);
+                const monthKey = `${dateParts[2]}-${dateParts[1]}`;
+                const historyRef = db.ref(`inventory_history/${itemId}/${monthKey}/${day}`);
+                await historyRef.transaction((current) => {
+                    if (!current) current = { inward: 0, outward: 0, waste: 0 };
+                    const oldWaste = parseFloat(current.waste) || 0;
+                    current.waste = Math.max(0, oldWaste - oldQty + newQty);
+                    return current;
+                });
+            }
+        }
+
+        // STEP 3: Update the waste record itself
+        await db.ref(`wastes/${id}`).update({
+            qty: newQty,
+            comment: comment
+        });
+
+        showToast("Waste record updated ✓");
+        loadWasteHistory();
+        closeEditModal('editWasteModal');
+    } catch (e) {
+        showToast("Error updating ❌");
+        console.error(e);
+    }
+}
+
+// Delete Waste Item — returns quantity to stock and adjusts the WASTE column, same as
+// deleteTransfer / askDeletePurchase do for their respective modules.
+async function deleteWaste(id) {
+    const result = await Swal.fire({
+        title: 'Delete Waste Record?',
+        text: "Stock will be returned and the Waste column adjusted!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete',
+        confirmButtonColor: '#e11d48'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+        const snap = await db.ref(`wastes/${id}`).once("value");
+        const wData = snap.val();
+        if (!wData) return;
+
+        const qtyVal = parseFloat(wData.qty) || 0;
+        const itemId = wData.itemId;
+        const wTime = wData.time;
+
+        // STEP 1: inventory_history WASTE column ghataana
+        if (wTime && itemId) {
+            const dateParts = wTime.split(' ')[0].split('/');
+            const day = parseInt(dateParts[0]);
+            const monthKey = `${dateParts[2]}-${dateParts[1]}`;
+            const historyRef = db.ref(`inventory_history/${itemId}/${monthKey}/${day}`);
+            const hSnap = await historyRef.once("value");
+            if (hSnap.exists()) {
+                const currentWaste = parseFloat(hSnap.val().waste || 0);
+                await historyRef.update({ waste: Math.max(0, currentWaste - qtyVal) });
+            }
+        }
+
+        // STEP 2: Home page stock wapas plus karna
+        if (itemId) {
+            const sSnap = await db.ref(`stocks/${itemId}`).once("value");
+            if (sSnap.exists()) {
+                const currentStock = parseFloat(sSnap.val().qty) || 0;
+                await db.ref(`stocks/${itemId}`).update({ qty: (currentStock + qtyVal).toFixed(2) });
+            }
+        }
+
+        // STEP 3: Waste record delete karo
+        await db.ref(`wastes/${id}`).remove();
+
+        showToast("Deleted! Stock returned ✓");
+        loadWasteHistory();
+    } catch (e) {
+        console.error("Delete Waste error:", e);
+        showToast("Error deleting ❌");
+    }
 }
 // 1. Nayi Car add karne ke liye function (legacy Swal popup - kept for compatibility, unused by ADD NEW CAR button now)
 
@@ -3841,6 +4384,43 @@ openPetrolPanel = function() {
         color: white !important;
         border-color: var(--teal) !important;
     }
+
+    /* --- Received tick mark (Distribution history) --- */
+    .receive-tick {
+        width: 22px;
+        height: 22px;
+        min-width: 22px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+    }
+    .receive-tick.is-admin { cursor: pointer; }
+    .receive-tick.received {
+        background: #16a34a;
+        border-color: #16a34a;
+    }
+    @keyframes tickPop {
+        0%   { transform: scale(0.4); opacity: 0.3; }
+        55%  { transform: scale(1.25); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .receive-tick.tick-animate {
+        animation: tickPop 0.4s ease;
+    }
+    .comment-box {
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--text-dim);
+        background: var(--bg);
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px dashed var(--border);
+        word-break: break-word;
+    }
 </style>
 
 <div id="sharePanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10000; display:none; flex-direction:column;">
@@ -3869,6 +4449,11 @@ openPetrolPanel = function() {
                     <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QTY</label>
                     <input type="number" id="shareQty" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--teal); font-weight:700;">
                 </div>
+            </div>
+
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
+                <input type="text" id="shareComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
             </div>
             
                     <div id="shareStockInfo" style="padding:0px; font-size:17px;
@@ -3924,6 +4509,10 @@ openPetrolPanel = function() {
                 <input type="number" id="purchaseQty" placeholder="Enter Purchase Qty" style="border:1.5px solid #28a745;">
                 <span id="purchaseUnitLabel" style="position:absolute; right:15px; top:12px; font-size:12px; font-weight:700; color:#28a745;">Unit</span>
             </div>
+            <div class="input-group" style="margin-top:10px;">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700; display:block; margin-bottom:4px;">COMMENT (OPTIONAL)</label>
+                <input type="text" id="purchaseComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; border:1.5px solid #28a745; background:var(--bg); color:var(--text-main);">
+            </div>
             <button onclick="processStockPurchase()" style="width:100%; padding:14px; border-radius:12px; background:#28a745; color:#fff; border:none; font-weight:700;">UPDATE STOCK (+)</button>
         </div>
 
@@ -3975,9 +4564,10 @@ openPetrolPanel = function() {
                 </div>
             </div>
 
-            
-                    
-
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
+                <input type="text" id="wasteComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
+            </div>
 
             <div id="wasteStockInfo" style="padding:10px 0; font-size:17px; color:var(--danger); font-weight:600;">
                 Current Stock: <span id="wMaxAvailable">0</span>
@@ -4016,6 +4606,126 @@ openPetrolPanel = function() {
     </div>
 </div>
 
+
+<!-- ========== EDIT MODALS FOR WASTE & PETROL ========== -->
+
+<!-- Wastage Edit Modal -->
+<div id="editWasteModal" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:none; flex-direction:column;">
+    <div style="padding:15px; display:flex; align-items:center; gap:12px; background:var(--panel); border-bottom:1px solid var(--border);">
+        <button onclick="closeEditModal('editWasteModal')" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
+        <h2 style="margin:0; font-size:16px; color:var(--text-main);">Edit Wastage</h2>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:12px;">
+        <div id="editWasteSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">ITEM</label>
+                <input type="text" id="editWasteItem" readonly style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border);">
+            </div>
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QTY</label>
+                    <input type="number" id="editWasteQty" placeholder="0.00" step="0.01" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border);">
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">UNIT</label>
+                    <input type="text" id="editWasteUnit" readonly style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border);">
+                </div>
+            </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT</label>
+                <input type="text" id="editWasteComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border);">
+            </div>
+            <button onclick="saveEditWaste()" style="width:100%; padding:14px; border-radius:12px; background:#e11d48; color:#fff; border:none; font-weight:700; font-size:14px; margin-top:15px;">
+                SAVE CHANGES
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Petrol Edit Modal -->
+<div id="editPetrolModal" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:none; flex-direction:column;">
+    <div style="padding:15px; display:flex; align-items:center; gap:12px; background:var(--panel); border-bottom:1px solid var(--border);">
+        <button onclick="closeEditModal('editPetrolModal')" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
+        <h2 style="margin:0; font-size:16px; color:var(--text-main);">Edit Petrol Entry</h2>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:12px;">
+        <div id="editPetrolSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">CAR</label>
+                <input type="text" id="editPetrolCar" readonly style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border);">
+            </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">AMOUNT (OMR)</label>
+                <input type="number" id="editPetrolAmount" placeholder="0.000" step="0.001" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border);">
+            </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT</label>
+                <input type="text" id="editPetrolComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border);">
+            </div>
+            <button onclick="saveEditPetrol()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px; margin-top:15px;">
+                SAVE CHANGES
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Distribution Edit Modal -->
+<div id="editDistModal" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:none; flex-direction:column;">
+    <div style="padding:15px; display:flex; align-items:center; gap:12px; background:var(--panel); border-bottom:1px solid var(--border);">
+        <button onclick="closeEditModal('editDistModal')" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
+        <h2 style="margin:0; font-size:16px; color:var(--text-main);">Edit Distribution</h2>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:12px;">
+        <div id="editDistSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">CHOOSE ITEM</label>
+                <select id="editDistItemSelect" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
+            </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">CHOOSE BRANCH</label>
+                <select id="editDistBranch" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
+            </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QUANTITY</label>
+                <input type="number" id="editDistQty" placeholder="0.00" step="0.01" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--teal); font-weight:700;">
+            </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
+                <input type="text" id="editDistComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
+            </div>
+            <button onclick="saveEditDist()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px; margin-top:15px;">
+                SAVE CHANGES
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Purchase Edit Modal -->
+<div id="editPurchaseModal" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:none; flex-direction:column;">
+    <div style="padding:15px; display:flex; align-items:center; gap:12px; background:var(--panel); border-bottom:1px solid var(--border);">
+        <button onclick="closeEditModal('editPurchaseModal')" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
+        <h2 style="margin:0; font-size:16px; color:var(--text-main);">Edit Purchase</h2>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:12px;">
+        <div id="editPurchaseSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid #28a745;">
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">CHOOSE ITEM</label>
+                <select id="editPurchaseItemSelect" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1.5px solid #28a745; font-size:14px; color:var(--text-main);"></select>
+            </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QUANTITY</label>
+                <input type="number" id="editPurchaseQty" placeholder="0.00" step="0.01" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1.5px solid #28a745; color:#28a745; font-weight:700;">
+            </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
+                <input type="text" id="editPurchaseComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1.5px solid #28a745; color:var(--text-main);">
+            </div>
+            <button onclick="saveEditPurchase()" style="width:100%; padding:14px; border-radius:12px; background:#28a745; color:#fff; border:none; font-weight:700; font-size:14px; margin-top:15px;">
+                SAVE CHANGES
+            </button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
