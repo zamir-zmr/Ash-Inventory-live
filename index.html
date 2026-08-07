@@ -2453,14 +2453,65 @@ function showPurchaseOptions(pId) {
         text: "Do you want to modify this purchase?",
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: '<i class="fas fa-trash"></i> Delete',
+        showDenyButton: true,
+        confirmButtonText: '<i class="fas fa-edit"></i> Edit',
+        denyButtonText: '<i class="fas fa-trash"></i> Delete',
         cancelButtonText: 'Cancel',
         confirmButtonColor: '#e11d48',
+        denyButtonColor: '#e11d48',
         target: document.getElementById('purchasedPanel')
     }).then((result) => {
         if (result.isConfirmed) {
+            editPurchase(pId);
+        } else if (result.isDenied) {
             askDeletePurchase(pId, 'purchases');
         }
+    });
+}
+
+function editPurchase(pId) {
+    db.ref('purchases/' + pId).once('value', (snap) => {
+        const pData = snap.val();
+        if (!pData) return;
+
+        Swal.fire({
+            title: 'Edit Purchase',
+            html: `
+                <label style="display:block; text-align:left; margin:10px 0; color:var(--text-main);">Item:</label>
+                <input type="text" id="editItemName" value="${pData.itemName}" disabled style="width:100%; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text-main); margin-bottom:15px;">
+                
+                <label style="display:block; text-align:left; margin:10px 0; color:var(--text-main);">Quantity:</label>
+                <input type="number" id="editPurchaseQty" value="${pData.qty}" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text-main); margin-bottom:15px;">
+                
+                <label style="display:block; text-align:left; margin:10px 0; color:var(--text-main);">Price:</label>
+                <input type="number" id="editPurchasePrice" value="${pData.price}" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text-main); margin-bottom:15px;">
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Update',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0d9488',
+            target: document.getElementById('purchasedPanel')
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const newQty = document.getElementById('editPurchaseQty').value;
+                const newPrice = document.getElementById('editPurchasePrice').value;
+
+                if (!newQty || !newPrice) {
+                    showToast('Please fill all fields!');
+                    return;
+                }
+
+                db.ref('purchases/' + pId).update({
+                    qty: parseFloat(newQty),
+                    price: parseFloat(newPrice)
+                }).then(() => {
+                    showToast('Purchase Updated! ✅');
+                    loadPurchaseHistory();
+                }).catch(err => {
+                    showToast('Error updating purchase! ❌');
+                });
+            }
+        });
     });
 }
 
