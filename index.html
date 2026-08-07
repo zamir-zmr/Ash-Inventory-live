@@ -1091,6 +1091,63 @@ function openMonthDetails(id, name, qty) {
     });
     openModalWithHistory('monthPickerModal');
 }
+// ========================================
+// MONTHLY ROLLOVER: find the closing (Current) stock at the end of a given
+// month, so it can become the Opening stock for day 1 of the next month.
+// Walks backward through permanently-stored history (inventory_history is
+// never auto-deleted) until it finds the last month with recorded activity,
+// replaying each month's days forward from its own opening balance.
+// depth caps the walk (~5 years) so a brand-new item with no prior history
+// resolves to 0 instead of recursing forever.
+// ========================================
+async function computeMonthClosingStock(itemId, year, monthIdx, depth) {
+    depth = depth || 0;
+    if (depth > 60) return 0;
+
+    const monthStr = String(monthIdx + 1).padStart(2, '0');
+    const monthKey = `${year}-${monthStr}`;
+
+    let data = null;
+    try {
+        const snap = await db.ref(`inventory_history/${itemId}/${monthKey}`).once('value');
+        data = snap.val();
+    } catch (e) { console.error(e); }
+
+    let prevMonthIdx = monthIdx - 1;
+    let prevYear = year;
+    if (prevMonthIdx < 0) { prevMonthIdx = 11; prevYear -= 1; }
+
+    if (!data) {
+        // No activity recorded this month at all — keep walking back to find
+        // the last month that actually has data.
+        return await computeMonthClosingStock(itemId, prevYear, prevMonthIdx, depth + 1);
+    }
+
+    // Establish the opening balance to start this month from.
+    let openingBalance;
+    const day1 = data['1'] || data[1];
+    if (day1 && day1.opening !== undefined) {
+        openingBalance = parseFloat(day1.opening);
+    } else {
+        openingBalance = await computeMonthClosingStock(itemId, prevYear, prevMonthIdx, depth + 1);
+    }
+
+    const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+    let running = openingBalance;
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dayData = data[String(d)] || data[d];
+        if (!dayData) continue; // no transactions that day — balance carries forward unchanged
+        if (dayData.opening !== undefined) {
+            running = parseFloat(dayData.opening);
+        }
+        const inVal = parseFloat(dayData.inward || 0);
+        const outVal = parseFloat(dayData.outward || 0);
+        const wasteVal = parseFloat(dayData.waste || 0);
+        running = running + inVal - outVal - wasteVal;
+    }
+    return running;
+}
+
 async function openLedger(monthName, monthIdx) {
     document.getElementById('ledgerTitle').innerText = `${currentSelectedItem} - ${monthName}`;
     const tbody = document.getElementById('ledgerBody');
@@ -1107,9 +1164,17 @@ async function openLedger(monthName, monthIdx) {
         historyData = snapshot.val() || {};
     } catch(e) { console.error(e); }
 
+    // Rollover: Day 1's opening = previous month's closing stock, computed
+    // from permanently-stored history rather than defaulting to 0.
+    let prevMonthIdx = monthIdx - 1;
+    let prevYear = year;
+    if (prevMonthIdx < 0) { prevMonthIdx = 11; prevYear -= 1; }
+    const rolloverOpening = await computeMonthClosingStock(currentSelectedId, prevYear, prevMonthIdx);
+
     const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
     const todayDate = new Date().getDate();
     const currentMonthIdx = new Date().getMonth();
+    const currentRealYear = new Date().getFullYear();
     let html = "";
     
     let totalOpening = 0;
@@ -1117,6 +1182,7 @@ async function openLedger(monthName, monthIdx) {
     let totalIn = 0;
     let totalWaste = 0;
     let totalCurrent = 0;
+    let runningClosing = rolloverOpening; // previous day's Current stock, carried forward day-to-day
 
     for (let i = 1; i <= daysInMonth; i++) {
         const dayData = historyData[String(i)] || historyData[i] || {};
@@ -1129,7 +1195,10 @@ async function openLedger(monthName, monthIdx) {
         totalWaste += wasteVal;
 
         let displayOpening = 0;
-        
+        const isFutureDay = (year > currentRealYear) ||
+            (year === currentRealYear && monthIdx > currentMonthIdx) ||
+            (year === currentRealYear && monthIdx === currentMonthIdx && i > todayDate);
+
         if (dayData.opening !== undefined) {
             displayOpening = parseFloat(dayData.opening);
         } else if (i === todayDate && monthIdx === currentMonthIdx) {
@@ -1139,17 +1208,30 @@ async function openLedger(monthName, monthIdx) {
                waise hi chalne denge taaki Open hamesha 10 (fixed) dikhaye.
             */
             displayOpening = currentItemBaseStock - inVal + outVal + wasteVal;
+        } else if (isFutureDay) {
+            // Dates that haven't happened yet must stay at 0 — they should
+            // not inherit today's (or any past day's) carried-forward stock.
+            displayOpening = 0;
+        } else if (i === 1) {
+            // MONTHLY ROLLOVER FIX: Day 1's Open = last month's Current stock,
+            // not a hardcoded 0.
+            displayOpening = rolloverOpening;
         } else {
-            displayOpening = parseFloat(dayData.opening || 0);
+            // No explicit opening recorded for this day — carry forward
+            // yesterday's Current stock instead of defaulting to 0.
+            displayOpening = runningClosing;
         }
 
         // Current Stock column ke liye formula
-        let displayCurrent = (displayOpening + inVal) - (outVal + wasteVal);
+        let displayCurrent = isFutureDay && dayData.opening === undefined ? 0 : (displayOpening + inVal) - (outVal + wasteVal);
         const isToday = (i === todayDate && monthIdx === currentMonthIdx);
         const isEvenRow = (i % 2 === 0);
         
         totalOpening += displayOpening;
         totalCurrent = displayCurrent;
+        if (!isFutureDay) {
+            runningClosing = displayCurrent;
+        }
 
         html += `
             <tr style="border-bottom:1px solid var(--border); ${isToday ? 'background:linear-gradient(90deg, rgba(13,148,136,0.12), transparent);' : isEvenRow ? 'background:rgba(0,0,0,0.02);' : 'background:var(--panel);'}">
@@ -1182,9 +1264,7 @@ async function openLedger(monthName, monthIdx) {
         <tr style="border-top:2px solid var(--accent); border-bottom:2px solid var(--accent); background:linear-gradient(90deg, rgba(14,165,233,0.15), rgba(13,148,136,0.15)); font-weight:900; font-size:13px;">
             <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:var(--accent); font-weight:900;">TOTAL</td>
             
-            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:var(--accent); font-weight:900;">
-                ${totalOpening.toFixed(2)}
-            </td>
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; background:var(--panel);"></td>
 
             <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:#ff5e5e; font-weight:900;">
                 ${totalOut > 0 ? totalOut.toFixed(2) : '0.00'}
@@ -1198,9 +1278,7 @@ async function openLedger(monthName, monthIdx) {
                 ${totalWaste > 0 ? totalWaste.toFixed(2) : '0.00'}
             </td>
 
-            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; background:linear-gradient(90deg, rgba(6,183,79,0.2), rgba(13,148,136,0.2)); color:var(--teal); font-weight:900;">
-                ${totalCurrent.toFixed(2)}
-            </td>
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; background:var(--panel);"></td>
         </tr>
     `;
     
@@ -4050,6 +4128,7 @@ function deletePetrol(id) {
 // Edit Purchase - Open full-screen modal (same treatment as Edit Distribution)
 let currentEditingPurchaseId = null;
 let currentEditingPurchaseOldData = null;
+let isSavingPurchase = false;
 
 async function populateEditPurchaseItemSelect(selectedId) {
     const snap = await db.ref("stocks").once("value");
@@ -4127,6 +4206,9 @@ async function cascadeUpdateOpeningBalances(itemId, editedDay, editedMonth, quan
 // Saves the edited purchase, correctly reversing the old item's stock/IN-column entry
 // and re-applying the new item/quantity, even if the item was changed — not just the quantity.
 async function saveEditPurchase() {
+    // Prevent duplicate saves
+    if (isSavingPurchase) return;
+    
     const panelTarget = document.getElementById('editPurchaseModal');
     const pId = currentEditingPurchaseId;
     const oldData = currentEditingPurchaseOldData;
@@ -4148,6 +4230,17 @@ async function saveEditPurchase() {
         Swal.fire({ title: "Error", text: "Please fill all fields correctly!", icon: "error", target: panelTarget });
         return;
     }
+
+    // Set flag and disable button immediately
+    isSavingPurchase = true;
+    const saveBtn = document.querySelector('#editPurchaseModal button[onclick="saveEditPurchase()"]');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = '0.6';
+    }
+    
+    // Close modal immediately
+    closeEditModal('editPurchaseModal');
 
     try {
         const oldItemId = oldData.itemId;
@@ -4192,7 +4285,12 @@ async function saveEditPurchase() {
         const newStockData = newStockSnap.val();
         
         if (!newStockData) {
-            Swal.fire({ title: "Error", text: "Item stock not found!", icon: "error", target: panelTarget });
+            showToast("Error: Item stock not found!");
+            isSavingPurchase = false;
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.style.opacity = '1';
+            }
             return;
         }
 
@@ -4226,11 +4324,17 @@ async function saveEditPurchase() {
         console.log("Purchase record updated successfully");
         showToast("Purchase updated ✓");
         loadPurchaseHistory();
-        closeEditModal('editPurchaseModal');
         
     } catch (e) {
         console.error("Edit Purchase error:", e);
-        Swal.fire({ title: "Error", text: "Something went wrong!", icon: "error", target: panelTarget });
+        showToast("Error updating purchase!");
+    } finally {
+        // Reset flag
+        isSavingPurchase = false;
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+        }
     }
 }
 
