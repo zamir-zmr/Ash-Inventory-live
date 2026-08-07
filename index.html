@@ -841,6 +841,73 @@
     let isAdmin = false, isManageMode = false, currentUser = "Guest";
     let cropperInstance = null, currentFileMode = "new", finalImageData = "";
 
+    // ================= BROWSER HISTORY NAVIGATION SYSTEM =================
+    let modalStack = [];
+    let isInitialLoad = true;
+    const allModals = ['petrolPanel', 'unitModal', 'categoryModal', 'manageOptionsModal', 'branchModal', 'carModal', 'cropModal', 'loginModal', 'editModal', 'deleteModal', 'monthPickerModal', 'ledgerModal', 'editWasteModal', 'editPetrolModal', 'editDistModal', 'editPurchaseModal'];
+
+    // Initialize history on page load
+    window.addEventListener('load', () => {
+        if (isInitialLoad) {
+            history.replaceState({ type: 'home', stack: [] }, '', '');
+            isInitialLoad = false;
+        }
+    });
+
+    function getActiveModal() { return modalStack[modalStack.length - 1] || null; }
+
+    function openModalWithHistory(modalId) {
+        const modalEl = document.getElementById(modalId);
+        if (!modalEl) return;
+        const currentActive = getActiveModal();
+        if (currentActive && currentActive !== modalId) {
+            document.getElementById(currentActive).style.display = 'none';
+        }
+        modalEl.style.display = 'flex';
+        if (!modalStack.includes(modalId)) { modalStack.push(modalId); }
+        history.pushState({ type: 'modal', modalId: modalId, stack: [...modalStack] }, '', '');
+    }
+
+    function closeModalWithHistory(modalId) {
+        const modalEl = document.getElementById(modalId);
+        if (!modalEl) return;
+        modalEl.style.display = 'none';
+        const idx = modalStack.indexOf(modalId);
+        if (idx !== -1) { modalStack.splice(idx, 1); }
+        const prevActive = getActiveModal();
+        if (prevActive) {
+            document.getElementById(prevActive).style.display = 'flex';
+        }
+    }
+
+    function closeAllModals() {
+        allModals.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+        modalStack = [];
+    }
+
+    window.addEventListener('popstate', (event) => {
+        if (event.state && event.state.type === 'modal') {
+            // Modal was open, close it
+            const activeModal = getActiveModal();
+            if (activeModal) {
+                document.getElementById(activeModal).style.display = 'none';
+                modalStack.pop();
+                const prevModal = getActiveModal();
+                if (prevModal) {
+                    document.getElementById(prevModal).style.display = 'flex';
+                }
+            }
+        } else if (event.state && event.state.type === 'home') {
+            // Back to home - close all modals
+            closeAllModals();
+            // Browser will handle going back further (closing app)
+        } else {
+            // No state - close any open modals and let browser close
+            closeAllModals();
+        }
+    });
+    // ================== END HISTORY NAVIGATION ==================
+
     // Small helper to safely render free-text comments inside HTML templates
     function escapeHtml(str) {
         if (str === undefined || str === null) return "";
@@ -988,13 +1055,13 @@ function openMonthDetails(id, name, qty) {
         btn.onclick = () => openLedger(m, index);
         grid.appendChild(btn);
     });
-    document.getElementById('monthPickerModal').style.display = 'flex';
+    openModalWithHistory('monthPickerModal');
 }
 async function openLedger(monthName, monthIdx) {
     document.getElementById('ledgerTitle').innerText = `${currentSelectedItem} - ${monthName}`;
     const tbody = document.getElementById('ledgerBody');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Loading...</td></tr>';
-    document.getElementById('ledgerModal').style.display = 'flex';
+    openModalWithHistory('ledgerModal');
 
     const year = new Date().getFullYear();
     const monthStr = String(monthIdx + 1).padStart(2, '0');
@@ -1114,7 +1181,7 @@ function closeMonthPicker() {
 }
 
 function closeLedger() {
-    document.getElementById('ledgerModal').style.display = 'none';
+    closeModalWithHistory('ledgerModal');
 }
 
 
@@ -1359,7 +1426,7 @@ function openEdit(id, cId, name, qty, currentImg, currentUnit) {
         previewCont.style.display = 'block';
     }
     
-    document.getElementById('editModal').style.display = 'flex';
+    openModalWithHistory('editModal');
     
     document.getElementById('saveEditBtn').onclick = async function() {
         const updatedUnit = document.getElementById('editItemUnit') ? document.getElementById('editItemUnit').value : "Pcs";
@@ -1484,31 +1551,13 @@ function processAddCat() {
     }
 
 // 1. Mobile Back Press Logic
-window.addEventListener('popstate', function (event) {
-    // Agar koi modal khula hai toh use band karein, varna piche jayein
-    const modals = document.querySelectorAll('.overlay');
-    let anyModalOpen = false;
-    
-    modals.forEach(m => {
-        if(m.style.display === 'flex') {
-            m.style.display = 'none';
-            anyModalOpen = true;
-        }
-    });
-
-    if (anyModalOpen) {
-        // Stop default back behavior to just close modal
-        history.pushState(null, null, window.location.pathname);
-    }
-});
-
 // 2. Open Modal function mein state add karein (for back press)
 function openCatModal() {
     if (!isAdmin) {
         showToast("Access Denied! 🔒");
         return;
     }
-    document.getElementById('categoryModal').style.display = 'flex';
+    openModalWithHistory('categoryModal');
     // Back button control ke liye history state
     history.pushState(null, null, window.location.pathname);
     loadCatList();
@@ -1528,7 +1577,12 @@ function processAddCat() {
 
 // 4. closeModals update
 function closeModals() {
-    document.querySelectorAll('.overlay').forEach(o => o.style.display = 'none');
+    const active = getActiveModal();
+    if (active) {
+        closeModalWithHistory(active);
+    } else {
+        closeAllModals();
+    }
 }
 
 function renameCat(id, oldName) {
@@ -1659,7 +1713,7 @@ function openManageOptions() {
         showToast("Access Denied! 🔒");
         return;
     }
-    document.getElementById('manageOptionsModal').style.display = 'flex';
+    openModalWithHistory('manageOptionsModal');
     history.pushState(null, null, window.location.pathname);
 }
 
@@ -1670,7 +1724,7 @@ function openBranchModal() {
         showToast("Access Denied! 🔒");
         return;
     }
-    document.getElementById('branchModal').style.display = 'flex';
+    openModalWithHistory('branchModal');
     history.pushState(null, null, window.location.pathname);
     loadBranchList();
 }
@@ -2090,7 +2144,7 @@ db.ref("units").on("value", snapshot => {
 
 // Modal kholne ka function
 function openUnitManager() {
-    document.getElementById('unitModal').style.display = 'flex';
+    openModalWithHistory('unitModal');
     renderUnitsList();
 }
 
@@ -3194,7 +3248,7 @@ async function editTransfer(tId) {
     document.getElementById('editDistQty').value = oldData.qty || '';
     document.getElementById('editDistComment').value = oldData.comment || '';
 
-    document.getElementById('editDistModal').style.display = 'flex';
+    openModalWithHistory('editDistModal');
 }
 
 // Saves the edited distribution, correctly returning old stock and deducting new stock
@@ -3886,7 +3940,7 @@ function editPetrol(id) {
         document.getElementById('editPetrolComment').value = data.comment || '';
         
         // Open modal
-        document.getElementById('editPetrolModal').style.display = 'flex';
+        openModalWithHistory('editPetrolModal');
     });
 }
 
@@ -3918,8 +3972,7 @@ async function saveEditPetrol() {
 
 // Close Edit Modal Helper Function
 function closeEditModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
-    // Clear all editing IDs
+    closeModalWithHistory(modalId);
     currentEditingPetrolId = null;
     currentEditingWasteId = null;
     currentEditingDistId = null;
@@ -3962,7 +4015,7 @@ async function editPurchase(id) {
     document.getElementById('editPurchaseQty').value = oldData.qty || '';
     document.getElementById('editPurchaseComment').value = oldData.comment || '';
 
-    document.getElementById('editPurchaseModal').style.display = 'flex';
+    openModalWithHistory('editPurchaseModal');
 }
 
 // Saves the edited purchase, correctly reversing the old item's stock/IN-column entry
@@ -4252,7 +4305,7 @@ function editWaste(id) {
         document.getElementById('editWasteComment').value = data.comment || '';
         
         // Open modal
-        document.getElementById('editWasteModal').style.display = 'flex';
+        openModalWithHistory('editWasteModal');
     });
 }
 
@@ -4421,7 +4474,7 @@ function openCarManageModal() {
         showToast("Access Denied! 🔒");
         return;
     }
-    document.getElementById('carModal').style.display = 'flex';
+    openModalWithHistory('carModal');
     history.pushState(null, null, window.location.pathname);
     loadCarList();
 }
