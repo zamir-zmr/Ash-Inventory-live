@@ -845,6 +845,8 @@
     let modalStack = [];
     let isInitialLoad = true;
     const allModals = ['petrolPanel', 'unitModal', 'categoryModal', 'manageOptionsModal', 'branchModal', 'carModal', 'cropModal', 'loginModal', 'editModal', 'deleteModal', 'monthPickerModal', 'ledgerModal', 'editWasteModal', 'editPetrolModal', 'editDistModal', 'editPurchaseModal'];
+    const sidePanels = ['petrolPanel', 'purchasedPanel', 'sharePanel', 'wastedPanel'];
+    const editModals = ['editDistModal', 'editPurchaseModal', 'editWasteModal', 'editPetrolModal'];
 
     // Initialize history on page load
     window.addEventListener('load', () => {
@@ -886,8 +888,32 @@
     }
 
     window.addEventListener('popstate', (event) => {
+        // Priority 1: If an edit modal is open, close it and stay in the side panel
+        const openEditModal = editModals.find(id => {
+            const el = document.getElementById(id);
+            return el && el.style.display !== 'none' && el.style.display !== '';
+        });
+        if (openEditModal) {
+            document.getElementById(openEditModal).style.display = 'none';
+            const idx = modalStack.indexOf(openEditModal);
+            if (idx !== -1) modalStack.splice(idx, 1);
+            // Push state so the side panel back press still works
+            history.pushState({ type: 'sidePanel' }, '', '');
+            return;
+        }
+
+        // Priority 2: If a side panel is open, close it and go home
+        const openPanel = sidePanels.find(id => {
+            const el = document.getElementById(id);
+            return el && el.style.display !== 'none' && el.style.display !== '';
+        });
+        if (openPanel) {
+            document.getElementById(openPanel).style.display = 'none';
+            history.pushState({ type: 'home', stack: [] }, '', '');
+            return;
+        }
+
         if (event.state && event.state.type === 'modal') {
-            // Modal was open, close it
             const activeModal = getActiveModal();
             if (activeModal) {
                 document.getElementById(activeModal).style.display = 'none';
@@ -898,11 +924,8 @@
                 }
             }
         } else if (event.state && event.state.type === 'home') {
-            // Back to home - close all modals
             closeAllModals();
-            // Browser will handle going back further (closing app)
         } else {
-            // No state - close any open modals and let browser close
             closeAllModals();
         }
     });
@@ -2276,7 +2299,8 @@ function openSharePanel() {
     const inputSection = document.getElementById('shareInputSection'); 
     
     panel.style.display = 'flex';
-    panel.style.zIndex = '10000'; 
+    panel.style.zIndex = '10000';
+    history.pushState({ type: 'sidePanel', panelId: 'sharePanel' }, '', '');
 
     if(typeof isAdmin !== 'undefined' && isAdmin) {
         if(inputSection) inputSection.style.display = 'flex';
@@ -2310,6 +2334,7 @@ function openPurchasedPanel() {
     const panel = document.getElementById('purchasedPanel');
     const inputSection = document.getElementById('purchaseInputSection');
     panel.style.display = 'flex';
+    history.pushState({ type: 'sidePanel', panelId: 'purchasedPanel' }, '', '');
 
     if (typeof isAdmin !== 'undefined' && isAdmin) {
         if (inputSection) inputSection.style.display = 'block';
@@ -2648,6 +2673,7 @@ function openWastedPanel() {
     const panel = document.getElementById('wastedPanel');
     const inputSection = document.getElementById('wasteInputSection');
     panel.style.display = 'flex';
+    history.pushState({ type: 'sidePanel', panelId: 'wastedPanel' }, '', '');
 
     if (typeof isAdmin !== 'undefined' && isAdmin) {
         if (inputSection) inputSection.style.display = 'flex';
@@ -3667,6 +3693,7 @@ window.onload = function() {
 function openPetrolPanel() {
     const panel = document.getElementById('petrolPanel');
     if(panel) panel.style.display = 'flex';
+    history.pushState({ type: 'sidePanel', panelId: 'petrolPanel' }, '', '');
 
     // Admin Check logic
     const isUserAdmin = (typeof isAdmin !== 'undefined' && isAdmin);
