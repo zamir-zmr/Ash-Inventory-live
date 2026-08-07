@@ -1094,24 +1094,17 @@ function openMonthDetails(id, name, qty) {
 // ========================================
 // MONTHLY ROLLOVER: find the closing (Current) stock at the end of a given
 // month, so it can become the Opening stock for day 1 of the next month.
-// Walks backward through permanently-stored history (inventory_history is
-// never auto-deleted) until it finds the last month with recorded activity,
-// replaying each month's days forward from its own opening balance.
-// depth caps the walk (~5 years) so a brand-new item with no prior history
-// resolves to 0 instead of recursing forever.
+// Computed entirely in-memory from a single already-fetched history blob
+// (see openLedger) instead of walking backward with repeated network calls —
+// same math as before, just no per-month round trips.
 // ========================================
-async function computeMonthClosingStock(itemId, year, monthIdx, depth) {
+function computeMonthClosingStockSync(allHistory, year, monthIdx, depth) {
     depth = depth || 0;
-    if (depth > 60) return 0;
+    if (depth > 600) return 0; // safety cap only, in-memory now so cheap
 
     const monthStr = String(monthIdx + 1).padStart(2, '0');
     const monthKey = `${year}-${monthStr}`;
-
-    let data = null;
-    try {
-        const snap = await db.ref(`inventory_history/${itemId}/${monthKey}`).once('value');
-        data = snap.val();
-    } catch (e) { console.error(e); }
+    const data = allHistory[monthKey];
 
     let prevMonthIdx = monthIdx - 1;
     let prevYear = year;
@@ -1120,7 +1113,7 @@ async function computeMonthClosingStock(itemId, year, monthIdx, depth) {
     if (!data) {
         // No activity recorded this month at all — keep walking back to find
         // the last month that actually has data.
-        return await computeMonthClosingStock(itemId, prevYear, prevMonthIdx, depth + 1);
+        return computeMonthClosingStockSync(allHistory, prevYear, prevMonthIdx, depth + 1);
     }
 
     // Establish the opening balance to start this month from.
@@ -1129,7 +1122,7 @@ async function computeMonthClosingStock(itemId, year, monthIdx, depth) {
     if (day1 && day1.opening !== undefined) {
         openingBalance = parseFloat(day1.opening);
     } else {
-        openingBalance = await computeMonthClosingStock(itemId, prevYear, prevMonthIdx, depth + 1);
+        openingBalance = computeMonthClosingStockSync(allHistory, prevYear, prevMonthIdx, depth + 1);
     }
 
     const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
@@ -1158,18 +1151,22 @@ async function openLedger(monthName, monthIdx) {
     const monthStr = String(monthIdx + 1).padStart(2, '0');
     const monthKey = `${year}-${monthStr}`;
 
-    let historyData = {};
+    // Single fetch of the item's entire history (data itself is unchanged —
+    // this just replaces many sequential per-month reads with one read).
+    let allHistory = {};
     try {
-        const snapshot = await db.ref(`inventory_history/${currentSelectedId}/${monthKey}`).once('value');
-        historyData = snapshot.val() || {};
+        const fullSnapshot = await db.ref(`inventory_history/${currentSelectedId}`).once('value');
+        allHistory = fullSnapshot.val() || {};
     } catch(e) { console.error(e); }
 
+    const historyData = allHistory[monthKey] || {};
+
     // Rollover: Day 1's opening = previous month's closing stock, computed
-    // from permanently-stored history rather than defaulting to 0.
+    // in-memory from the history already fetched above.
     let prevMonthIdx = monthIdx - 1;
     let prevYear = year;
     if (prevMonthIdx < 0) { prevMonthIdx = 11; prevYear -= 1; }
-    const rolloverOpening = await computeMonthClosingStock(currentSelectedId, prevYear, prevMonthIdx);
+    const rolloverOpening = computeMonthClosingStockSync(allHistory, prevYear, prevMonthIdx);
 
     const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
     const todayDate = new Date().getDate();
