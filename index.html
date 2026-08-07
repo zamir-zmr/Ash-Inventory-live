@@ -1247,36 +1247,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Long-press detection for history cards
-let longPressTimer = null;
-const LONG_PRESS_DURATION = 600; // milliseconds
-
-document.addEventListener('touchstart', function(e) {
-    const card = e.target.closest('.history-card');
-    if (!card) return;
-    
-    longPressTimer = setTimeout(() => {
-        const id = card.getAttribute('data-id');
-        const type = card.getAttribute('data-type');
-        if (id && type) {
-            showHistoryContextMenu(id, type);
-        }
-    }, LONG_PRESS_DURATION);
-}, false);
-
-document.addEventListener('touchend', function(e) {
-    if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-    }
-}, false);
-
-document.addEventListener('touchmove', function(e) {
-    if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-    }
-}, false);
+// Long-press detection removed - using oncontextmenu handlers instead for module-specific popups
 
 // Context menu for history items
 function showHistoryContextMenu(id, type) {
@@ -2478,7 +2449,7 @@ function showPurchaseOptions(pId) {
     if(!isAdmin) return;
 
     Swal.fire({
-        title: 'Select Action',
+        title: 'खरीद एक्शन',
         text: "Do you want to modify this purchase?",
         icon: 'question',
         showCancelButton: true,
@@ -2769,7 +2740,7 @@ function showWasteOptions(wId) {
     }
 
     Swal.fire({
-        title: 'Actions',
+        title: 'वेस्टेज एक्शन',
         text: "What would you like to do?",
         icon: 'question',
         showCancelButton: true,
@@ -3110,7 +3081,7 @@ function showTransferOptions(tId) {
     }
 
     Swal.fire({
-        title: 'Select Action',
+        title: 'वितरण एक्शन',
         text: "Do you want to modify this distribution?",
         icon: 'question',
         showCancelButton: true,
@@ -3702,16 +3673,7 @@ function renderPetrolCards(data, keys) {
                 <div style="font-size:9px; color:var(--text-dim);">${item.date} ${item.time}</div>
             </div>`;
 
-        // LONG PRESS LOGIC
-        let timer;
-        card.addEventListener('touchstart', () => {
-            card.style.background = "var(--bg)";
-            timer = setTimeout(() => showPetrolOptions(key, item), 800); 
-        });
-        card.addEventListener('touchend', () => {
-            clearTimeout(timer);
-            card.style.background = "var(--panel)";
-        });
+        // SINGLE EVENT HANDLER - Only oncontextmenu for smooth popup
         card.oncontextmenu = (e) => { e.preventDefault(); showPetrolOptions(key, item); };
 
         historyDiv.appendChild(card);
@@ -3807,7 +3769,7 @@ function showPetrolOptions(id, item) {
     }
 
     Swal.fire({
-        title: 'Actions',
+        title: 'पेट्रोल एक्शन',
         text: `${item.carNum} - OMR ${parseFloat(item.amount).toFixed(3)}`,
         showDenyButton: true,
         showCancelButton: true,
