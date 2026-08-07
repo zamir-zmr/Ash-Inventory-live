@@ -871,21 +871,32 @@
     }
 
     function closeModalWithHistory(modalId) {
+        // Instead of hiding the modal directly (which desyncs the JS state
+        // from the real browser/WebView history stack), go back through
+        // history and let the single popstate handler below do the actual
+        // hiding. This keeps in-app "X"/back-arrow taps and the hardware
+        // back button perfectly in sync.
         const modalEl = document.getElementById(modalId);
-        if (!modalEl) return;
-        modalEl.style.display = 'none';
-        const idx = modalStack.indexOf(modalId);
-        if (idx !== -1) { modalStack.splice(idx, 1); }
-        const prevActive = getActiveModal();
-        if (prevActive) {
-            document.getElementById(prevActive).style.display = 'flex';
-        }
+        if (!modalEl || modalEl.style.display === 'none' || modalEl.style.display === '') return;
+        history.back();
     }
 
     function closeAllModals() {
         allModals.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
         modalStack = [];
     }
+
+    // Some Android WebView wrapper apps (Cordova/Capacitor style shells) fire a
+    // custom 'backbutton' event for the hardware back key and, if nothing
+    // handles it, exit the app immediately -- completely bypassing the page's
+    // own browser history. Registering this listener (harmless no-op if the
+    // shell is a plain WebView that already uses real browser navigation)
+    // routes the hardware key through the exact same history.back() path as
+    // every in-app back-arrow button, so both stay perfectly in sync.
+    document.addEventListener('backbutton', function (e) {
+        e.preventDefault();
+        history.back();
+    }, false);
 
     window.addEventListener('popstate', (event) => {
         // Priority 1: If an edit modal is open, close it and stay in the side panel
@@ -2318,7 +2329,13 @@ function openSharePanel() {
 }
 
 function closeSharePanel() {
-    document.getElementById('sharePanel').style.display = 'none';
+    // Go back through history instead of hiding directly, so the JS state
+    // stays in sync with the browser/WebView history stack (fixes the
+    // hardware back button skipping Home and closing the app).
+    const panel = document.getElementById('sharePanel');
+    if (panel && panel.style.display !== 'none' && panel.style.display !== '') {
+        history.back();
+    }
 }
 
 
@@ -2347,8 +2364,14 @@ function openPurchasedPanel() {
     loadPurchaseHistory();
 }
 
-function closePurchasedPanel() { 
-    document.getElementById('purchasedPanel').style.display = 'none'; 
+function closePurchasedPanel() {
+    // Go back through history instead of hiding directly, so the JS state
+    // stays in sync with the browser/WebView history stack (fixes the
+    // hardware back button skipping Home and closing the app).
+    const panel = document.getElementById('purchasedPanel');
+    if (panel && panel.style.display !== 'none' && panel.style.display !== '') {
+        history.back();
+    }
 }
 
 function updatePurchaseMaxQty() {
@@ -2686,8 +2709,14 @@ function openWastedPanel() {
     loadWasteHistory(); // Custom history function call
 }
 
-function closeWastedPanel() { 
-    document.getElementById('wastedPanel').style.display = 'none'; 
+function closeWastedPanel() {
+    // Go back through history instead of hiding directly, so the JS state
+    // stays in sync with the browser/WebView history stack (fixes the
+    // hardware back button skipping Home and closing the app).
+    const panel = document.getElementById('wastedPanel');
+    if (panel && panel.style.display !== 'none' && panel.style.display !== '') {
+        history.back();
+    }
 }
 
 // 1. Filter Logic (Cloned from Distributions)
@@ -3716,8 +3745,13 @@ function openPetrolPanel() {
 }
 
 function closePetrolPanel() {
+    // Go back through history instead of hiding directly, so the JS state
+    // stays in sync with the browser/WebView history stack (fixes the
+    // hardware back button skipping Home and closing the app).
     const panel = document.getElementById('petrolPanel');
-    if(panel) panel.style.display = 'none';
+    if (panel && panel.style.display !== 'none' && panel.style.display !== '') {
+        history.back();
+    }
 }
 
 // --- 3. SAVE DATA (Firebase) ---
