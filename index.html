@@ -1282,39 +1282,49 @@ async function openLedgerOptimized(monthName, monthIdx) {
         const outVal   = parseFloat(dayData.outward || 0);
         const wasteVal = parseFloat(dayData.waste   || 0);
 
-        let displayOpening = 0;
         const isFutureDay = (year > currentRealYear) ||
             (year === currentRealYear && monthIdx > currentMonthIdx) ||
             (year === currentRealYear && monthIdx === currentMonthIdx && i > todayDate);
 
+        // Opening always comes from the persisted Firebase chain:
+        // 1) an explicit opening saved for this day, else
+        // 2) day 1 → previous month's closing (rollover), else
+        // 3) the previous day's computed closing (running balance).
+        // The chain keeps running underneath every day (including future
+        // ones) so that as soon as a day actually arrives, its opening is
+        // already correctly carried forward from the day before — but a
+        // future day that hasn't happened yet is DISPLAYED as all zeros,
+        // never pre-filled with today's balance.
+        let displayOpening;
         if (dayData.opening !== undefined) {
             displayOpening = parseFloat(dayData.opening);
-        } else if (i === todayDate && monthIdx === currentMonthIdx) {
-            displayOpening = currentItemBaseStock - inVal + outVal + wasteVal;
-        } else if (isFutureDay) {
-            displayOpening = 0;
         } else if (i === 1) {
             displayOpening = rolloverOpening;
         } else {
             displayOpening = runningClosing;
         }
 
-        let displayCurrent = isFutureDay && dayData.opening === undefined ? 0 : (displayOpening + inVal) - (outVal + wasteVal);
+        let displayCurrent = (displayOpening + inVal) - (outVal + wasteVal);
         const isToday = (i === todayDate && monthIdx === currentMonthIdx);
         const isEvenRow = (i % 2 === 0);
         
-        if (!isFutureDay) {
-            runningClosing = displayCurrent;
-        }
+        runningClosing = displayCurrent;
+
+        // What actually gets shown in the table for this row.
+        const shownOpening = isFutureDay ? 0 : displayOpening;
+        const shownCurrent  = isFutureDay ? 0 : displayCurrent;
+        const shownOut   = (!isFutureDay && outVal   > 0) ? outVal.toFixed(2)     : '-';
+        const shownIn    = (!isFutureDay && inVal    > 0) ? '+' + inVal.toFixed(2) : '-';
+        const shownWaste = (!isFutureDay && wasteVal > 0) ? wasteVal.toFixed(2)    : '-';
 
         html += `
             <tr style="border-bottom:1px solid var(--border); ${isToday ? 'background:linear-gradient(90deg, rgba(13,148,136,0.12), transparent);' : isEvenRow ? 'background:rgba(0,0,0,0.02);' : 'background:var(--panel);'}">
                 <td style="padding:12px 10px; border:1px solid var(--border); text-align:center; font-weight:700; color:var(--text-main);">${i}</td>
-                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:600; color:var(--accent); text-align:center;">${displayOpening.toFixed(2)}</td>
-                <td style="padding:12px 10px; border:1px solid var(--border); color:#ff5e5e; text-align:center; font-weight:600;">${outVal > 0 ? outVal.toFixed(2) : '-'}</td>
-                <td style="padding:12px 10px; border:1px solid var(--border); color:var(--teal); font-weight:800; text-align:center;">${inVal > 0 ? '+' + inVal.toFixed(2) : '-'}</td>
-                <td style="padding:12px 10px; border:1px solid var(--border); color:#ffa500; text-align:center; font-weight:600;">${wasteVal > 0 ? wasteVal.toFixed(2) : '-'}</td>
-                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:900; text-align:center; background:${displayCurrent > 0 ? 'rgba(6,183,79,0.08)' : 'rgba(225,29,72,0.08)'}; color:${displayCurrent > 0 ? '#06b74f' : '#e11d48'};">${displayCurrent.toFixed(2)}</td>
+                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:600; color:var(--accent); text-align:center;">${shownOpening.toFixed(2)}</td>
+                <td style="padding:12px 10px; border:1px solid var(--border); color:#ff5e5e; text-align:center; font-weight:600;">${shownOut}</td>
+                <td style="padding:12px 10px; border:1px solid var(--border); color:var(--teal); font-weight:800; text-align:center;">${shownIn}</td>
+                <td style="padding:12px 10px; border:1px solid var(--border); color:#ffa500; text-align:center; font-weight:600;">${shownWaste}</td>
+                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:900; text-align:center; background:${shownCurrent > 0 ? 'rgba(6,183,79,0.08)' : 'rgba(225,29,72,0.08)'}; color:${shownCurrent > 0 ? '#06b74f' : '#e11d48'};">${shownCurrent.toFixed(2)}</td>
             </tr>
         `;
     }
@@ -1567,7 +1577,27 @@ async function addStock() {
             img: finalImageData, 
             by: currentUser, 
             time: new Date().toLocaleString() 
-        }).then(() => {
+        }).then((newRef) => {
+            // Seed today's ledger row so a brand-new item's starting qty
+            // shows up in TODAY's Open column instead of the table reading
+            // 0.00 until someone later edits the quantity.
+            const newItemId = newRef.key;
+            const startQty = parseFloat(q) || 0;
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate());
+            const monthKey = `${year}-${month}`;
+
+            db.ref(`inventory_history/${newItemId}/${monthKey}/${day}`).update({
+                opening: startQty,
+                inward: 0,
+                outward: 0,
+                waste: 0
+            }).then(() => {
+                triggerDailyCarryover(newItemId, monthKey, parseInt(day));
+            });
+
             document.getElementById('stockName').value = ""; 
             document.getElementById('stockQty').value = "";
             document.getElementById('fileName').innerText = "Add Photo";
@@ -1646,6 +1676,11 @@ function openEdit(id, cId, name, qty, currentImg, currentUnit) {
                 opening: calculatedOpening, // Ledger ke 'Open' column ke liye
                 manualQty: newQty
             });
+
+            // Push this day's closing forward as next day's opening (and into
+            // next month's day 1 if this was the month's last day), and drop
+            // the cached ledger so the table re-reads fresh from Firebase.
+            triggerDailyCarryover(id, monthKey, parseInt(day));
 
             finalImageData = ""; 
             closeModals();
@@ -3341,18 +3376,50 @@ function loadTransferHistory() {
     });
 }
 
-// Any user can mark a distribution as "Received" with a green tick + animation
+// Any user can tap the tick to mark a distribution "Received" (name + time
+// recorded), and tap again to un-mark it back to "Not received yet".
 async function toggleReceived(id) {
     const tickEl = document.getElementById(`tick-${id}`);
-    if (tickEl && tickEl.classList.contains('received')) {
-        showToast("Already received ✓");
+    const labelEl = document.getElementById(`tick-label-${id}`);
+    const isCurrentlyReceived = !!(tickEl && tickEl.classList.contains('received'));
+    const userName = currentUser || "Guest";
+
+    if (isCurrentlyReceived) {
+        // --- UNCHECK: revert back to "Not received yet" ---
+        if (tickEl) {
+            tickEl.classList.remove('received', 'tick-animate');
+            tickEl.innerHTML = '';
+        }
+        if (labelEl) {
+            labelEl.style.color = 'var(--text-dim)';
+            labelEl.innerText = 'Not received yet';
+        }
+
+        try {
+            await db.ref(`transfers/${id}`).update({
+                received: false,
+                receivedBy: "",
+                receivedTime: ""
+            });
+            showToast("Marked as not received");
+        } catch(e) {
+            console.error("Un-receive update error:", e);
+            showToast("Error updating ❌");
+            // revert optimistic UI on failure
+            if (tickEl) {
+                tickEl.classList.add('received');
+                tickEl.innerHTML = '<i class="fas fa-check" style="color:#fff; font-size:11px;"></i>';
+            }
+            if (labelEl) {
+                labelEl.style.color = '#16a34a';
+                labelEl.innerText = `Received by: ${userName}`;
+            }
+        }
         return;
     }
 
-    const userName = currentUser || "Guest";
-    
+    // --- CHECK: mark as received, recording current user + time ---
     // Optimistic UI feedback with pop animation
-    const labelEl = document.getElementById(`tick-label-${id}`);
     if (tickEl) {
         tickEl.classList.add('received', 'tick-animate');
         tickEl.innerHTML = '<i class="fas fa-check" style="color:#fff; font-size:11px;"></i>';
@@ -3832,6 +3899,7 @@ function filterData(type) {
 
             // --- FINAL HTML GENERATION ---
             if (dateMatch && branchMatch) {
+                const received = !!t.received;
                 html += `
                 <div id="card-${id}" oncontextmenu="showTransferOptions('${id}'); return false;" style="background:var(--panel); padding:12px; border-radius:18px; border:1px solid var(--border); margin-bottom:10px; cursor:pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -3852,6 +3920,14 @@ function filterData(type) {
                             <i class="fas fa-user-circle" style="color:var(--teal);"></i> By: <b>${t.by || 'Admin'}</b>
                         </div>
                         <div style="font-size:9px; color:var(--text-dim);">${t.time}</div>
+                    </div>
+                    <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation();">
+                        <div id="tick-${id}" class="receive-tick ${received ? 'received' : ''}" onclick="toggleReceived('${id}')" style="cursor:pointer;">
+                            ${received ? '<i class="fas fa-check" style="color:#fff; font-size:11px;"></i>' : ''}
+                        </div>
+                        <span id="tick-label-${id}" style="font-size:10px; font-weight:700; color:${received ? '#16a34a' : 'var(--text-dim)'};">
+                            ${received ? `Received by: ${escapeHtml(t.receivedBy || 'Admin')}` : 'Not received yet'}
+                        </span>
                     </div>
                 </div>`;
             }
