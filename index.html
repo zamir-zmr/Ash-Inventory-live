@@ -1086,7 +1086,7 @@ function openMonthDetails(id, name, qty) {
         const btn = document.createElement('button');
         btn.innerText = m;
         btn.style = "padding:15px; border-radius:12px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700;";
-        btn.onclick = () => openLedger(m, index);
+        btn.onclick = () => openLedgerOptimized(m, index);
         grid.appendChild(btn);
     });
     openModalWithHistory('monthPickerModal');
@@ -1141,7 +1141,103 @@ function computeMonthClosingStockSync(allHistory, year, monthIdx, depth) {
     return running;
 }
 
-async function openLedger(monthName, monthIdx) {
+// ========== AUTOMATIC DATA CARRYOVER & OPTIMIZATION FUNCTIONS ==========
+let cachedLedgerData = {};
+let lastLedgerItemId = null;
+let lastLedgerMonth = null;
+
+async function syncDailyOpeningStock(itemId, monthKey, dayNum) {
+    try {
+        const year = monthKey.split('-')[0];
+        const monthIdx = parseInt(monthKey.split('-')[1]) - 1;
+        
+        const currentDaySnap = await db.ref(`inventory_history/${itemId}/${monthKey}/${dayNum}`).once('value');
+        const currentDayData = currentDaySnap.val() || {};
+        
+        const opening = parseFloat(currentDayData.opening || 0);
+        const inVal = parseFloat(currentDayData.inward || 0);
+        const outVal = parseFloat(currentDayData.outward || 0);
+        const wasteVal = parseFloat(currentDayData.waste || 0);
+        const currentStock = opening + inVal - outVal - wasteVal;
+        
+        const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+        if (dayNum < daysInMonth) {
+            const nextDay = dayNum + 1;
+            const nextDayRef = db.ref(`inventory_history/${itemId}/${monthKey}/${nextDay}`);
+            
+            nextDayRef.transaction((current) => {
+                if (!current) current = {};
+                if (current.opening === undefined || current.opening === null) {
+                    current.opening = parseFloat(currentStock.toFixed(2));
+                }
+                if (!current.inward) current.inward = 0;
+                if (!current.outward) current.outward = 0;
+                if (!current.waste) current.waste = 0;
+                return current;
+            });
+        } else {
+            syncMonthEndToNextMonth(itemId, year, monthIdx, currentStock);
+        }
+    } catch (e) {
+        console.error("Daily carryover sync error:", e);
+    }
+}
+
+async function syncMonthEndToNextMonth(itemId, year, monthIdx, closingStock) {
+    try {
+        let nextMonthIdx = monthIdx + 1;
+        let nextYear = year;
+        if (nextMonthIdx > 11) {
+            nextMonthIdx = 0;
+            nextYear += 1;
+        }
+        
+        const nextMonthKey = `${nextYear}-${String(nextMonthIdx + 1).padStart(2, '0')}`;
+        const nextDayOneRef = db.ref(`inventory_history/${itemId}/${nextMonthKey}/1`);
+        
+        nextDayOneRef.transaction((current) => {
+            if (!current) current = {};
+            if (current.opening === undefined || current.opening === null) {
+                current.opening = parseFloat(closingStock.toFixed(2));
+            }
+            if (!current.inward) current.inward = 0;
+            if (!current.outward) current.outward = 0;
+            if (!current.waste) current.waste = 0;
+            return current;
+        });
+    } catch (e) {
+        console.error("Month-end sync error:", e);
+    }
+}
+
+async function loadItemHistoryBatch(itemId) {
+    try {
+        const snapshot = await db.ref(`inventory_history/${itemId}`).once('value');
+        return snapshot.val() || {};
+    } catch (e) {
+        console.error("Batch history load failed:", e);
+        return {};
+    }
+}
+
+function computeMonthTotalsMemory(monthData, daysInMonth) {
+    let totalOut = 0;
+    let totalIn = 0;
+    let totalWaste = 0;
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dayData = monthData[String(i)] || monthData[i] || {};
+        totalOut += parseFloat(dayData.outward || 0);
+        totalIn += parseFloat(dayData.inward || 0);
+        totalWaste += parseFloat(dayData.waste || 0);
+    }
+    
+    return { totalOut, totalIn, totalWaste };
+}
+
+async function openLedgerOptimized(monthName, monthIdx) {
+    const cacheKey = `${currentSelectedId}_${monthIdx}`;
+    
     document.getElementById('ledgerTitle').innerText = `${currentSelectedItem} - ${monthName}`;
     const tbody = document.getElementById('ledgerBody');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Loading...</td></tr>';
@@ -1151,18 +1247,20 @@ async function openLedger(monthName, monthIdx) {
     const monthStr = String(monthIdx + 1).padStart(2, '0');
     const monthKey = `${year}-${monthStr}`;
 
-    // Single fetch of the item's entire history (data itself is unchanged —
-    // this just replaces many sequential per-month reads with one read).
-    let allHistory = {};
-    try {
-        const fullSnapshot = await db.ref(`inventory_history/${currentSelectedId}`).once('value');
-        allHistory = fullSnapshot.val() || {};
-    } catch(e) { console.error(e); }
+    let allHistory = cachedLedgerData[currentSelectedId];
+    if (!allHistory || lastLedgerItemId !== currentSelectedId) {
+        try {
+            allHistory = await loadItemHistoryBatch(currentSelectedId);
+            cachedLedgerData[currentSelectedId] = allHistory;
+            lastLedgerItemId = currentSelectedId;
+        } catch (e) {
+            console.error("Ledger load error:", e);
+            allHistory = {};
+        }
+    }
 
     const historyData = allHistory[monthKey] || {};
 
-    // Rollover: Day 1's opening = previous month's closing stock, computed
-    // in-memory from the history already fetched above.
     let prevMonthIdx = monthIdx - 1;
     let prevYear = year;
     if (prevMonthIdx < 0) { prevMonthIdx = 11; prevYear -= 1; }
@@ -1172,24 +1270,17 @@ async function openLedger(monthName, monthIdx) {
     const todayDate = new Date().getDate();
     const currentMonthIdx = new Date().getMonth();
     const currentRealYear = new Date().getFullYear();
-    let html = "";
     
-    let totalOpening = 0;
-    let totalOut = 0;
-    let totalIn = 0;
-    let totalWaste = 0;
-    let totalCurrent = 0;
-    let runningClosing = rolloverOpening; // previous day's Current stock, carried forward day-to-day
-
+    const { totalOut, totalIn, totalWaste } = computeMonthTotalsMemory(historyData, daysInMonth);
+    
+    let html = "";
+    let runningClosing = rolloverOpening;
+    
     for (let i = 1; i <= daysInMonth; i++) {
         const dayData = historyData[String(i)] || historyData[i] || {};
         const inVal    = parseFloat(dayData.inward  || 0);
         const outVal   = parseFloat(dayData.outward || 0);
         const wasteVal = parseFloat(dayData.waste   || 0);
-        
-        totalOut += outVal;
-        totalIn += inVal;
-        totalWaste += wasteVal;
 
         let displayOpening = 0;
         const isFutureDay = (year > currentRealYear) ||
@@ -1199,33 +1290,19 @@ async function openLedger(monthName, monthIdx) {
         if (dayData.opening !== undefined) {
             displayOpening = parseFloat(dayData.opening);
         } else if (i === todayDate && monthIdx === currentMonthIdx) {
-            /* YAHA HAI FIX: 
-               Jab aap purchase delete karte hain, toh currentItemBaseStock kam ho jata hai.
-               Isliye hum formula mein inVal ko nahi chedenge, balki formula ko 
-               waise hi chalne denge taaki Open hamesha 10 (fixed) dikhaye.
-            */
             displayOpening = currentItemBaseStock - inVal + outVal + wasteVal;
         } else if (isFutureDay) {
-            // Dates that haven't happened yet must stay at 0 — they should
-            // not inherit today's (or any past day's) carried-forward stock.
             displayOpening = 0;
         } else if (i === 1) {
-            // MONTHLY ROLLOVER FIX: Day 1's Open = last month's Current stock,
-            // not a hardcoded 0.
             displayOpening = rolloverOpening;
         } else {
-            // No explicit opening recorded for this day — carry forward
-            // yesterday's Current stock instead of defaulting to 0.
             displayOpening = runningClosing;
         }
 
-        // Current Stock column ke liye formula
         let displayCurrent = isFutureDay && dayData.opening === undefined ? 0 : (displayOpening + inVal) - (outVal + wasteVal);
         const isToday = (i === todayDate && monthIdx === currentMonthIdx);
         const isEvenRow = (i % 2 === 0);
         
-        totalOpening += displayOpening;
-        totalCurrent = displayCurrent;
         if (!isFutureDay) {
             runningClosing = displayCurrent;
         }
@@ -1233,26 +1310,11 @@ async function openLedger(monthName, monthIdx) {
         html += `
             <tr style="border-bottom:1px solid var(--border); ${isToday ? 'background:linear-gradient(90deg, rgba(13,148,136,0.12), transparent);' : isEvenRow ? 'background:rgba(0,0,0,0.02);' : 'background:var(--panel);'}">
                 <td style="padding:12px 10px; border:1px solid var(--border); text-align:center; font-weight:700; color:var(--text-main);">${i}</td>
-                
-                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:600; color:var(--accent); text-align:center;">
-                    ${displayOpening.toFixed(2)}
-                </td>
-
-                <td style="padding:12px 10px; border:1px solid var(--border); color:#ff5e5e; text-align:center; font-weight:600;">
-                    ${outVal > 0 ? outVal.toFixed(2) : '-'}
-                </td>
-
-                <td style="padding:12px 10px; border:1px solid var(--border); color:var(--teal); font-weight:800; text-align:center;">
-                    ${inVal > 0 ? '+' + inVal.toFixed(2) : '-'}
-                </td>
-
-                <td style="padding:12px 10px; border:1px solid var(--border); color:#ffa500; text-align:center; font-weight:600;">
-                    ${wasteVal > 0 ? wasteVal.toFixed(2) : '-'}
-                </td>
-
-                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:900; text-align:center; background:${displayCurrent > 0 ? 'rgba(6,183,79,0.08)' : 'rgba(225,29,72,0.08)'}; color:${displayCurrent > 0 ? '#06b74f' : '#e11d48'};">
-                    ${displayCurrent.toFixed(2)}
-                </td>
+                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:600; color:var(--accent); text-align:center;">${displayOpening.toFixed(2)}</td>
+                <td style="padding:12px 10px; border:1px solid var(--border); color:#ff5e5e; text-align:center; font-weight:600;">${outVal > 0 ? outVal.toFixed(2) : '-'}</td>
+                <td style="padding:12px 10px; border:1px solid var(--border); color:var(--teal); font-weight:800; text-align:center;">${inVal > 0 ? '+' + inVal.toFixed(2) : '-'}</td>
+                <td style="padding:12px 10px; border:1px solid var(--border); color:#ffa500; text-align:center; font-weight:600;">${wasteVal > 0 ? wasteVal.toFixed(2) : '-'}</td>
+                <td style="padding:12px 10px; border:1px solid var(--border); font-weight:900; text-align:center; background:${displayCurrent > 0 ? 'rgba(6,183,79,0.08)' : 'rgba(225,29,72,0.08)'}; color:${displayCurrent > 0 ? '#06b74f' : '#e11d48'};">${displayCurrent.toFixed(2)}</td>
             </tr>
         `;
     }
@@ -1260,27 +1322,31 @@ async function openLedger(monthName, monthIdx) {
     html += `
         <tr style="border-top:2px solid var(--accent); border-bottom:2px solid var(--accent); background:linear-gradient(90deg, rgba(14,165,233,0.15), rgba(13,148,136,0.15)); font-weight:900; font-size:13px;">
             <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:var(--accent); font-weight:900;">TOTAL</td>
-            
             <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; background:var(--panel);"></td>
-
-            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:#ff5e5e; font-weight:900;">
-                ${totalOut > 0 ? totalOut.toFixed(2) : '0.00'}
-            </td>
-
-            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:var(--teal); font-weight:900;">
-                ${totalIn > 0 ? '+' + totalIn.toFixed(2) : '0.00'}
-            </td>
-
-            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:#ffa500; font-weight:900;">
-                ${totalWaste > 0 ? totalWaste.toFixed(2) : '0.00'}
-            </td>
-
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:#ff5e5e; font-weight:900;">${totalOut > 0 ? totalOut.toFixed(2) : '0.00'}</td>
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:var(--teal); font-weight:900;">${totalIn > 0 ? '+' + totalIn.toFixed(2) : '0.00'}</td>
+            <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; color:#ffa500; font-weight:900;">${totalWaste > 0 ? totalWaste.toFixed(2) : '0.00'}</td>
             <td style="padding:14px 10px; border:1px solid var(--accent); text-align:center; background:var(--panel);"></td>
         </tr>
     `;
     
-    tbody.innerHTML = html;
+    requestAnimationFrame(() => {
+        tbody.innerHTML = html;
+    });
 }
+
+function clearLedgerCache() {
+    cachedLedgerData = {};
+    lastLedgerItemId = null;
+}
+
+function triggerDailyCarryover(itemId, monthKey, dayNum) {
+    syncDailyOpeningStock(itemId, monthKey, dayNum).catch(e => console.error("Carryover error:", e));
+    clearLedgerCache();
+}
+// ========== END OPTIMIZATION FUNCTIONS ==========
+
+
 
 
 
@@ -2492,6 +2558,9 @@ async function processStockPurchase() {
             return current;
         });
 
+        // AUTO CARRYOVER: Sync this day's closing to next day's opening
+        triggerDailyCarryover(sId, monthKey, parseInt(day));
+
         // STEP 3: purchases log me save karo
         await db.ref("purchases").push({
             itemId: sId,
@@ -2944,6 +3013,9 @@ async function processStockWaste() {
             return current;
         });
 
+        // AUTO CARRYOVER: Sync this day's closing to next day's opening
+        triggerDailyCarryover(sId, monthKey, parseInt(day));
+
         // STEP 3: wastes log me save
         await db.ref("wastes").push({
             itemId: sId,
@@ -3175,6 +3247,9 @@ async function processStockShare() {
             current.outward = (parseFloat(current.outward) || 0) + sendQty;
             return current;
         });
+
+        // AUTO CARRYOVER: Sync this day's closing to next day's opening
+        triggerDailyCarryover(sId, monthKey, parseInt(day));
 
         // STEP 3: Save to transfers log
         await db.ref("transfers").push({
@@ -3471,6 +3546,9 @@ async function saveEditDist() {
                 current.outward = (parseFloat(current.outward) || 0) + newQty;
                 return current;
             });
+            
+            // AUTO CARRYOVER: Sync distribution day's closing to next day's opening
+            triggerDailyCarryover(newItemId, monthKey, day);
         }
 
         // STEP 3: Save the updated distribution record
@@ -4307,6 +4385,9 @@ async function saveEditPurchase() {
             
             const forwardQtyDelta = newQty;
             await cascadeUpdateOpeningBalances(newItemId, editedDay, editedMonth, forwardQtyDelta);
+            
+            // AUTO CARRYOVER: Sync updated purchase day's closing to next day's opening
+            triggerDailyCarryover(newItemId, editedMonth, parseInt(editedDay));
         }
 
         // STEP 3: Save the updated purchase record
@@ -4519,6 +4600,9 @@ async function saveEditWaste() {
                     current.waste = Math.max(0, oldWaste - oldQty + newQty);
                     return current;
                 });
+                
+                // AUTO CARRYOVER: Sync updated waste day's closing to next day's opening
+                triggerDailyCarryover(itemId, monthKey, day);
             }
         }
 
