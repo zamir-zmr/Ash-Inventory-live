@@ -1117,9 +1117,14 @@ function computeMonthClosingStockSync(allHistory, year, monthIdx, depth) {
     }
 
     // Establish the opening balance to start this month from.
+    // A stored "opening" is only trusted as an anchor when it was a
+    // deliberate manual entry (flagged with manualQty — set on item
+    // creation or a manual stock correction). Every other day's opening
+    // always just chains forward from the previous day's Current balance,
+    // so an edit anywhere upstream always ripples all the way through.
     let openingBalance;
     const day1 = data['1'] || data[1];
-    if (day1 && day1.opening !== undefined) {
+    if (day1 && day1.opening !== undefined && day1.manualQty !== undefined) {
         openingBalance = parseFloat(day1.opening);
     } else {
         openingBalance = computeMonthClosingStockSync(allHistory, prevYear, prevMonthIdx, depth + 1);
@@ -1130,7 +1135,7 @@ function computeMonthClosingStockSync(allHistory, year, monthIdx, depth) {
     for (let d = 1; d <= daysInMonth; d++) {
         const dayData = data[String(d)] || data[d];
         if (!dayData) continue; // no transactions that day — balance carries forward unchanged
-        if (dayData.opening !== undefined) {
+        if (dayData.opening !== undefined && dayData.manualQty !== undefined) {
             running = parseFloat(dayData.opening);
         }
         const inVal = parseFloat(dayData.inward || 0);
@@ -1146,6 +1151,12 @@ let cachedLedgerData = {};
 let lastLedgerItemId = null;
 let lastLedgerMonth = null;
 
+// Recomputes this day's Current balance and pushes it forward as the next
+// day's Open balance — ALWAYS (not just when the next day is blank), and
+// then recurses into the next day so the fix ripples all the way to the
+// end of the recorded ledger. A next day is only left untouched when it
+// carries its own deliberate manual anchor (manualQty set, e.g. a manual
+// stock correction) — auto-carried openings are always kept in sync.
 async function syncDailyOpeningStock(itemId, monthKey, dayNum) {
     try {
         const year = monthKey.split('-')[0];
@@ -1158,35 +1169,51 @@ async function syncDailyOpeningStock(itemId, monthKey, dayNum) {
         const inVal = parseFloat(currentDayData.inward || 0);
         const outVal = parseFloat(currentDayData.outward || 0);
         const wasteVal = parseFloat(currentDayData.waste || 0);
-        const currentStock = opening + inVal - outVal - wasteVal;
+        const currentStock = parseFloat((opening + inVal - outVal - wasteVal).toFixed(2));
         
         const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
         if (dayNum < daysInMonth) {
             const nextDay = dayNum + 1;
             const nextDayRef = db.ref(`inventory_history/${itemId}/${monthKey}/${nextDay}`);
             
-            nextDayRef.transaction((current) => {
+            let didChange = false;
+            await nextDayRef.transaction((current) => {
                 if (!current) current = {};
-                if (current.opening === undefined || current.opening === null) {
-                    current.opening = parseFloat(currentStock.toFixed(2));
+                if (current.manualQty === undefined || current.manualQty === null) {
+                    const prevOpening = (current.opening === undefined || current.opening === null)
+                        ? null : parseFloat(current.opening);
+                    if (prevOpening !== currentStock) {
+                        current.opening = currentStock;
+                        didChange = true;
+                    }
                 }
-                if (!current.inward) current.inward = 0;
-                if (!current.outward) current.outward = 0;
-                if (!current.waste) current.waste = 0;
+                if (current.inward === undefined || current.inward === null) current.inward = 0;
+                if (current.outward === undefined || current.outward === null) current.outward = 0;
+                if (current.waste === undefined || current.waste === null) current.waste = 0;
                 return current;
             });
+
+            // Only keep cascading while the value actually changes — once a
+            // day already matches, everything after it is already correct.
+            if (didChange) {
+                await syncDailyOpeningStock(itemId, monthKey, nextDay);
+            }
         } else {
-            syncMonthEndToNextMonth(itemId, year, monthIdx, currentStock);
+            await syncMonthEndToNextMonth(itemId, year, monthIdx, currentStock);
         }
     } catch (e) {
         console.error("Daily carryover sync error:", e);
     }
 }
 
+// Carries the final Current balance of a month forward as the Open balance
+// of day 1 of the following month, then keeps cascading from there —
+// exactly the same rule as day-to-day carryover, just across a month (and
+// year) boundary.
 async function syncMonthEndToNextMonth(itemId, year, monthIdx, closingStock) {
     try {
         let nextMonthIdx = monthIdx + 1;
-        let nextYear = year;
+        let nextYear = parseInt(year);
         if (nextMonthIdx > 11) {
             nextMonthIdx = 0;
             nextYear += 1;
@@ -1194,17 +1221,28 @@ async function syncMonthEndToNextMonth(itemId, year, monthIdx, closingStock) {
         
         const nextMonthKey = `${nextYear}-${String(nextMonthIdx + 1).padStart(2, '0')}`;
         const nextDayOneRef = db.ref(`inventory_history/${itemId}/${nextMonthKey}/1`);
+        const roundedClosing = parseFloat(closingStock.toFixed(2));
         
-        nextDayOneRef.transaction((current) => {
+        let didChange = false;
+        await nextDayOneRef.transaction((current) => {
             if (!current) current = {};
-            if (current.opening === undefined || current.opening === null) {
-                current.opening = parseFloat(closingStock.toFixed(2));
+            if (current.manualQty === undefined || current.manualQty === null) {
+                const prevOpening = (current.opening === undefined || current.opening === null)
+                    ? null : parseFloat(current.opening);
+                if (prevOpening !== roundedClosing) {
+                    current.opening = roundedClosing;
+                    didChange = true;
+                }
             }
-            if (!current.inward) current.inward = 0;
-            if (!current.outward) current.outward = 0;
-            if (!current.waste) current.waste = 0;
+            if (current.inward === undefined || current.inward === null) current.inward = 0;
+            if (current.outward === undefined || current.outward === null) current.outward = 0;
+            if (current.waste === undefined || current.waste === null) current.waste = 0;
             return current;
         });
+
+        if (didChange) {
+            await syncDailyOpeningStock(itemId, nextMonthKey, 1);
+        }
     } catch (e) {
         console.error("Month-end sync error:", e);
     }
@@ -1286,17 +1324,20 @@ async function openLedgerOptimized(monthName, monthIdx) {
             (year === currentRealYear && monthIdx > currentMonthIdx) ||
             (year === currentRealYear && monthIdx === currentMonthIdx && i > todayDate);
 
-        // Opening always comes from the persisted Firebase chain:
-        // 1) an explicit opening saved for this day, else
-        // 2) day 1 → previous month's closing (rollover), else
-        // 3) the previous day's computed closing (running balance).
-        // The chain keeps running underneath every day (including future
-        // ones) so that as soon as a day actually arrives, its opening is
-        // already correctly carried forward from the day before — but a
-        // future day that hasn't happened yet is DISPLAYED as all zeros,
-        // never pre-filled with today's balance.
+        // Opening always comes from the live carryover chain:
+        // 1) day 1 → previous month's closing (rollover), else
+        // 2) the previous day's computed Current balance (running chain).
+        // The only exception is a day carrying a deliberate manual anchor
+        // (manualQty set — item creation or a manual stock correction),
+        // which is respected as-is. This guarantees a day's Current always
+        // becomes the next day's Open, even if a stale value was previously
+        // persisted for that day. The chain keeps running underneath every
+        // day (including future ones) so that as soon as a day actually
+        // arrives, its opening is already correctly carried forward from
+        // the day before — but a future day that hasn't happened yet is
+        // DISPLAYED as all zeros, never pre-filled with today's balance.
         let displayOpening;
-        if (dayData.opening !== undefined) {
+        if (dayData.opening !== undefined && dayData.manualQty !== undefined) {
             displayOpening = parseFloat(dayData.opening);
         } else if (i === 1) {
             displayOpening = rolloverOpening;
@@ -1591,6 +1632,7 @@ async function addStock() {
 
             db.ref(`inventory_history/${newItemId}/${monthKey}/${day}`).update({
                 opening: startQty,
+                manualQty: startQty,
                 inward: 0,
                 outward: 0,
                 waste: 0
@@ -4317,35 +4359,17 @@ async function editPurchase(id) {
 // ========================================
 async function cascadeUpdateOpeningBalances(itemId, editedDay, editedMonth, quantityDelta) {
     try {
-        const monthKey = editedMonth;
-        const [year, month] = monthKey.split('-');
-        const daysInMonth = new Date(year, parseInt(month), 0).getDate();
-        
         console.log(`Cascading update: ${itemId}, Day ${editedDay}, Delta: ${quantityDelta}`);
-        
-        for (let day = editedDay + 1; day <= daysInMonth; day++) {
-            const dayRef = db.ref(`inventory_history/${itemId}/${monthKey}/${day}`);
-            
-            await dayRef.transaction((dayData) => {
-                if (!dayData) return dayData;
-                
-                const currentOpening = parseFloat(dayData.opening || 0);
-                const newOpening = currentOpening + quantityDelta;
-                
-                dayData.opening = Math.max(0, newOpening).toFixed(2);
-                
-                const inVal = parseFloat(dayData.inward || 0);
-                const outVal = parseFloat(dayData.outward || 0);
-                const wasteVal = parseFloat(dayData.waste || 0);
-                const closing = (parseFloat(dayData.opening) + inVal) - (outVal + wasteVal);
-                
-                dayData.closing = Math.max(0, closing).toFixed(2);
-                
-                console.log(`Day ${day}: opening=${dayData.opening}, closing=${dayData.closing}`);
-                return dayData;
-            });
-        }
-        
+
+        // The edited day's In/Out/Waste have already been updated by the
+        // caller by this point — so instead of nudging every later day's
+        // opening by a raw +/- delta (which can drift, and never crossed a
+        // month boundary), just re-run the authoritative carryover chain
+        // starting at the edited day. This recomputes every subsequent
+        // day's Open/Current correctly and keeps cascading through month
+        // and year boundaries automatically.
+        await syncDailyOpeningStock(itemId, editedMonth, parseInt(editedDay));
+
         console.log("Cascade update completed successfully");
         return true;
     } catch (error) {
