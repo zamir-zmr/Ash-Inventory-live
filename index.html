@@ -631,33 +631,28 @@
 </div>
 
 
-<div id="unitModal" class="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column;">
-    
-    <div style="background:var(--panel); padding:20px; display:flex; justify-content:space-between; align-items:center; border-bottom:5px solid #00bac3;">
-        <h2 style="color:var(--text-main); font-size:20px; margin:0; display:flex; align-items:center; gap:10px;">
-            <i class="fas fa-balance-scale" style="color:#00bac3;"></i> Manage Units
-        </h2>
-        <button onclick="closeUnitModal()" style="background:none; border:none; font-size:28px; color:var(--text-dim); cursor:pointer;">&times;</button>
-    </div>
+<div id="unitModal" class="overlay" style="align-items: flex-start; background: var(--bg);">
+    <div class="modal" style="width: 100%; height: 100vh; max-width: none; border-radius: 0; padding: 20px; display: flex; flex-direction: column;">
 
-    <div style="flex:1; padding:20px; overflow-y:auto;">
-        
-        <p style="font-size:11px; color:var(--text-dim); margin-bottom:8px; font-weight:700; letter-spacing:1px;">ADD NEW UNIT</p>
-        <div style="display:flex; gap:10px; margin-bottom:25px;">
-            <input type="text" id="unitInput" placeholder="Enter Unit (e.g. Kg, Gram, Pcs)" 
-                style="flex:1; padding:15px; border-radius:15px; border:2px solid #00bac3; background:var(--panel); color:var(--text-main); outline:none; font-size:15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-            <button onclick="addUnit()" style="width:55px; border-radius:15px; border:none; background:#00bac3; color:white; cursor:pointer; font-size:18px; box-shadow: 0 4px 15px rgba(0,186,195,0.3);">
-                <i class="fas fa-plus"></i>
-            </button>
+        <div style="display:flex; align-items:center; gap: 15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-left" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 1.3rem;"></i>
+            <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Units</h3>
         </div>
 
-        <p style="font-size:11px; color:var(--text-dim); margin-bottom:12px; font-weight:700; letter-spacing:1px;">UNIT LIST</p>
-        <div id="unitListContainer" style="padding-bottom:80px;">
+        <div id="addUnitBox" style="background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 20px; flex-shrink: 0;">
+            <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">Add New Unit</label>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="unitInput" placeholder="Enter unit name..." 
+                    style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 14px; outline: none;">
+                <button onclick="addUnit()" 
+                    style="background: var(--teal); color: white; border: none; padding: 0 20px; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                    ADD
+                </button>
             </div>
-    </div>
+        </div>
 
-    <div style="position:fixed; bottom:20px; left:0; width:100%; padding:0 20px;">
-
+        <div id="unitListContainer" style="flex: 1; overflow-y: auto; padding-bottom: 30px;">
+            </div>
     </div>
 </div>
 
@@ -699,6 +694,9 @@
             </button>
             <button onclick="closeModals(); openCatModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
                 <i class="fas fa-tags" style="color:var(--accent); font-size:18px; width:20px;"></i> Category
+            </button>
+            <button onclick="closeModals(); openUnitManager();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
+                <i class="fas fa-balance-scale" style="color:#00bac3; font-size:18px; width:20px;"></i> Units
             </button>
             <button onclick="closeModals(); openCarManageModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
                 <i class="fas fa-gas-pump" style="color:#f59e0b; font-size:18px; width:20px;"></i> Petrol
@@ -2361,6 +2359,7 @@ function filter() {
         handleLogin(); 
     }
     render();
+    if (isAdmin) cleanupInvalidStocks();
     
 
 let units = []; // Global variable
@@ -2402,7 +2401,12 @@ db.ref("units").on("value", snapshot => {
 
 // Modal kholne ka function
 function openUnitManager() {
+    if (!isAdmin) {
+        showToast("Access Denied! 🔒");
+        return;
+    }
     openModalWithHistory('unitModal');
+    history.pushState(null, null, window.location.pathname);
     renderUnitsList();
 }
 
@@ -2415,13 +2419,18 @@ function closeUnitModal() {
 function renderUnitsList() {
     const container = document.getElementById('unitListContainer');
     if (!container) return;
-    
+
+    if (!units || units.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-dim); text-align:center; padding:20px;">No Units Found.</p>';
+        return;
+    }
+
     container.innerHTML = units.map(u => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg); padding:12px 15px; border-radius:15px; margin-bottom:10px; border:1px solid var(--border);">
-            <span style="font-weight:600; color:var(--text-main);">${u.name}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:8px; border:1px solid var(--border);">
+            <span style="color:var(--text-main) !important; font-weight: 600; font-size: 14px;">${u.name}</span>
             <div style="display:flex; gap:15px;">
-                <i class="fas fa-edit" onclick="renameUnit('${u.id}', '${u.name}')" style="color:#00bac3; cursor:pointer;"></i>
-                <i class="fas fa-trash-alt" onclick="deleteUnit('${u.id}', '${u.name}')" style="color:var(--danger); cursor:pointer;"></i>
+                <i class="fas fa-edit" style="color:var(--accent); cursor:pointer;" onclick="renameUnit('${u.id}', '${u.name}')"></i>
+                <i class="fas fa-trash-alt" style="color:var(--danger); cursor:pointer;" onclick="deleteUnit('${u.id}', '${u.name}')"></i>
             </div>
         </div>
     `).join('');
@@ -3204,9 +3213,36 @@ function populateDropdown(elementId) {
         const stocks = snap.val();
         let opts = '<option value="">Choose Item...</option>';
         for(let id in stocks) {
+            const nm = (stocks[id].name || "").trim().toLowerCase();
+            if(!stocks[id].name || nm === "undefined" || nm === "undefine" || !stocks[id].catId || stocks[id].catId === "undefined") continue;
             opts += `<option value="${id}" data-qty="${stocks[id].qty}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
         }
         document.getElementById(elementId).innerHTML = opts;
+    });
+}
+
+// Cleanup: delete stock items where name is 'undefined'/'undefine'/empty OR catId is null/missing/invalid
+function cleanupInvalidStocks() {
+    db.ref("stocks").once("value", snap => {
+        const stocks = snap.val() || {};
+        db.ref("categories").once("value", catSnap => {
+            const cats = catSnap.val() || {};
+            const updates = {};
+            for (let id in stocks) {
+                const nm = (stocks[id].name || "").trim().toLowerCase();
+                const badName = !stocks[id].name || nm === "undefined" || nm === "undefine";
+                const badCat = !stocks[id].catId || stocks[id].catId === "undefined" || !cats[stocks[id].catId];
+                if (badName || badCat) {
+                    updates["stocks/" + id] = null;
+                }
+            }
+            if (Object.keys(updates).length > 0) {
+                db.ref().update(updates).then(() => {
+                    showToast("Invalid items cleaned! 🧹");
+                    render();
+                });
+            }
+        });
     });
 }
 function loadHistory(refName, containerId, color) {
@@ -3244,6 +3280,8 @@ function populateShareDropdown() {
         const stocks = snap.val();
         let opts = '<option value="">Choose Item...</option>';
         for(let id in stocks) {
+            const nm = (stocks[id].name || "").trim().toLowerCase();
+            if(!stocks[id].name || nm === "undefined" || nm === "undefine" || !stocks[id].catId || stocks[id].catId === "undefined") continue;
             opts += `<option value="${id}" data-qty="${stocks[id].qty}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
         }
         document.getElementById('shareItemSelect').innerHTML = opts;
@@ -3535,6 +3573,8 @@ async function populateEditDistItemSelect(selectedId) {
     const stocks = snap.val() || {};
     let opts = '<option value="">Choose Item...</option>';
     for (let id in stocks) {
+        const nm = (stocks[id].name || "").trim().toLowerCase();
+        if(!stocks[id].name || nm === "undefined" || nm === "undefine" || !stocks[id].catId || stocks[id].catId === "undefined") continue;
         opts += `<option value="${id}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
     }
     const sel = document.getElementById('editDistItemSelect');
@@ -4334,6 +4374,8 @@ async function populateEditPurchaseItemSelect(selectedId) {
     const stocks = snap.val() || {};
     let opts = '<option value="">Choose Item...</option>';
     for (let id in stocks) {
+        const nm = (stocks[id].name || "").trim().toLowerCase();
+        if(!stocks[id].name || nm === "undefined" || nm === "undefine" || !stocks[id].catId || stocks[id].catId === "undefined") continue;
         opts += `<option value="${id}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
     }
     const sel = document.getElementById('editPurchaseItemSelect');
