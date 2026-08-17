@@ -2214,7 +2214,7 @@ function render() {
         const stocks = stockSnap.val();
         
         // --- Get History first, then render everything ---
-        db.ref("transfers").limitToLast(10).once("value", transferSnap => {
+        db.ref("transfers").limitToLast(10).on("value", transferSnap => {
             const transfers = transferSnap.val();
             
             db.ref("categories").once("value", catSnap => {
@@ -3393,6 +3393,7 @@ async function processStockShare() {
         if (commentInput) commentInput.value = "";
         populateShareDropdown();
         refreshShareStock();
+        render();
 
     } catch(e) {
         console.error("Share error:", e);
