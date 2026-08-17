@@ -21,6 +21,21 @@
 
 
     <style>
+        /* --- History grid: Distribution / Purchase / Wastage / Petrol --- */
+        .history-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        @media (min-width: 600px), (orientation: landscape) {
+            .history-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .history-grid .history-card {
+            margin-bottom: 0 !important;
+        }
+
         /* --- Themes --- */
         :root {
             --bg: #e4fbff;
@@ -629,7 +644,7 @@
 
         <div style="display:flex; flex-direction:column; gap:8px;">
             <h3 style="font-size:14px; color:var(--text-main); margin:0; font-weight:700;">History</h3>
-            <div id="petrolHistory" style="display:flex; flex-direction:column; gap:8px;"></div>
+            <div id="petrolHistory" class="history-grid"></div>
         </div>
     </div>
 </div>
@@ -5223,7 +5238,7 @@ openPetrolPanel = function() {
     <input type="date" id="distToDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
     <button onclick="filterData('manually')" style="background:var(--teal); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
 </div>
-<div id="transferHistory" style="display:flex; flex-direction:column; gap:0px;"></div>
+<div id="transferHistory" class="history-grid"></div>
 
     </div>
 </div>
@@ -5278,7 +5293,7 @@ openPetrolPanel = function() {
             <button onclick="filterPurchaseData('manually')" style="background:var(--teal); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
         </div>
 
-        <div id="purchaseHistory"></div>
+        <div id="purchaseHistory" class="history-grid"></div>
     </div>
 </div>
 
@@ -5349,7 +5364,7 @@ openPetrolPanel = function() {
             <button onclick="filterWasteData('manually')" style="background:var(--teal); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
         </div>
 
-        <div id="wasteHistory" style="display:flex; flex-direction:column; gap:0px;"></div>
+        <div id="wasteHistory" class="history-grid"></div>
     </div>
 </div>
 
