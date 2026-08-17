@@ -1673,7 +1673,12 @@ async function addStock() {
             showToast("Error saving data! ❌");
         });
     } else {
-        alert("Please fill Name, Category and Crop a Photo!");
+
+
+      Swal.fire({ title: "Error", text: "Please fill Name, Category and Crop a Photo!", icon: "error" });
+        return;
+
+      
     }
 }
 
@@ -1809,8 +1814,10 @@ function processAddCat() {
             showToast("Error adding category! ❌");
         });
     } else {
-        showToast("Please enter a category name! ⚠️");
-    }
+
+      Swal.fire({ title: "Error", text: "Please enter a category name", icon: "error" });
+        return;
+                            }
 }
 
 // Category List Loader
@@ -2044,7 +2051,10 @@ function processAddBranch() {
             showToast("Error adding branch! ❌");
         });
     } else {
-        showToast("Please enter a branch name! ⚠️");
+
+Swal.fire({ title: "Error", text: "Please enter a branch name", icon: "error" });
+        return;
+      
     }
 }
 
@@ -2470,7 +2480,9 @@ function addUnit() {
             // renderUnitsList automatic ho jayega 'on value' listener se
         });
     } else {
-        showToast("Please enter a name! ❌");
+
+      Swal.fire({ title: "Error", text: "Please enter a unit name", icon: "error" });
+        return;
     }
 }
 
@@ -2648,7 +2660,7 @@ async function processStockPurchase() {
     const comment = commentInput ? commentInput.value.trim() : "";
 
     if(!sId || isNaN(addQty) || addQty <= 0) {
-        Swal.fire({ title: "Error", text: "Details sahi bharein!", icon: "error" });
+        Swal.fire({ title: "Error", text: "Fill Details", icon: "error" });
         return;
     }
 
@@ -3098,7 +3110,7 @@ async function processStockWaste() {
     const comment = commentInput ? commentInput.value.trim() : "";
 
     if(!sId || isNaN(wasteQty) || wasteQty <= 0) {
-        Swal.fire({ title: "Error", text: "Details sahi bharein!", icon: "error" });
+        Swal.fire({ title: "Error", text: "Fill Details", icon: "error" });
         return;
     }
 
@@ -3355,7 +3367,7 @@ async function processStockShare() {
     const opt = sel.options[sel.selectedIndex];
 
     if(!sId || !branch || isNaN(sendQty) || sendQty <= 0) {
-        Swal.fire({ title: "Error", text: "Details sahi bharein!", icon: "error", target: panelTarget });
+        Swal.fire({ title: "Error", text: "Fill Details", icon: "error", target: panelTarget });
         return;
     }
 
@@ -4104,8 +4116,11 @@ function savePetrolEntry() {
     const comment = commentInput ? commentInput.value.trim() : "";
     
     if(!carNum || !amount) {
-        showToast("Car Number aur Amount bhariye!");
+
+Swal.fire({ title: "Error", text: "Enter the car number and amount", icon: "error" });
         return;
+
+      
     }
 
     const newLog = {
@@ -5244,11 +5259,18 @@ openPetrolPanel = function() {
 </div>
 
 
+
+
+
+
+
+
 <div id="purchasedPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:1000; display:none; flex-direction:column;">
-    <div style="padding:15px 20px; display:flex; align-items:center; gap:15px; background:#28a745; color:white;">
-        <button onclick="closePurchasedPanel()" style="background:none; border:none; color:white; font-size:18px;"><i class="fas fa-arrow-left"></i></button>
-        <h2 style="margin:0; font-size:16px;">Add Purchased Stock</h2>
+    <div style="padding:15px; display:flex; align-items:center; gap:12px; background:var(--panel); border-bottom:1px solid var(--border);">
+        <button onclick="closePurchasedPanel()" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
+        <h2 style="margin:0; font-size:16px; color:var(--text-main);">Purchased</h2>
     </div>
+  
     <div style="flex:1; overflow-y:auto; padding:15px;">
         <div id="purchaseInputSection" style="background:var(--panel); padding:15px; border-radius:15px; border:1px solid #28a745; margin-bottom:20px;">
             <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -5300,7 +5322,7 @@ openPetrolPanel = function() {
 <div id="wastedPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:1000; display:none; flex-direction:column;">
     <div style="padding:15px; display:flex; align-items:center; gap:12px; background:var(--panel); border-bottom:1px solid var(--border);">
         <button onclick="closeWastedPanel()" style="background:none; border:none; color:var(--text-main); font-size:18px;"><i class="fas fa-arrow-left"></i></button>
-        <h2 style="margin:0; font-size:16px; color:var(--text-main);">WastedPanel</h2>
+        <h2 style="margin:0; font-size:16px; color:var(--text-main);">Wastege</h2>
     </div>
 
     <div style="flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:12px;">
