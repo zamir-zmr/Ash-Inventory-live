@@ -51,6 +51,7 @@
         @media (max-width: 360px) {
             .responsive-2col { grid-template-columns: 1fr !important; }
             .modal { padding: 15px !important; }
+            #adminPanel > div[style*="display:flex"] { flex-direction: column !important; }
         }
 
         [data-theme="dark"] {
@@ -470,23 +471,26 @@
     </div>
 
   
-    <input type="text" id="stockName" placeholder="Item Name">
-    <input type="number" id="stockQty" placeholder="Quantity">
+    <div style="display:flex; gap:10px;">
+        <input type="text" id="stockName" placeholder="Item Name" style="flex:1;">
+        <input type="number" id="stockQty" placeholder="Quantity" style="flex:1;">
+    </div>
 
-<select id="itemUnit" style="width:100%; padding:12px; margin-bottom:15px; border-radius:12px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main); outline:none;">
-    </select>
+    <div style="display:flex; gap:10px;">
+        <select id="itemUnit" style="flex:1; padding:12px; margin-bottom:12px; border-radius:12px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main); outline:none;">
+        </select>
 
-    <select id="catDropdown"></select>
+        <select id="catDropdown" style="flex:1;"></select>
+    </div>
 
     <div style="display:flex; gap:10px; margin-top:10px;">
         <label class="btn-file" style="flex:1; background:var(--teal); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; display:block;">
             <i class="fas fa-camera"></i> <span id="fileName">Add Photo</span>
             <input type="file" accept="image/*" onchange="handleFileSelect(this, 'new')" hidden>
         </label>
+
+        <button class="btn-main" onclick="addStock()" style="flex:1; width:auto;">SAVE TO INVENTORY</button>
     </div>
-
-
-    <button class="btn-main" onclick="addStock()" style="margin-top:15px;">SAVE TO INVENTORY</button>
 </div>
 
 
@@ -534,27 +538,32 @@
     <div style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:15px;">
         
         <div id="petrolInputSection" style="display: flex; flex-direction: column; gap: 12px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
-            <div class="input-group">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">CHOOSE CAR</label>
-
-
-
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:5px; display:block;">CHOOSE CAR</label>
+                    <select id="petrolCarNum" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
+                        <option value="">Select Car</option>
+                    </select>
                 </div>
-                <select id="petrolCarNum" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
-                    <option value="">Select Car</option>
-                </select>
+
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">AMOUNT (OMR)</label>
+                    <input type="number" id="petrolAmount" placeholder="0.000" step="0.001" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1.5px solid var(--border); color:var(--teal); font-weight:700;">
+                </div>
             </div>
-            
-            <div class="input-group">
-                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">AMOUNT (OMR)</label>
-                <input type="number" id="petrolAmount" placeholder="0.000" step="0.001" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1.5px solid var(--border); color:var(--teal); font-weight:700;">
+
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
+                    <input type="text" id="petrolComment" placeholder="Add a comment..." style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1.5px solid var(--border); color:var(--text-main);">
+                </div>
+                <div class="input-group" style="display:flex; flex-direction:column; justify-content:flex-end;">
+                    <button onclick="savePetrolEntry()" style="width:auto; 
+                      display: block; margin: 0 auto;
+        margin-bottom: 10px;                   
+                      padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px;">SAVE LOG</button>
+                </div>
             </div>
-            <div class="input-group">
-                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
-                <input type="text" id="petrolComment" placeholder="Add a comment..." style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1.5px solid var(--border); color:var(--text-main);">
-            </div>
-            <button onclick="savePetrolEntry()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px;">SAVE LOG</button>
         </div>
 
 
@@ -5153,27 +5162,28 @@ openPetrolPanel = function() {
         
 
         <div id="shareInputSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
-            <div class="input-group">
-                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">SELECT ITEM</label>
-                <select id="shareItemSelect" onchange="refreshShareStock()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px;"></select>
-            </div>
-
             <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">SELECT ITEM</label>
+                    <select id="shareItemSelect" onchange="refreshShareStock()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px;"></select>
+                </div>
                 <div class="input-group">
                     <label style="color:var(--text-dim); font-size:10px; font-weight:700;">BRANCH</label>
                     <select id="shareBranch" onchange="refreshShareStock()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
                         <option value="">Choose Branch...</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div class="input-group">
                     <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QTY</label>
                     <input type="number" id="shareQty" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--teal); font-weight:700;">
                 </div>
-            </div>
-
-            <div class="input-group">
-                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
-                <input type="text" id="shareComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
+                    <input type="text" id="shareComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
+                </div>
             </div>
             
                     <div id="shareStockInfo" style="padding:0px; font-size:17px;
@@ -5182,12 +5192,17 @@ openPetrolPanel = function() {
             Current Stock: <span id="maxAvailable">0</span>
         </div>
 
-
-            <button id="btnConfirmShare" onclick="processStockShare()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px;">
+<button id="btnConfirmShare" onclick="processStockShare()" style="width:auto; 
+  display: block; margin: 0 auto;
+  padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; 
+              font-weight:700; font-size:14px;">
                 SEND TO BRANCH
-            </button>
+</button>
+            
         </div>
-        
+
+
+      
                   <h3 style="font-size:11px; color:var(--text-dim); font-weight:700; padding-left:3px;">Search & Filters</h3>
   
         
@@ -5221,19 +5236,27 @@ openPetrolPanel = function() {
     </div>
     <div style="flex:1; overflow-y:auto; padding:15px;">
         <div id="purchaseInputSection" style="background:var(--panel); padding:15px; border-radius:15px; border:1px solid #28a745; margin-bottom:20px;">
-            <select id="purchaseItemSelect" onchange="updatePurchaseMaxQty()"></select>
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:11px; font-weight:700;">
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="input-group">
+                    <select id="purchaseItemSelect" onchange="updatePurchaseMaxQty()" style="margin-bottom:0;"></select>
+                </div>
+                <div class="input-group" style="position:relative;">
+                    <input type="number" id="purchaseQty" placeholder="Enter Purchase Qty" style="border:1.5px solid #28a745; margin-bottom:0;">
+                    <span id="purchaseUnitLabel" style="position:absolute; right:15px; top:12px; font-size:12px; font-weight:700; color:#28a745;">Unit</span>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin:5px 0 10px 0; font-size:11px; font-weight:700;">
                 <span style="color:var(--text-dim);">Current: <b id="pMaxAvailable">0</b></span>
             </div>
-            <div style="position:relative;">
-                <input type="number" id="purchaseQty" placeholder="Enter Purchase Qty" style="border:1.5px solid #28a745;">
-                <span id="purchaseUnitLabel" style="position:absolute; right:15px; top:12px; font-size:12px; font-weight:700; color:#28a745;">Unit</span>
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; align-items:end;">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700; display:block; margin-bottom:4px;">COMMENT (OPTIONAL)</label>
+                    <input type="text" id="purchaseComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; border:1.5px solid #28a745; background:var(--bg); color:var(--text-main); margin-bottom:0;">
+                </div>
+                <button onclick="processStockPurchase()" style="width:auto; 
+                  display: block; margin: 0 auto;
+                  padding:14px; border-radius:12px; background:#28a745; color:#fff; border:none; font-weight:700;">UPDATE STOCK (+)</button>
             </div>
-            <div class="input-group" style="margin-top:10px;">
-                <label style="color:var(--text-dim); font-size:10px; font-weight:700; display:block; margin-bottom:4px;">COMMENT (OPTIONAL)</label>
-                <input type="text" id="purchaseComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; border:1.5px solid #28a745; background:var(--bg); color:var(--text-main);">
-            </div>
-            <button onclick="processStockPurchase()" style="width:100%; padding:14px; border-radius:12px; background:#28a745; color:#fff; border:none; font-weight:700;">UPDATE STOCK (+)</button>
         </div>
 
         <h3 style="font-size:11px; color:var(--text-dim); font-weight:700; padding-left:3px;">Search & Filters</h3>
@@ -5269,24 +5292,26 @@ openPetrolPanel = function() {
         
 
         <div id="wasteInputSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
-            <div class="input-group">
-                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">SELECT ITEM</label>
-                <select id="wasteItemSelect" onchange="updateWasteMaxQty()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
-            </div>
             <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">SELECT ITEM</label>
+                    <select id="wasteItemSelect" onchange="updateWasteMaxQty()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
+                </div>
                 <div class="input-group">
                     <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QTY</label>
                     <input type="number" id="wasteQty" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--danger); font-weight:700;">
                 </div>
+            </div>
+
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div class="input-group">
                     <label style="color:var(--text-dim); font-size:10px; font-weight:700;">UNIT</label>
                     <div id="wasteUnitLabel" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main); font-weight:600;">-</div>
                 </div>
-            </div>
-
-            <div class="input-group">
-                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
-                <input type="text" id="wasteComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
+                    <input type="text" id="wasteComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
+                </div>
             </div>
 
             <div id="wasteStockInfo" style="padding:10px 0; font-size:17px; color:var(--danger); font-weight:600;">
@@ -5295,7 +5320,9 @@ openPetrolPanel = function() {
 
 
 
-            <button id="btnConfirmWaste" onclick="processStockWaste()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px;">
+            <button id="btnConfirmWaste" onclick="processStockWaste()" style="width:auto; 
+              display: block; margin: 0 auto;
+              padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px;">
                Put in  Wasted
             </button>
         </div>
