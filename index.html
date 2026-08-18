@@ -5056,24 +5056,41 @@ openPetrolPanel = function() {
 
 </script>
 
-<div id="monthPickerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:999999; flex-direction:column;">
-    <div style="padding:20px; display:flex; align-items:center; gap:15px; background:var(--panel); border-bottom:1px solid var(--border);">
-        <button onclick="closeMonthPicker()" style="background:none; border:none; color:var(--text-main); font-size:20px;"><i class="fas fa-arrow-left"></i></button>
-        <h2 id="monthPickerTitle" style="margin:0; font-size:18px; color:var(--text-main);">Select Month</h2>
+
+<div id="monthPickerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg, #f4f4f4); z-index:999999; flex-direction:column;">
+    
+    <!-- Top Fixed Header -->
+    <div style="padding:15px 20px; display:flex; align-items:center; gap:15px; background:var(--panel, #ffffff); border-bottom:1px solid var(--border, #e0e0e0); width:100%; box-sizing:border-box;">
+        <button onclick="closeMonthPicker()" style="background:none; border:none; color:var(--text-main, #333); font-size:18px; cursor:pointer; padding:0; display:flex; align-items:center;">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 id="monthPickerTitle" style="margin:0; font-size:18px; font-weight:600; color:var(--text-main, #333);">Select Month</h2>
     </div>
-    <div id="monthGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:15px; padding:20px;">
+
+    <!-- Center Content / Month Grid Area -->
+    <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+        <div id="monthGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; width:100%; max-width:400px;">
+            <!-- JavaScript se months list yahan render hogi -->
         </div>
+    </div>
+
 </div>
 
-<div id="ledgerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:1000000; flex-direction:column;">
-    <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, var(--accent), var(--teal)); border-bottom:2px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <button onclick="closeLedger()" style="background:none; border:none; color:#fff; font-size:20px; cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
-            <h2 id="ledgerTitle" style="margin:0; font-size:18px; color:#fff; font-weight:800;">📊 Inventory Ledger</h2>
+  
+<div id="ledgerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:1000000; flex-direction:column; padding:0; margin:0;">
+    
+    <!-- Full Width Top Header Bar -->
+    <div style="width:100%; box-sizing:border-box; padding:15px 20px; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, var(--accent), var(--teal)); border-bottom:2px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button onclick="closeLedger()" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer; padding:0; display:flex; align-items:center;">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2 id="ledgerTitle" style="margin:0; font-size:18px; color:#fff; font-weight:700;">📊 Inventory Ledger</h2>
         </div>
-
     </div>
-    <div style="flex:1; overflow:auto; background:var(--bg);">
+
+    <!-- Full Width Table Container -->
+    <div style="flex:1; overflow:auto; background:var(--bg); width:100%;">
         <table style="width:100%; border-collapse:collapse; background:var(--panel); font-size:12px; font-weight:500;">
             <thead style="position:sticky; top:0; background:linear-gradient(135deg, var(--accent), var(--teal)); z-index:10; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
                 <tr style="color:#fff; text-align:center; font-weight:700;">
