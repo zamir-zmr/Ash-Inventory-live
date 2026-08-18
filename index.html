@@ -716,27 +716,35 @@ border:none; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer;">
     </div>
 </div>
 
-<div id="manageOptionsModal" class="overlay">
-    <div class="modal" style="width:90%; max-width:340px; padding:20px; border-radius:20px;">
-        <div style="display:flex; align-items:center; gap: 15px; margin-bottom:20px;">
-            <i class="fas fa-arrow-left" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 1.3rem;"></i>
-            <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage</h3>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:14px;">
-            <button onclick="closeModals(); openBranchModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
+<div id="manageOptionsModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:999999; flex-direction:column; padding:0; margin:0;">
+    
+    <!-- Full-Width Top Header Bar -->
+    <div style="width:100%; box-sizing:border-box; padding:15px 20px; display:flex; align-items:center; gap:15px; background:var(--panel); border-bottom:1px solid var(--border); box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+        <i class="fas fa-arrow-left" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size:1.3rem;"></i>
+        <h3 style="margin:0; color:var(--text-main); font-size:1.2rem; font-weight:700;">Manage</h3>
+    </div>
+
+    <!-- Responsive Responsive Grid Area -->
+    <div class="modal" style="width:100%; max-width:none; padding:20px; border-radius:0; background:transparent; box-shadow:none; flex:1; overflow-y:auto; box-sizing:border-box;">
+        
+        <!-- CSS Grid layout for responsive columns -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:14px; width:100%;">
+            <button onclick="closeModals(); openBranchModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
                 <i class="fas fa-code-branch" style="color:var(--teal); font-size:18px; width:20px;"></i> Branch
             </button>
-            <button onclick="closeModals(); openCatModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
+            <button onclick="closeModals(); openCatModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
                 <i class="fas fa-tags" style="color:var(--accent); font-size:18px; width:20px;"></i> Category
             </button>
-            <button onclick="closeModals(); openUnitManager();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
+            <button onclick="closeModals(); openUnitManager();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
                 <i class="fas fa-balance-scale" style="color:#00bac3; font-size:18px; width:20px;"></i> Units
             </button>
-            <button onclick="closeModals(); openCarManageModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer;">
+            <button onclick="closeModals(); openCarManageModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
                 <i class="fas fa-gas-pump" style="color:#f59e0b; font-size:18px; width:20px;"></i> Petrol
             </button>
         </div>
+
     </div>
+
 </div>
 
 <div id="branchModal" class="overlay" style="align-items: flex-start; background: var(--bg);">
@@ -4962,8 +4970,8 @@ function processAddCarEntry() {
             showToast("Error adding car! ❌");
         });
     } else {
-        showToast("Please enter a car name! ⚠️");
-    }
+Swal.fire({ title: "Error", text: "Please enter a car number", icon: "error" });
+        return;    }
 }
 
 function renameCarEntry(id, oldName) {
