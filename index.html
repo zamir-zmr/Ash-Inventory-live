@@ -464,15 +464,16 @@
     <i class="fas fa-balance-scale"></i>
 </button>
  -->
-        <button class="icon-btn" onclick="openPetrolPanel()" style="background:none; border:none; color:var(--text-main); cursor:pointer; padding:8px;">
-    <i class="fas fa-gas-pump"></i>
-</button>
 
         
-        <div class="icon-btn" id="manageAllBtn" onclick="openManageOptions()" style="display:none; color:var(--teal);"><i class="fas fa-cogs"></i></div>
+<div class="icon-btn" id="manageAllBtn" onclick="toggleTheme()" style="display:none; color:var(--teal);"><i class="fas fa-moon"></i></div>
+      
         
-        <div class="header-actions">
-            <div class="icon-btn" id="themeBtn" onclick="toggleTheme()"><i class="fas fa-moon"></i></div>
+<div class="header-actions">
+<div class="icon-btn" id="" onclick="openManageOptions()"><i class="fas fa-cogs"></i></div>
+
+          
+          
             <div class="icon-btn" id="manageBtn" onclick="toggleManageMode()" style="display:none;"><i class="fas fa-sliders-h"></i></div>
             <div class="icon-btn" onclick="openLogin()"><i class="fas fa-user-lock" id="lockIcon"></i></div>
         </div>
@@ -517,21 +518,29 @@
         <i id="viewToggleIcon" class="fas fa-list" style="font-size: 18px;"></i>
     </button>
     
-    <button onclick="openSharePanel()" style="width:50px; height:50px; border-radius:25px; background:var(--teal); color:#fff; border:none; margin-top:0px; 
+    <button onclick="openSharePanel()" style="width:45px; height:45px; border-radius:12px; background:var(--teal); color:#fff; border:none; margin-top:0px; 
     margin-left:10px;
+      margin-right: 5px;
     box-shadow:0 4px 10px rgba(0,0,0,0.1);">
     <i class="fas fa-share-alt"></i>
 </button>
 
-    <button onclick="openPurchasedPanel()" style="width:45px; height:45px; border-radius:12px; background:#28a745; color:#fff; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer;">
+    <button onclick="openPurchasedPanel()" style="width:45px; height:45px; border-radius:12px; background:#28a745; color:#fff;       margin-right: 5px;
+border:none; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer;">
         <i class="fas fa-cart-plus"></i>
     </button>
 
-    <button onclick="openWastedPanel()" style="width:45px; height:45px; border-radius:12px; background:#dc3545; color:#fff; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer;">
+    <button onclick="openWastedPanel()" style="width:45px; height:45px; border-radius:12px; background:#dc3545; color:#fff; 
+           margin-right: 5px; 
+      border:none; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer;">
         <i class="fas fa-trash-alt"></i>
     </button>
 
 
+
+      <button onclick="openPetrolPanel()" style="width:45px; height:45px; border-radius:12px; background:#f4ff92; color:var(--text-main); border:none; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer;">
+        <i class="fas fa-gas-pump"></i>
+    </button>
 
 
 </div>
