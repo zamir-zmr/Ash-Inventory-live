@@ -467,11 +467,10 @@
  -->
 
         
-<div class="icon-btn" id="manageAllBtn" onclick="toggleTheme()" style="display:none; color:var(--teal);"><i class="fas fa-moon"></i></div>
       
         
 <div class="header-actions">
-            <div class="icon-btn" id="manageBtn" onclick="toggleManageMode()" style="display:none;"><i class="fas fa-sliders-h"></i></div>
+            
             <!-- HAMBURGER BUTTON -->
             <button id="hamburgerBtn" onclick="toggleHamburger(event)" style="background:var(--panel); border:1px solid var(--border); color:var(--accent); width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
                 <i class="fas fa-bars" style="font-size:16px;"></i>
@@ -588,7 +587,19 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
     <button onclick="toggleView()" style="background: var(--panel); border: 1px solid var(--border); color: var(--teal); width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);">
         <i id="viewToggleIcon" class="fas fa-list" style="font-size: 18px;"></i>
     </button>
+
+
+    <button onclick="toggleManageMode()" style="background: var(--panel); border: 1px solid var(--border); color: var(--teal); width: 45px; height: 45px; border-radius: 12px; 
+      margin-left: 5px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);">
+        <i id="manageBtn" class="fas fa-sliders-h" style="font-size: 18px;"></i>
+    </button>
+
+  
+
+
 </div>
+
 
  <div id="petrolPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:999; display:none; flex-direction:column;">
     <div style="padding:15px 20px; display:flex; align-items:center; gap:15px; background:var(--panel); border-bottom:1px solid var(--border);">
