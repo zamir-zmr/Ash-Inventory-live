@@ -66,7 +66,7 @@
         @media (max-width: 360px) {
             .responsive-2col { grid-template-columns: 1fr !important; }
             .modal { padding: 15px !important; }
-            #adminPanel > div[style*="display:flex"] { flex-direction: column !important; }
+            #adminPanel > div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
         }
 
         [data-theme="dark"] {
@@ -557,48 +557,27 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
     </div>
 
   
-    <div style="display:flex; gap:10px;">
-        <input type="text" id="stockName" placeholder="Item Name" style="flex:1;">
-        <input type="number" id="stockQty" placeholder="Quantity" style="flex:1;">
-    </div>
-
-    <div style="display:flex; gap:10px;">
-        <select id="itemUnit" style="flex:1; padding:12px; margin-bottom:12px; border-radius:12px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main); outline:none;">
+    <!-- Row 1: Item Name | Quantity | Unit (Pcs) -->
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
+        <input type="text" id="stockName" placeholder="Item Name" style="margin-bottom:0;">
+        <input type="number" id="stockQty" placeholder="Quantity" style="margin-bottom:0;">
+        <select id="itemUnit" style="padding:12px; margin-bottom:0; border-radius:12px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main); outline:none;">
         </select>
-
-        <select id="catDropdown" style="flex:1;"></select>
     </div>
 
-    <div style="display:flex; gap:10px; margin-top:10px;">
-        <label class="btn-file" style="flex:1; background:var(--teal); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; display:block;">
+    <!-- Row 2: Category | Add Photo | Save to Inventory -->
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+        <select id="catDropdown" style="margin-bottom:0;"></select>
+        <label class="btn-file" style="background:var(--teal); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:0;">
             <i class="fas fa-camera"></i> <span id="fileName">Add Photo</span>
             <input type="file" accept="image/*" onchange="handleFileSelect(this, 'new')" hidden>
         </label>
-
-        <button class="btn-main" onclick="addStock()" style="flex:1; width:auto;">SAVE TO INVENTORY</button>
+        <button class="btn-main" onclick="addStock()" style="width:100%; margin-bottom:0;">SAVE TO INVENTORY</button>
     </div>
 </div>
 
 
-<input type="text" id="search" onkeyup="filter()" placeholder="🔍 Search Stocks inventory..." style="border-radius:15px; margin-bottom: 5px;">
-    
 
-<div style="display: flex; flex-wrap: wrap; row-gap: 8px; justify-content: flex-start; margin-bottom: 5px;">
-    <button onclick="toggleView()" style="background: var(--panel); border: 1px solid var(--border); color: var(--teal); width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);">
-        <i id="viewToggleIcon" class="fas fa-list" style="font-size: 18px;"></i>
-    </button>
-
-
-    <button onclick="toggleManageMode()" style="background: var(--panel); border: 1px solid var(--border); color: var(--teal); width: 45px; height: 45px; border-radius: 12px; 
-      margin-left: 5px;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);">
-        <i id="manageBtn" class="fas fa-sliders-h" style="font-size: 18px;"></i>
-    </button>
-
-  
-
-
-</div>
 
 
  <div id="petrolPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:999; display:none; flex-direction:column;">
@@ -716,7 +695,21 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 
  
     
-    <div id="contentArea"></div>
+    <div id="contentAreaTop"></div>
+
+    <!-- Search + Toggle Buttons — below SENT section, above stock items -->
+    <input type="text" id="search" onkeyup="filter()" placeholder="🔍 Search Stocks inventory..." style="border-radius:15px; margin-bottom:5px; margin-top:10px;">
+
+    <div style="display:flex; flex-wrap:wrap; row-gap:8px; justify-content:flex-start; margin-bottom:5px;">
+        <button onclick="toggleView()" style="background:var(--panel); border:1px solid var(--border); color:var(--teal); width:45px; height:45px; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);">
+            <i id="viewToggleIcon" class="fas fa-list" style="font-size:18px;"></i>
+        </button>
+        <button onclick="toggleManageMode()" style="background:var(--panel); border:1px solid var(--border); color:var(--teal); width:45px; height:45px; border-radius:12px; margin-left:5px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);">
+            <i id="manageBtn" class="fas fa-sliders-h" style="font-size:18px;"></i>
+        </button>
+    </div>
+
+    <div id="contentAreaBottom"></div>
 </div>
 
 
@@ -2394,7 +2387,8 @@ function render() {
 
                 let dashboardHtml = lowStockItemsHtml ? `<div style="margin-bottom:0px;"><h3 style="font-size:11px; color:#e11d48; margin-bottom:0px; padding-left:10px; font-weight:800;">LOW STOCK ALERT</h3><div style="display:flex; gap:10px; overflow-x:auto; padding:5px 10px; scrollbar-width:none;">${lowStockItemsHtml}</div></div>` : "";
                 
-                document.getElementById('contentArea').innerHTML = dashboardHtml + historyHtml + html;
+                document.getElementById('contentAreaTop').innerHTML = dashboardHtml + historyHtml;
+                document.getElementById('contentAreaBottom').innerHTML = html;
                 
                 if(document.getElementById('search').value !== "") filter();
             });
