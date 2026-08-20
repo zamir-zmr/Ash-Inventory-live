@@ -179,6 +179,9 @@
         .file-label { display: block; background: var(--panel); border: 1px dashed var(--accent); color: var(--accent); padding: 10px; border-radius: 10px; text-align: center; font-size: 12px; margin-bottom: 12px; cursor: pointer; }
         .btn-main { background: var(--accent); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 800; width: 100%; cursor: pointer; }
 
+        .btn-main-save-inventory { background: var(--accent); color: #fff; border: none; padding: 5px; border-radius: 12px; font-weight: 500; height:50px; width: 100%; cursor: pointer; }
+
+          
 /* Category List Styling */
 
 
@@ -601,11 +604,13 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
     <!-- Row 2: Category | Add Photo | Save to Inventory -->
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
         <select id="catDropdown" style="margin-bottom:0;"></select>
-        <label class="btn-file" style="background:var(--teal); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:0;">
+        
+      <label class="btn-file" style="background:var(--teal); color:white; padding:4px; border-radius:12px; text-align:center; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom:0;">
             <i class="fas fa-camera"></i> <span id="fileName">Add Photo</span>
             <input type="file" accept="image/*" onchange="handleFileSelect(this, 'new')" hidden>
         </label>
-        <button class="btn-main" onclick="addStock()" style="width:100%; margin-bottom:0;">SAVE TO INVENTORY</button>
+      
+        <button class="btn-main-save-inventory" onclick="addStock()" style="width:100%; margin-bottom:0;">SAVE TO INVENTORY</button>
     </div>
 </div>
 
@@ -902,7 +907,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 </div>
 
 
-<div id="addPreviewBox" style="text-align:center; display:none; margin-bottom:10px;">
+<div id="addPreviewBox" style="text-align:center; display:none; margin-bottom:0px;">
     <img id="addImgPreview" src="" style="width:80px; height:80px; border-radius:10px; border:2px solid var(--teal);">
 </div>
 
@@ -911,27 +916,34 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
         <h2 style="color:var(--text-main); text-align:center; margin-bottom:0px;">Update Item</h2>
         
         <div id="editPreviewContainer" style="text-align:center; display:none; margin-bottom:15px; background:var(--bg); padding:10px; border-radius:15px; border:1px dashed var(--accent);">
-            <p style="font-size:10px; color:var(--accent); font-weight:600; margin-bottom:5px;">NEW PHOTO READY</p>
+            <p style="font-size:10px; color:var(--accent); font-weight:600; margin-bottom:0px;">PHOTO</p>
             <img id="editImgPreview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border:2px solid var(--accent);">
         </div>
 
-        <input type="text" id="editName" placeholder="Item Name" style="width:100%; margin-bottom:0px; padding:12px; border-radius:10px; border:1px solid var(--border);">
+        <input type="text" id="editName" placeholder="Item Name" style="width:100%; margin-bottom:5px; padding:12px; border-radius:10px; border:1px solid var(--border);">
 
-<input type="number" id="editQty" placeholder="Quantity" style="width:100%; margin-bottom:0px; padding:12px; border-radius:10px; border:1px solid var(--border);">
+<input type="number" id="editQty" placeholder="Quantity" style="width:100%; margin-bottom:5px; padding:12px; border-radius:10px; border:1px solid var(--border);">
 
-<select id="editItemUnit" style="width:100%; margin-bottom:0px; padding:12px; border-radius:10px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main);">
+<select id="editItemUnit" style="width:100%; padding:12px;margin-bottom:5px; border-radius:10px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main);">
     </select>
 
-<select id="editCatDropdown" style="width:100%; margin-bottom:0px; padding:12px; border-radius:10px; border:1px solid var(--border);"></select>
+<select id="editCatDropdown" style="width:100%; margin-bottom:0px; padding:12px;margin-bottom:5px; border-radius:10px; border:1px solid var(--border);"></select>
 
         
-        <label class="btn-file" style="display:block; background:var(--accent); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; margin-bottom:0px;">
+        <label class="btn-file" style="display:block; background:var(--accent); color:white; padding:12px; border-radius:12px; text-align:center; cursor:pointer; margin-bottom:5px;">
             <i class="fas fa-camera"></i> <span id="editFileName">Change Photo</span>
             <input type="file" accept="image/*" onchange="handleFileSelect(this, 'edit')" hidden>
         </label>
 
-        <button class="btn-main" id="saveEditBtn" style="width:100%;">UPDATE INVENTORY</button>
-        <p onclick="closeModals()" style="color:var(--text-dim); cursor:pointer; text-align:center; margin-top:0px; font-weight:600;">Cancel</p>
+        <button class="btn-main" id="saveEditBtn" style="width:100%;margin-bottom:5px;">UPDATE INVENTORY</button>
+
+        <button class="btn-main"
+    onclick="closeModals()" style="width:100%;
+          
+          ">
+          CANCEL</button>
+
+      
     </div>
 </div>
 
@@ -1132,11 +1144,11 @@ function applyCrop() {
     if (currentFileMode === 'edit') {
         document.getElementById('editImgPreview').src = base64;
         document.getElementById('editPreviewContainer').style.display = 'block';
-        document.getElementById('editFileName').innerText = "✅ Photo Compressed";
+        // document.getElementById('editFileName').innerText = "✅ Photo Compressed";
     } else {
         document.getElementById('addImgPreview').src = base64;
         document.getElementById('addPreviewBox').style.display = 'block';
-        document.getElementById('fileName').innerText = "✅ Photo Ready (Small Size)";
+        // document.getElementById('fileName').innerText = "✅ Photo Ready (Small Size)";
     }
     
     closeCrop();
