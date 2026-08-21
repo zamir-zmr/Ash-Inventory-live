@@ -505,7 +505,7 @@
 <div id="hamburgerMenu" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999;" onclick="closeHamburger()">
     <div id="hamburgerDropdown" onclick="event.stopPropagation()" style="
         position:absolute;
-        top:70px;
+        top:55px;
         right:15px;
         background:var(--panel);
         border:2px solid var(--accent);
@@ -1071,6 +1071,29 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
             closeAllModals();
         } else {
             closeAllModals();
+            // Homepage pe back = app exit
+            if (typeof navigator.app !== 'undefined' && typeof navigator.app.exitApp === 'function') {
+                navigator.app.exitApp();
+            } else {
+                // Plain browser / Vercel fallback
+                Swal.fire({
+                    title: 'Exit App?',
+                    text: 'Kya aap app se bahar jaana chahte hain?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0ea5e9',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Haan, Exit',
+                    cancelButtonText: 'Ruko'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.close();
+                    } else {
+                        // Re-push home state taaki agle back press pe phir pooche
+                        history.pushState({ type: 'home', stack: [] }, '', '');
+                    }
+                });
+            }
         }
     });
     // ================== END HISTORY NAVIGATION ==================
