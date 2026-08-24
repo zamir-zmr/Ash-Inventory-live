@@ -142,7 +142,7 @@
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px 15px;
             position: fixed;
-            top: 0;
+            top: 0px;
             left: 50%;
             transform: translateX(-50%);
             width: 100%;
@@ -151,6 +151,7 @@
             z-index: 900;
             background: var(--bg);
             border: 1px solid var(--border);
+            border-radius: 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.07);
         }
         @media (min-width: 600px) {
@@ -169,6 +170,7 @@
         .avatar img#uAvatarLogo { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
         .header-text span { font-size: 10px; color: var(--text-dim); font-weight: 800; display: block; }
         .header-text strong { font-size: 15px; color: var(--text-main); }
+        .company-name-display { font-size: 18px !important; font-weight: 900 !important; color: var(--text-main) !important; letter-spacing: 0.3px; margin-bottom: 3px; }
 
         .header-actions { display: flex; gap: 8px; }
         .icon-btn {
@@ -488,6 +490,9 @@
                 <span id="roleLabel">VIEWER MODE</span>
                 <strong id="uNameDisplay">Guest User</strong>
                 <span class="current-date" id="currentDateDisplay"></span>
+            
+                            <span id="companyNameDisplay" class="company-name-display" style="display:none;"></span>
+
             </div>
         </div>
         
@@ -560,7 +565,7 @@ function adjustHeaderSpacer() {
     const header = document.querySelector('.app-header');
     const spacer = document.getElementById('headerSpacer');
     if (header && spacer) {
-        spacer.style.height = header.offsetHeight + 'px';
+        spacer.style.height = (header.offsetHeight + header.offsetTop) + 'px';
     }
 }
 window.addEventListener('load', adjustHeaderSpacer);
@@ -873,6 +878,20 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
                 </button>
                 <button id="removeLogoBtn" onclick="removeAppLogo()" style="flex:1; background:#e11d48; color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:700;">
                     <i class="fas fa-trash-alt"></i> Remove Logo
+                </button>
+            </div>
+        </div>
+
+        <div style="background: var(--panel); padding: 20px; border-radius: 15px; border: 1px solid var(--border); flex-shrink: 0; margin-top: 20px;">
+            <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">Company Name</label>
+            <input type="text" id="companyNameInput" placeholder="Enter company name..."
+                style="width:100%; box-sizing:border-box; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 14px; outline: none; margin-bottom: 14px;">
+            <div style="display:flex; gap:10px;">
+                <button id="saveCompanyNameBtn" onclick="saveCompanyName()" style="flex:1; background:var(--teal); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:700;">
+                    <i class="fas fa-save"></i> Save Name
+                </button>
+                <button id="removeCompanyNameBtn" onclick="removeCompanyName()" style="flex:1; background:#e11d48; color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:700;">
+                    <i class="fas fa-trash-alt"></i> Remove Name
                 </button>
             </div>
         </div>
@@ -1704,6 +1723,7 @@ function updateCurrentDate() {
 window.addEventListener('DOMContentLoaded', () => {
     updateCurrentDate();
     loadAppLogo();
+    loadCompanyName();
     const savedUser = localStorage.getItem("user");
     const savedPass = localStorage.getItem("userKey");
 
@@ -2204,6 +2224,7 @@ function openBranchModal() {
     // 8b. App Logo Management (Firebase-synced, replaces header avatar)
 
 let pendingLogoBase64 = null;
+let currentCompanyName = "";
 
 function openLogoManageModal() {
     if (!isAdmin) {
@@ -2227,6 +2248,9 @@ function openLogoManageModal() {
         previewImg.style.display = 'none';
         placeholder.style.display = 'flex';
     }
+
+    const nameInput = document.getElementById('companyNameInput');
+    if (nameInput) nameInput.value = currentCompanyName || "";
 }
 
 function handleLogoFileSelect(input) {
@@ -2343,6 +2367,75 @@ function loadAppLogo() {
             // Error pe bhi letter restore karo
             if (letterEl) letterEl.style.display = 'block';
         });
+}
+
+    // 8c. Company Name Management (Firebase-synced, shown above ADMIN/VIEWER label)
+
+function saveCompanyName() {
+    if (!isAdmin) {
+        showToast("Access Denied! 🔒");
+        return;
+    }
+    const input = document.getElementById('companyNameInput');
+    const name = input.value.trim();
+    if (!name) {
+        showToast("Pehle company ka naam likhein! ⚠️");
+        return;
+    }
+    const btn = document.getElementById('saveCompanyNameBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    db.ref('appSettings/companyName').set(name)
+        .then(() => {
+            applyCompanyName(name);
+            showToast("Company Name Saved! ✅");
+        })
+        .catch(() => {
+            showToast("Failed to save name ❌");
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Save Name';
+        });
+}
+
+function removeCompanyName() {
+    if (!isAdmin) {
+        showToast("Access Denied! 🔒");
+        return;
+    }
+    db.ref('appSettings/companyName').remove()
+        .then(() => {
+            applyCompanyName("");
+            const input = document.getElementById('companyNameInput');
+            if (input) input.value = "";
+            showToast("Company Name Removed 🗑️");
+        })
+        .catch(() => showToast("Failed to remove name ❌"));
+}
+
+function applyCompanyName(name) {
+    currentCompanyName = name || "";
+    const el = document.getElementById('companyNameDisplay');
+    if (!el) return;
+    if (currentCompanyName) {
+        el.textContent = currentCompanyName;
+        el.style.display = 'block';
+    } else {
+        el.textContent = '';
+        el.style.display = 'none';
+    }
+    adjustHeaderSpacer();
+}
+
+function loadCompanyName() {
+    if (!db) return;
+    db.ref('appSettings/companyName').once('value')
+        .then((snap) => {
+            applyCompanyName(snap.val() || "");
+        })
+        .catch(() => {});
 }
 
 function loadBranchList() {
