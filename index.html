@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js"></script>
@@ -1045,8 +1046,8 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
     // ================= BROWSER HISTORY NAVIGATION SYSTEM =================
     let modalStack = [];
     let isInitialLoad = true;
-    const allModals = ['petrolPanel', 'unitModal', 'categoryModal', 'manageOptionsModal', 'branchModal', 'carModal', 'cropModal', 'loginModal', 'editModal', 'deleteModal', 'monthPickerModal', 'ledgerModal', 'editWasteModal', 'editPetrolModal', 'editDistModal', 'editPurchaseModal', 'backupPanel'];
-    const sidePanels = ['petrolPanel', 'purchasedPanel', 'sharePanel', 'wastedPanel'];
+    const allModals = ['petrolPanel', 'unitModal', 'categoryModal', 'manageOptionsModal', 'branchModal', 'carModal', 'cropModal', 'loginModal', 'editModal', 'deleteModal', 'monthPickerModal', 'ledgerModal', 'editWasteModal', 'editPetrolModal', 'editDistModal', 'editPurchaseModal', 'backupPanel', 'excelExportPanel'];
+    const sidePanels = ['petrolPanel', 'purchasedPanel', 'sharePanel', 'wastedPanel', 'backupPanel', 'excelExportPanel'];
     const editModals = ['editDistModal', 'editPurchaseModal', 'editWasteModal', 'editPetrolModal'];
 
     // Initialize history on page load
@@ -1292,18 +1293,61 @@ function openMonthDetails(id, name, qty) {
 
     console.log("DEBUG → id:", id, "| name:", name, "| qty:", qty);
 
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const yearSel = document.getElementById('ledgerYearSelect');
+    const thisYear = new Date().getFullYear();
+    yearSel.innerHTML = "";
+    for (let y = thisYear; y >= thisYear - 5; y--) {
+        const opt = document.createElement('option');
+        opt.value = y; opt.innerText = y;
+        if (y === thisYear) opt.selected = true;
+        yearSel.appendChild(opt);
+    }
+    renderMonthGrid();
+    openModalWithHistory('monthPickerModal');
+}
+
+function onLedgerYearChange() { renderMonthGrid(); }
+
+function renderMonthGrid() {
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const grid = document.getElementById('monthGrid');
     grid.innerHTML = "";
+    const selectedYear = parseInt(document.getElementById('ledgerYearSelect').value);
+    const thisYear = new Date().getFullYear();
+    const thisMonth = new Date().getMonth();
 
     months.forEach((m, index) => {
         const btn = document.createElement('button');
         btn.innerText = m;
-        btn.style = "padding:15px; border-radius:12px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700;";
-        btn.onclick = () => openLedgerOptimized(m, index);
+        const isFuture = (selectedYear > thisYear) || (selectedYear === thisYear && index > thisMonth);
+        btn.style = "padding:15px; border-radius:12px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; cursor:pointer;";
+        if (isFuture) {
+            btn.disabled = true;
+            btn.style.cssText += "opacity:0.35; cursor:not-allowed;";
+        } else if (selectedYear < thisYear) {
+            btn.style.cssText += "opacity:0.5;";
+            btn.disabled = true;
+            checkMonthHasData(currentSelectedId, selectedYear, index).then(hasData => {
+                if (hasData) {
+                    btn.disabled = false;
+                    btn.style.cssText = "padding:15px; border-radius:12px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; cursor:pointer;";
+                } else {
+                    btn.innerText = m + " -";
+                    btn.style.cssText = "padding:15px; border-radius:12px; border:1px solid var(--border); background:var(--panel); color:var(--text-dim); font-weight:700; cursor:not-allowed; opacity:0.45;";
+                }
+            });
+        }
+        if (!isFuture) btn.onclick = () => { if (!btn.disabled) openLedgerOptimized(m, index); };
         grid.appendChild(btn);
     });
-    openModalWithHistory('monthPickerModal');
+}
+
+async function checkMonthHasData(itemId, year, monthIdx) {
+    try {
+        const monthKey = `${year}-${String(monthIdx+1).padStart(2,'0')}`;
+        const snap = await db.ref(`inventory_history/${itemId}/${monthKey}`).once('value');
+        return snap.exists();
+    } catch(e) { return false; }
 }
 // ========================================
 // MONTHLY ROLLOVER: find the closing (Current) stock at the end of a given
@@ -1488,14 +1532,14 @@ function computeMonthTotalsMemory(monthData, daysInMonth) {
 }
 
 async function openLedgerOptimized(monthName, monthIdx) {
-    const cacheKey = `${currentSelectedId}_${monthIdx}`;
+    const year = parseInt(document.getElementById('ledgerYearSelect').value) || new Date().getFullYear();
+    const cacheKey = `${currentSelectedId}_${year}_${monthIdx}`;
     
-    document.getElementById('ledgerTitle').innerText = `${currentSelectedItem} - ${monthName}`;
+    document.getElementById('ledgerTitle').innerText = `${currentSelectedItem} - ${monthName} ${year}`;
     const tbody = document.getElementById('ledgerBody');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Loading...</td></tr>';
     openModalWithHistory('ledgerModal');
 
-    const year = new Date().getFullYear();
     const monthStr = String(monthIdx + 1).padStart(2, '0');
     const monthKey = `${year}-${monthStr}`;
 
@@ -1560,7 +1604,7 @@ async function openLedgerOptimized(monthName, monthIdx) {
         }
 
         let displayCurrent = (displayOpening + inVal) - (outVal + wasteVal);
-        const isToday = (i === todayDate && monthIdx === currentMonthIdx);
+        const isToday = (i === todayDate && monthIdx === currentMonthIdx && year === currentRealYear);
         const isEvenRow = (i % 2 === 0);
         
         runningClosing = displayCurrent;
@@ -5495,10 +5539,11 @@ openPetrolPanel = function() {
     </div>
 
     <!-- Center Content / Month Grid Area -->
-    <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
-        <div id="monthGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; width:100%; max-width:400px;">
-            <!-- JavaScript se months list yahan render hogi -->
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; gap:20px;">
+        <div style="width:100%; max-width:400px;">
+            <select id="ledgerYearSelect" onchange="onLedgerYearChange()" style="width:100%; padding:14px 16px; border-radius:14px; border:1.5px solid var(--border); background:var(--panel); color:var(--text-main); font-size:16px; font-weight:700; outline:none; box-sizing:border-box; appearance:none; background-image:url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%230ea5e9%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat:no-repeat; background-position:right 14px top 50%; background-size:11px auto; padding-right:36px;"></select>
         </div>
+        <div id="monthGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; width:100%; max-width:400px;"></div>
     </div>
 
 </div>
@@ -6007,6 +6052,18 @@ openPetrolPanel = function() {
             <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importBackupJSON(this)">
         </div>
 
+        <!-- Export to Excel Card -->
+        <div style="background:var(--panel); border-radius:16px; padding:20px; border:1px solid var(--border); text-align:center;">
+            <div style="width:64px; height:64px; background:rgba(22,163,74,0.1); border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
+                <i class="fas fa-file-excel" style="font-size:28px; color:#16a34a;"></i>
+            </div>
+            <b style="color:var(--text-main); font-size:16px; display:block; margin-bottom:6px;">Export to Excel</b>
+            <p style="color:var(--text-dim); font-size:12px; margin:0 0 16px;">Select item &amp; date range, export inventory ledger as .xlsx</p>
+            <button onclick="openExcelExportScreen()" style="width:100%; padding:14px; border-radius:12px; background:#16a34a; color:#fff; border:none; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <i class="fas fa-file-excel"></i> EXPORT EXCEL
+            </button>
+        </div>
+
         <!-- Inline Confirm (hidden by default) -->
         <div id="importConfirmBox" style="display:none; background:var(--panel); border-radius:16px; padding:20px; border:2px solid #e11d48; text-align:center;">
             <i class="fas fa-exclamation-triangle" style="font-size:36px; color:#f59e0b; margin-bottom:12px;"></i>
@@ -6264,6 +6321,188 @@ async function confirmImport() {
         if (typeof render === 'function') render();
     };
     reader.readAsText(file);
+}
+</script>
+
+<!-- ========== EXCEL EXPORT PANEL ========== -->
+<div id="excelExportPanel" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:none; flex-direction:column;">
+    <div style="padding:15px 20px; display:flex; align-items:center; gap:15px; background:var(--panel); border-bottom:1px solid var(--border); width:100%; box-sizing:border-box;">
+        <button onclick="closeExcelExportScreen()" style="background:none; border:none; color:var(--text-main); font-size:18px; cursor:pointer; padding:0;"><i class="fas fa-arrow-left"></i></button>
+        <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main);">Export to Excel</h2>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:18px; box-sizing:border-box;">
+
+        <!-- Item Name -->
+        <div style="position:relative;">
+            <label style="position:absolute; top:-9px; left:12px; background:var(--bg); padding:0 4px; font-size:11px; font-weight:700; color:var(--text-dim); z-index:1;">Item Name</label>
+            <select id="excelItemSelect" style="width:100%; padding:16px 14px 12px; border-radius:12px; border:1.5px solid var(--text-main); background:var(--panel); color:var(--text-main); font-size:15px; font-weight:600; outline:none; appearance:none; background-image:url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%230ea5e9%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat:no-repeat; background-position:right 14px top 50%; background-size:12px auto; padding-right:38px; box-sizing:border-box;">
+                <option value="">Loading items...</option>
+            </select>
+        </div>
+
+        <!-- Dates Row -->
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button onclick="document.getElementById('excelStartDateHidden').showPicker ? document.getElementById('excelStartDateHidden').showPicker() : document.getElementById('excelStartDateHidden').click()" style="flex:1; display:flex; align-items:center; gap:10px; padding:14px 12px; border-radius:12px; border:1.5px solid var(--border); background:var(--panel); color:var(--text-main); font-size:13px; font-weight:600; cursor:pointer;">
+                <i class="fas fa-calendar-alt" style="color:var(--text-dim); font-size:16px;"></i>
+                <div style="text-align:left;">
+                    <div style="font-size:10px; color:var(--text-dim); font-weight:700;">Start Date:</div>
+                    <div id="excelStartDateLabel" style="font-size:13px; font-weight:700; color:var(--text-main);">-- Select --</div>
+                </div>
+            </button>
+            <input type="date" id="excelStartDateHidden" style="display:none;" onchange="updateExcelDateLabel('start')">
+
+            <button onclick="document.getElementById('excelEndDateHidden').showPicker ? document.getElementById('excelEndDateHidden').showPicker() : document.getElementById('excelEndDateHidden').click()" style="flex:1; display:flex; align-items:center; gap:10px; padding:14px 12px; border-radius:12px; border:1.5px solid var(--border); background:var(--panel); color:var(--text-main); font-size:13px; font-weight:600; cursor:pointer;">
+                <i class="fas fa-calendar-alt" style="color:var(--text-dim); font-size:16px;"></i>
+                <div style="text-align:left;">
+                    <div style="font-size:10px; color:var(--text-dim); font-weight:700;">End Date:</div>
+                    <div id="excelEndDateLabel" style="font-size:13px; font-weight:700; color:var(--text-main);">-- Select --</div>
+                </div>
+            </button>
+            <input type="date" id="excelEndDateHidden" style="display:none;" onchange="updateExcelDateLabel('end')">
+
+            <button onclick="runExcelExport()" style="flex-shrink:0; padding:14px 22px; border-radius:50px; background:var(--teal); color:#fff; border:none; font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 4px 12px rgba(13,148,136,0.35);">Export</button>
+        </div>
+
+        <div id="excelExportStatus" style="display:none; text-align:center; padding:14px; border-radius:12px; background:rgba(14,165,233,0.08); border:1px solid var(--border); color:var(--text-dim); font-size:13px; font-weight:600;"></div>
+    </div>
+</div>
+
+<script>
+// ========== EXCEL EXPORT ==========
+
+async function openExcelExportScreen() {
+    const sel = document.getElementById('excelItemSelect');
+    sel.innerHTML = '<option value="">Loading...</option>';
+
+    // Firebase se stocks load karo
+    try {
+        const snap = await db.ref('stocks').once('value');
+        const stocks = snap.val() || {};
+        sel.innerHTML = '<option value="">-- Select Item --</option>';
+        Object.entries(stocks).forEach(([id, s]) => {
+            if (s && s.name) {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = s.name;
+                sel.appendChild(opt);
+            }
+        });
+    } catch(e) {
+        sel.innerHTML = '<option value="">Error loading items</option>';
+    }
+
+    const today = new Date();
+    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    document.getElementById('excelStartDateHidden').value = _fmtISO(firstOfMonth);
+    document.getElementById('excelEndDateHidden').value = _fmtISO(today);
+    updateExcelDateLabel('start');
+    updateExcelDateLabel('end');
+    document.getElementById('excelExportStatus').style.display = 'none';
+
+    document.getElementById('excelExportPanel').style.display = 'flex';
+    history.pushState({ type: 'sidePanel', panelId: 'excelExportPanel' }, '', '');
+}
+
+function closeExcelExportScreen() {
+    const p = document.getElementById('excelExportPanel');
+    if (p && p.style.display !== 'none') history.back();
+    p.style.display = 'none';
+}
+
+function _fmtISO(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function _fmtDisplay(iso) {
+    if (!iso) return '-- Select --';
+    const [y,m,day] = iso.split('-');
+    const mn = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    return `${parseInt(day)}-${mn[parseInt(m)-1]}-${y}`;
+}
+
+function updateExcelDateLabel(which) {
+    if (which === 'start') {
+        document.getElementById('excelStartDateLabel').textContent = _fmtDisplay(document.getElementById('excelStartDateHidden').value);
+    } else {
+        document.getElementById('excelEndDateLabel').textContent = _fmtDisplay(document.getElementById('excelEndDateHidden').value);
+    }
+}
+
+async function runExcelExport() {
+    const itemId   = document.getElementById('excelItemSelect').value;
+    const startStr = document.getElementById('excelStartDateHidden').value;
+    const endStr   = document.getElementById('excelEndDateHidden').value;
+    const itemName = itemId ? document.getElementById('excelItemSelect').selectedOptions[0].textContent : '';
+
+    if (!itemId)              { showToast('Please select an item ⚠️'); return; }
+    if (!startStr || !endStr) { showToast('Please select start and end dates ⚠️'); return; }
+
+    const startDate = new Date(startStr + 'T00:00:00');
+    const endDate   = new Date(endStr   + 'T23:59:59');
+    if (startDate > endDate)  { showToast('Start date must be before End date ⚠️'); return; }
+
+    const statusEl = document.getElementById('excelExportStatus');
+    statusEl.style.display = 'block';
+    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching data...';
+
+    try {
+        const snap = await db.ref(`inventory_history/${itemId}`).once('value');
+        const allHistory = snap.val() || {};
+
+        const mn = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+        // Compute opening balance just before startDate
+        const fmi = startDate.getMonth(), fy = startDate.getFullYear();
+        let pmi = fmi - 1, py = fy;
+        if (pmi < 0) { pmi = 11; py--; }
+        let runBal = computeMonthClosingStockSync(allHistory, py, pmi);
+
+        // Walk from month start to day before startDate
+        const msCursor = new Date(fy, fmi, 1);
+        while (msCursor < startDate) {
+            const mk = `${msCursor.getFullYear()}-${String(msCursor.getMonth()+1).padStart(2,'0')}`;
+            const dd = (allHistory[mk] || {})[String(msCursor.getDate())] || {};
+            if (dd.opening !== undefined && dd.manualQty !== undefined) runBal = parseFloat(dd.opening);
+            runBal = runBal + parseFloat(dd.inward||0) - parseFloat(dd.outward||0) - parseFloat(dd.waste||0);
+            msCursor.setDate(msCursor.getDate() + 1);
+        }
+
+        const rows = [];
+        const cursor = new Date(startDate);
+        while (cursor <= endDate) {
+            const mk = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}`;
+            const dd = (allHistory[mk] || {})[String(cursor.getDate())] || {};
+            let openBal = runBal;
+            if (dd.opening !== undefined && dd.manualQty !== undefined) { openBal = parseFloat(dd.opening); runBal = openBal; }
+            const inV = parseFloat(dd.inward||0), outV = parseFloat(dd.outward||0), wV = parseFloat(dd.waste||0);
+            const cur = parseFloat((openBal + inV - outV - wV).toFixed(2));
+            runBal = cur;
+            rows.push({
+                'Date':          `${cursor.getDate()}-${mn[cursor.getMonth()]}-${cursor.getFullYear()}`,
+                'Item Name':     itemName,
+                'Open':          parseFloat(openBal.toFixed(2)),
+                'Out':           outV,
+                'In':            inV,
+                'Waste':         wV,
+                'Current Stock': cur
+            });
+            cursor.setDate(cursor.getDate() + 1);
+        }
+
+        if (!rows.length) { statusEl.innerHTML = '⚠️ No data found for selected range.'; return; }
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [{wch:15},{wch:20},{wch:12},{wch:10},{wch:10},{wch:10},{wch:15}];
+        XLSX.utils.book_append_sheet(wb, ws, 'inventory data');
+        XLSX.writeFile(wb, `${itemName}_${_fmtDisplay(startStr)}_to_${_fmtDisplay(endStr)}.xlsx`);
+
+        statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a;"></i> Export successful!';
+        setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+    } catch(e) {
+        console.error(e);
+        statusEl.innerHTML = '❌ Export failed. Please try again.';
+    }
 }
 </script>
 
