@@ -2182,7 +2182,7 @@ function deleteCat(id, name) {
 
 function openManageOptions() {
     if (!isAdmin) {
-        showToast("Access Denied! 🔒");
+        showToast("Access Denied! Login Please🔒");
         return;
     }
     openModalWithHistory('manageOptionsModal');
@@ -2326,12 +2326,23 @@ function applyLogoToAvatar(base64) {
 
 function loadAppLogo() {
     if (!db) return;
+    // Pehle letter hide karo taaki logo load hote tak ? na dikhe
+    const letterEl = document.getElementById('uAvatarLetter');
+    if (letterEl) letterEl.style.display = 'none';
     db.ref('appSettings/logo').once('value')
         .then((snap) => {
             const val = snap.val();
-            if (val) applyLogoToAvatar(val);
+            if (val) {
+                applyLogoToAvatar(val);
+            } else {
+                // Logo nahi hai to letter wapas dikhao
+                if (letterEl) letterEl.style.display = 'block';
+            }
         })
-        .catch(() => {});
+        .catch(() => {
+            // Error pe bhi letter restore karo
+            if (letterEl) letterEl.style.display = 'block';
+        });
 }
 
 function loadBranchList() {
@@ -2703,7 +2714,14 @@ function filter() {
 
 
 
-    function toggleManageMode() { isManageMode = !isManageMode; render(); }
+    function toggleManageMode() {
+        if (!isAdmin) {
+            showToast("🔒 Access Denied! Login Please");
+            return;
+        }
+        isManageMode = !isManageMode;
+        render();
+    }
     function closeModals() { document.querySelectorAll('.overlay').forEach(o => o.style.display = 'none'); }
     
     // Init
@@ -2758,7 +2776,7 @@ db.ref("units").on("value", snapshot => {
 // Modal kholne ka function
 function openUnitManager() {
     if (!isAdmin) {
-        showToast("Access Denied! 🔒");
+        showToast("Access Denied!🔒");
         return;
     }
     openModalWithHistory('unitModal');
@@ -4362,6 +4380,7 @@ function filterData(type) {
                             </div>
                         </div>
                     </div>
+                    ${t.comment ? `<div class="comment-box"><i class="fas fa-comment-dots" style="margin-right:4px;"></i>${escapeHtml(t.comment)}</div>` : ''}
                     <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
                         <div style="font-size:10px; color:var(--text-main);">
                             <i class="fas fa-user-circle" style="color:var(--teal);"></i> By: <b>${t.by || 'Admin'}</b>
@@ -5924,7 +5943,7 @@ openPetrolPanel = function() {
 // ========== BACKUP PANEL OPEN/CLOSE ==========
 function openBackupPanel() {
     if (!isAdmin) {
-        showToast("Access Denied! 🔒");
+        showToast("Access Denied! Login Please🔒");
         return;
     }
     const panel = document.getElementById('backupPanel');
