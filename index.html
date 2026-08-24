@@ -160,7 +160,7 @@
         #headerSpacer { width: 100%; }
         .user-profile { display: flex; align-items: center; gap: 12px; }
         .avatar { 
-            width: 52px; height: 52px; background: linear-gradient(135deg, var(--accent), var(--teal)); 
+            width: 70px; height: 70px; background: transparent; 
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-weight: 800; color: #fff; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
             overflow: hidden; position: relative; transition: width 0.2s ease, height 0.2s ease;
@@ -832,7 +832,13 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
         
         <!-- CSS Grid layout for responsive columns -->
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:14px; width:100%;">
-            <button onclick="closeModals(); openBranchModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
+            
+                 <button onclick="closeModals(); openLogoManageModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
+                <i class="fas fa-image" style="color:#9333ea; font-size:18px; width:20px;"></i> Logo & Comapany Name
+            </button>
+     
+          
+          <button onclick="closeModals(); openBranchModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
                 <i class="fas fa-code-branch" style="color:var(--teal); font-size:18px; width:20px;"></i> Branch
             </button>
             <button onclick="closeModals(); openCatModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
@@ -843,9 +849,6 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
             </button>
             <button onclick="closeModals(); openCarManageModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
                 <i class="fas fa-gas-pump" style="color:#f59e0b; font-size:18px; width:20px;"></i> Petrol
-            </button>
-            <button onclick="closeModals(); openLogoManageModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
-                <i class="fas fa-image" style="color:#9333ea; font-size:18px; width:20px;"></i> Logo
             </button>
         </div>
 
@@ -858,7 +861,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 
         <div style="display:flex; align-items:center; gap: 15px; margin-bottom:20px;">
             <i class="fas fa-arrow-left" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 1.3rem;"></i>
-            <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Logo</h3>
+            <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Logo & Company Name</h3>
         </div>
 
         <div style="background: var(--panel); padding: 20px; border-radius: 15px; border: 1px solid var(--border); flex-shrink: 0; text-align:center;">
