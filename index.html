@@ -1300,20 +1300,27 @@ function openMonthDetails(id, name, qty) {
 
     console.log("DEBUG → id:", id, "| name:", name, "| qty:", qty);
 
-    const yearSel = document.getElementById('ledgerYearSelect');
-    const thisYear = new Date().getFullYear();
-    yearSel.innerHTML = "";
-    for (let y = thisYear; y >= thisYear - 5; y--) {
-        const opt = document.createElement('option');
-        opt.value = y; opt.innerText = y;
-        if (y === thisYear) opt.selected = true;
-        yearSel.appendChild(opt);
-    }
+    populateYearSelect();
     renderMonthGrid();
     openModalWithHistory('monthPickerModal');
 }
 
 function onLedgerYearChange() { renderMonthGrid(); }
+
+function populateYearSelect() {
+    const yearSel = document.getElementById('ledgerYearSelect');
+    if (!yearSel) return;
+    const startYear = 2026;
+    const currentYear = new Date().getFullYear();
+    yearSel.innerHTML = "";
+    for (let y = startYear; y <= currentYear; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.innerText = y;
+        if (y === currentYear) opt.selected = true;
+        yearSel.appendChild(opt);
+    }
+}
 
 function renderMonthGrid() {
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -1773,6 +1780,7 @@ function updateCurrentDate() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    populateYearSelect();
     updateCurrentDate();
     loadAppLogo();
     loadCompanyName();
