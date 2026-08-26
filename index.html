@@ -639,7 +639,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 <div id="petrolPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:999; display:none; flex-direction:column;">
     <div style="padding:15px 20px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
         <h2 style="margin:0; font-size:18px; color:var(--text-main);">Petrol Distribution</h2>
-        <button onclick="closePetrolPanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button onclick="closePetrolPanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0;margin-right:12px;display:flex; align-items:center;">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -769,7 +769,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
             <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Units</h3>
-            <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 30px;"></i>
+            <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main);margin-right:12px;font-size: 30px;"></i>
         </div>
 
         <div id="addUnitBox" style="background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 20px; flex-shrink: 0;">
@@ -797,7 +797,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
         
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
     <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Categories</h3>
-    <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 30px;"></i>
+    <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main);margin-right:12px;font-size: 30px;"></i>
 </div>
 
       
@@ -824,7 +824,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 
 <div style="width:100%; box-sizing:border-box; padding:15px 20px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border); box-shadow:0 2px 5px rgba(0,0,0,0.05);">
         <h3 style="margin:0; color:var(--text-main); font-size:1.2rem; font-weight:700;">Manage</h3>
-        <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size:30px;"></i>
+        <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main);margin-right:12px;font-size:30px;"></i>
     </div>
 
 
@@ -863,7 +863,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
     <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Logo & Company Name</h3>
-    <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 30px;"></i>
+    <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main);margin-right:12px;font-size: 30px;"></i>
 </div>
 
       
@@ -910,7 +910,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
     <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Branches</h3>
-    <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 30px;"></i>
+    <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main);margin-right:12px;font-size: 30px;"></i>
 </div>
 
 
@@ -938,7 +938,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
     <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Cars</h3>
-    <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main); font-size: 30px;"></i>
+    <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main);margin-right:12px;font-size: 30px;"></i>
 </div>
 
       
@@ -5502,43 +5502,49 @@ openPetrolPanel = function() {
 </script>
 
 
-<div id="monthPickerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg, #f4f4f4); z-index:999999; flex-direction:column;">
+<!-- Fully Responsive Month Picker Modal -->
+<!-- Fully Responsive Month Picker Modal -->
+<div id="monthPickerModal" class="overlay" style="display:none; position:fixed; inset:0; width:100vw; height:100dvh; background:var(--bg, #f4f4f4); z-index:999999; flex-direction:column; overflow:hidden;">
     
     <!-- Top Fixed Header -->
-    
-
-  <div style="padding:15px 20px; display:flex; align-items:center; justify-content:space-between; background:var(--panel, #ffffff); border-bottom:1px solid var(--border, #e0e0e0); width:100%; box-sizing:border-box;">
-    <h2 id="monthPickerTitle" style="margin:0; font-size:18px; font-weight:600; color:var(--text-main, #333);">Select Month</h2>
-    <button onclick="closeMonthPicker()" style="background:none; border:none; color:var(--text-main, #333); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
-        <i class="fas fa-times"></i>
-    </button>
-</div>
-
-
-    <!-- Center Content / Month Grid Area -->
-    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; gap:20px;">
-        <div style="width:100%; max-width:400px;">
-            <select id="ledgerYearSelect" onchange="onLedgerYearChange()" style="width:100%; padding:14px 16px; border-radius:14px; border:1.5px solid var(--border); background:var(--panel); color:var(--text-main); font-size:16px; font-weight:700; outline:none; box-sizing:border-box; appearance:none; background-image:url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%230ea5e9%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat:no-repeat; background-position:right 14px top 50%; background-size:11px auto; padding-right:36px;"></select>
-        </div>
-        <div id="monthGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; width:100%; max-width:400px;"></div>
-    </div>
-
-</div>
-
-  
-<div id="ledgerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:1000000; flex-direction:column; padding:0; margin:0;">
-    
-    <!-- Full Width Top Header Bar -->
-
-
-  <div style="width:100%; box-sizing:border-box; padding:15px 20px; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, var(--accent), var(--teal)); border-bottom:2px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0;">
-        <h2 id="ledgerTitle" style="margin:0; font-size:18px; color:#fff; font-weight:700;">📊 Inventory Ledger</h2>
-        <button onclick="closeLedger()" style="background:none; border:none; color:#fff; font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+    <div style="padding:10px 16px; display:flex; align-items:center; justify-content:space-between; background:var(--panel, #ffffff); border-bottom:1px solid var(--border, #e0e0e0); width:100%; box-sizing:border-box; flex-shrink:0;">
+        <h2 id="monthPickerTitle" style="margin:0; font-size:18px; font-weight:600; color:var(--text-main, #333);">Select Month</h2>
+        
+        <!-- Cross Button (Margin-right updated to shift left) -->
+        <button onclick="closeMonthPicker()" style="background:none; border:none; color:var(--text-main, #333); font-size:30px; cursor:pointer; padding:0;margin-right:14px;display:flex; align-items:center; margin-right:8px;">
             <i class="fas fa-times"></i>
         </button>
     </div>
 
+    <!-- Center Content / Month Grid Area -->
 
+<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 16px; box-sizing:border-box; gap:12px; overflow-y:auto; width:100%;">
+        
+    <!-- Year Selection Dropdown Container (Centered) -->
+    <div style="width:100%; max-width:400px; flex-shrink:0; display:flex; justify-content:center;">
+        <select id="ledgerYearSelect" onchange="onLedgerYearChange()" style="width:auto; padding:10px 36px 10px 20px; border-radius:12px; border:1.5px solid var(--border); background:var(--panel); color:var(--text-main); font-size:22px; font-weight:700; outline:none; box-sizing:border-box; appearance:none; text-align:center; text-align-last:center; background-image:url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%230ea5e9%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat:no-repeat; background-position:right 14px top 50%; background-size:11px auto;"></select>
+    </div>
+    
+    <!-- Month Grid Layout -->
+    <div id="monthGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:100%; max-width:400px;"></div>
+</div>
+
+  
+</div>
+
+  
+
+  <div id="ledgerModal" class="overlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:1000000; flex-direction:column; padding:0; margin:0;">
+    
+    <!-- Full Width Top Header Bar -->
+    <div style="width:100%; box-sizing:border-box; padding:15px 20px; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, var(--accent), var(--teal)); border-bottom:2px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0;">
+        <h2 id="ledgerTitle" style="margin:0; font-size:18px; color:#fff; font-weight:700;">📊 Inventory Ledger</h2>
+        
+        <!-- Cross Button (margin-right added to move left) -->
+        <button onclick="closeLedger()" style="background:none; border:none; color:#fff; font-size:30px; cursor:pointer; padding:0;margin-right:12px; display:flex; align-items:center; margin-right:12px;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
 
     <!-- Full Width Table Container -->
     <div style="flex:1; overflow:auto; background:var(--bg); width:100%;">
@@ -5664,7 +5670,7 @@ openPetrolPanel = function() {
 
 <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
     <h2 style="margin:0; font-size:18px; color:var(--text-main);">Distributions</h2>
-    <button onclick="closeSharePanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+    <button onclick="closeSharePanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px;display:flex; align-items:center;">
         <i class="fas fa-times"></i>
     </button>
 </div>
@@ -5751,7 +5757,7 @@ openPetrolPanel = function() {
 <div id="purchasedPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:1000; display:none; flex-direction:column;">
     <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
         <h2 style="margin:0; font-size:18px; color:var(--text-main);">Purchased</h2>
-        <button onclick="closePurchasedPanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button onclick="closePurchasedPanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px;display:flex; align-items:center;">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -5810,7 +5816,7 @@ openPetrolPanel = function() {
     <!-- HEADER WITH 25PX CROSS ICON ON RIGHT -->
     <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
         <h2 style="margin:0; font-size:18px; color:var(--text-main);">Wasted</h2>
-        <button onclick="closeWastedPanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button onclick="closeWastedPanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px;isplay:flex; align-items:center;">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -5879,7 +5885,7 @@ openPetrolPanel = function() {
 <div id="editWasteModal" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:1001; display:none; flex-direction:column;">
     <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
         <h2 style="margin:0; font-size:16px; color:var(--text-main);">Edit Wastage</h2>
-        <button onclick="closeEditModal('editWasteModal')" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button onclick="closeEditModal('editWasteModal')" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px;display:flex; align-items:center;">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -5916,7 +5922,7 @@ openPetrolPanel = function() {
 <div id="editPetrolModal" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:none; flex-direction:column;">
     <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
         <h2 style="margin:0; font-size:16px; color:var(--text-main);">Edit Petrol Entry</h2>
-        <button onclick="closeEditModal('editPetrolModal')" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button onclick="closeEditModal('editPetrolModal')" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px;display:flex; align-items:center;">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -5947,7 +5953,7 @@ openPetrolPanel = function() {
 <div id="editDistModal" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:none; flex-direction:column;">
     <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
         <h2 style="margin:0; font-size:16px; color:var(--text-main);">Edit Distribution</h2>
-        <button onclick="closeEditModal('editDistModal')" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button onclick="closeEditModal('editDistModal')" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px;display:flex; align-items:center;">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -5982,7 +5988,7 @@ openPetrolPanel = function() {
 <div id="editPurchaseModal" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:none; flex-direction:column;">
     <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
         <h2 style="margin:0; font-size:16px; color:var(--text-main);">Edit Purchase</h2>
-        <button onclick="closeEditModal('editPurchaseModal')" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button onclick="closeEditModal('editPurchaseModal')" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px;display:flex; align-items:center;">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -6013,7 +6019,7 @@ openPetrolPanel = function() {
 <div id="backupPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10000; display:none; flex-direction:column;">
     <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
         <h2 style="margin:0; font-size:18px; color:var(--text-main); font-weight:700;">Backup &amp; Restore</h2>
-        <button onclick="closeBackupPanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button onclick="closeBackupPanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px;display:flex; align-items:center;">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -6339,7 +6345,7 @@ async function confirmImport() {
 
   <div style="padding:15px 20px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border); width:100%; box-sizing:border-box;">
         <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main);">Export to Excel</h2>
-        <button onclick="closeExcelExportScreen()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button onclick="closeExcelExportScreen()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px;display:flex; align-items:center;">
             <i class="fas fa-times"></i>
         </button>
     </div>
