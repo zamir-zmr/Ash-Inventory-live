@@ -5516,6 +5516,13 @@ openPetrolPanel = function() {
     margin-right: 12px !important;
     margin-left: 0 !important;
 }
+/* Big screen (PC): 5px extra right margin for the close (X) icon → 17px total */
+@media (min-width: 768px) {
+    #monthPickerModal .modal-header-bar .modal-close-btn,
+    #ledgerModal .modal-header-bar .modal-close-btn {
+        margin-right: 17px !important;
+    }
+}
 </style>
 <div id="monthPickerModal" class="overlay" style="display:none; position:fixed; inset:0; width:100vw; height:100dvh; background:var(--bg, #f4f4f4); z-index:999999; flex-direction:column; overflow:hidden;">
     
