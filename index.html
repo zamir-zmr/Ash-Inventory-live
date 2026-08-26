@@ -5505,18 +5505,16 @@ openPetrolPanel = function() {
 <!-- Fully Responsive Month Picker Modal -->
 <!-- Fully Responsive Month Picker Modal -->
 <style>
-/* PC / big screen: move the modal close (X) icon to the LEFT.
-   Mobile stays default (X on the right). */
-@media (min-width: 768px) {
-    #monthPickerModal .modal-header-bar,
-    #ledgerModal .modal-header-bar {
-        flex-direction: row-reverse;
-    }
-    #monthPickerModal .modal-header-bar .modal-close-btn,
-    #ledgerModal .modal-header-bar .modal-close-btn {
-        margin-right: 0 !important;
-        margin-left: 8px;
-    }
+/* Title stays LEFT, close (X) icon stays RIGHT on every screen size,
+   with a consistent 12px right margin for the X icon. */
+#monthPickerModal .modal-header-bar,
+#ledgerModal .modal-header-bar {
+    flex-direction: row;
+}
+#monthPickerModal .modal-header-bar .modal-close-btn,
+#ledgerModal .modal-header-bar .modal-close-btn {
+    margin-right: 12px !important;
+    margin-left: 0 !important;
 }
 </style>
 <div id="monthPickerModal" class="overlay" style="display:none; position:fixed; inset:0; width:100vw; height:100dvh; background:var(--bg, #f4f4f4); z-index:999999; flex-direction:column; overflow:hidden;">
@@ -5526,7 +5524,7 @@ openPetrolPanel = function() {
         <h2 id="monthPickerTitle" style="margin:0; font-size:18px; font-weight:600; color:var(--text-main, #333);">Select Month</h2>
         
         <!-- Cross Button -->
-        <button class="modal-close-btn" onclick="closeMonthPicker()" style="background:none; border:none; color:var(--text-main, #333); font-size:30px; cursor:pointer; padding:0;display:flex; align-items:center; margin-right:8px;">
+        <button class="modal-close-btn" onclick="closeMonthPicker()" style="background:none; border:none; color:var(--text-main, #333); font-size:30px; cursor:pointer; padding:0;display:flex; align-items:center; margin-right:12px;">
             <i class="fas fa-times"></i>
         </button>
     </div>
