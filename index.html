@@ -595,6 +595,9 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:' && location.pr
         <div onclick="openPetrolPanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:#b8860b; font-weight:700; font-size:14px; letter-spacing:1px;">
             <i class="fas fa-gas-pump" style="font-size:16px;"></i> PETROL
         </div>
+        <div onclick="openReportPanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:var(--accent); font-weight:700; font-size:14px; letter-spacing:1px;">
+            <i class="fas fa-chart-bar" style="font-size:16px;"></i> REPORT
+        </div>
         <div onclick="openBackupPanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:#e11d48; font-weight:700; font-size:14px; letter-spacing:1px;">
             <i class="fas fa-cloud-upload-alt" style="font-size:16px;"></i> BACKUP
         </div>
@@ -1097,7 +1100,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
     let modalStack = [];
     let isInitialLoad = true;
     const allModals = ['petrolPanel', 'unitModal', 'categoryModal', 'manageOptionsModal', 'branchModal', 'carModal', 'cropModal', 'loginModal', 'editModal', 'deleteModal', 'monthPickerModal', 'ledgerModal', 'editWasteModal', 'editPetrolModal', 'editDistModal', 'editPurchaseModal', 'backupPanel', 'excelExportPanel'];
-    const sidePanels = ['petrolPanel', 'purchasedPanel', 'sharePanel', 'wastedPanel', 'backupPanel', 'excelExportPanel'];
+    const sidePanels = ['petrolPanel', 'purchasedPanel', 'sharePanel', 'wastedPanel', 'backupPanel', 'excelExportPanel', 'salesExportPanel', 'reportPanel'];
     const editModals = ['editDistModal', 'editPurchaseModal', 'editWasteModal', 'editPetrolModal'];
 
     // Initialize history on page load
@@ -1177,6 +1180,10 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
                 const bp = document.getElementById('backupPanel');
                 if (bp) bp.style.display = 'flex';
                 history.pushState({ type: 'sidePanel', panelId: 'backupPanel' }, '', '');
+            } else if (openPanel === 'salesExportPanel') {
+                const rp = document.getElementById('reportPanel');
+                if (rp) rp.style.display = 'flex';
+                history.pushState({ type: 'sidePanel', panelId: 'reportPanel' }, '', '');
             } else {
                 history.pushState({ type: 'home', stack: [] }, '', '');
             }
@@ -6691,6 +6698,359 @@ async function runExcelExport() {
         statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a;"></i> Export successful!';
         setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
     } catch(e) {
+        console.error(e);
+        statusEl.innerHTML = '❌ Export failed. Please try again.';
+    }
+}
+</script>
+
+
+<!-- ================= REPORT PANEL (Sales report) ================= -->
+<style>
+    .rpt-btn { flex:0 0 auto; font-size:12px; padding:0 14px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; cursor:pointer; font-weight:600; transition:0.2s; }
+    .rpt-btn.rpt-active { background:var(--teal); color:#fff; border-color:var(--teal); }
+    .rpt-select { width:100%; padding:14px 38px 12px 14px; border-radius:12px; border:1.5px solid var(--text-main, #333); background-color:var(--panel, #fff); color:var(--text-main, #333); font-size:14px; font-weight:600; outline:none; appearance:none; -webkit-appearance:none; background-image:url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%230ea5e9%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat:no-repeat; background-position:right 14px top 50%; background-size:12px auto; box-sizing:border-box; }
+    .rpt-float-label { position:absolute; top:-9px; left:12px; background:var(--bg, #fff); padding:0 4px; font-size:11px; font-weight:700; color:var(--text-dim, #666); z-index:1; }
+    .rpt-card { background:var(--panel); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,0.04); }
+    #reportTable { width:100%; border-collapse:collapse; font-size:13px; table-layout:auto; }
+    #reportTable th { position:sticky; top:0; z-index:2; background:var(--panel); color:var(--text-dim); font-size:10px; font-weight:800; letter-spacing:0.6px; text-transform:uppercase; padding:11px 10px; border-bottom:2px solid var(--teal); text-align:left; }
+    #reportTable td { padding:11px 10px; border-bottom:1px solid var(--border); color:var(--text-main); vertical-align:middle; }
+    #reportTable tbody tr:nth-child(even) td { background:rgba(14,165,233,0.04); }
+    #reportTable tbody tr:last-child td { border-bottom:none; }
+    #reportTable th.rpt-r, #reportTable td.rpt-r { text-align:right; }
+    #reportTable td.rpt-item { font-weight:700; line-height:1.25; word-break:break-word; }
+    #reportTable td.rpt-date { color:var(--text-dim); font-size:11px; font-weight:600; white-space:nowrap; }
+    #reportTable td.rpt-qty { font-weight:800; white-space:nowrap; }
+    #reportTable td.rpt-amt { font-weight:800; color:var(--teal); white-space:nowrap; }
+    #reportTable td.rpt-amt small { display:block; font-size:9px; font-weight:600; color:var(--text-dim); margin-top:2px; }
+</style>
+
+<div id="reportPanel" class="side-panel" style="position:fixed; inset:0; background:var(--bg); z-index:10000; display:none; flex-direction:column;">
+    <div style="padding:15px; display:flex; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid var(--border);">
+        <h2 style="margin:0; font-size:18px; color:var(--text-main);">Sales Report</h2>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button onclick="openSalesExportScreen()" style="background:var(--teal); color:#fff; border:none; padding:8px 14px; border-radius:50px; font-weight:800; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 3px 10px rgba(13,148,136,0.3);">
+                <i class="fas fa-file-excel"></i> Export to Excel
+            </button>
+            <button onclick="closeReportPanel()" style="background:none; border:none; color:var(--text-main); font-size:30px; cursor:pointer; padding:0; margin-right:12px; display:flex; align-items:center;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <div style="padding:16px 12px 0 12px;">
+        <div style="position:relative; margin-bottom:10px;">
+            <label class="rpt-float-label">Item Name</label>
+            <select id="rptItemSelect" class="rpt-select" onchange="onReportItemChange()">
+                <option value="">All Items</option>
+            </select>
+        </div>
+        <div style="background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:6px 8px; display:flex; gap:6px; align-items:center; overflow-x:auto; scrollbar-width:none;">
+            <button id="rptBtnToday" class="rpt-btn" onclick="setReportFilter('today')">Today</button>
+            <button id="rptBtnYesterday" class="rpt-btn" onclick="setReportFilter('yesterday')">Yesterday</button>
+            <button id="rptBtnMonth" class="rpt-btn rpt-active" onclick="setReportFilter('thisMonth')">This Month</button>
+            <button id="rptBtnManual" class="rpt-btn" onclick="setReportFilter('manually')">Manually</button>
+        </div>
+        <div id="rptManualBox" style="display:none; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px; margin-top:8px;">
+            <input type="date" id="rptFromDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+            <span style="color:var(--text-dim); font-size:11px;">to</span>
+            <input type="date" id="rptToDate" style="flex:1; min-width:110px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); font-size:12px;">
+            <button onclick="applyReportManual()" style="background:var(--teal); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
+        </div>
+        <div id="rptSummary" style="font-size:11px; color:var(--text-dim); font-weight:700; padding:10px 2px 8px 2px;"></div>
+    </div>
+
+    <div style="flex:1; overflow-y:auto; padding:0 12px 12px 12px;">
+        <div class="rpt-card" style="overflow-x:auto;">
+            <table id="reportTable">
+                <thead><tr><th>Item Name</th><th>Date</th><th class="rpt-r">Qty Sold</th><th class="rpt-r">Price / Total</th></tr></thead>
+                <tbody id="reportBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Footer: Total Price summary -->
+    <div style="background:var(--panel); border-top:2px solid var(--teal); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; box-shadow:0 -4px 14px rgba(0,0,0,0.06);">
+        <div>
+            <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:var(--text-dim); text-transform:uppercase;">Total Qty</div>
+            <div id="rptFooterQty" style="font-size:13px; font-weight:700; color:var(--text-main); margin-top:2px;">0</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:var(--text-dim); text-transform:uppercase;">Total Price</div>
+            <div id="rptFooterTotal" style="font-size:22px; font-weight:900; color:var(--teal); line-height:1.1; margin-top:2px;">0.00</div>
+        </div>
+    </div>
+</div>
+
+<!-- Export to Excel screen (same layout as backup export) -->
+<div id="salesExportPanel" style="position:fixed; inset:0; background:#ffffff; z-index:10002; display:none; flex-direction:column; padding:0; margin:0;">
+    <div style="padding:15px 12px; display:flex; align-items:center; justify-content:space-between; background:#ffffff; border-bottom:1px solid var(--border, #e0e0e0); width:100%; box-sizing:border-box;">
+        <h2 style="margin:0; margin-left:3px; padding:0; font-size:18px; font-weight:700; color:var(--text-main, #333);">Export to Excel</h2>
+        <button onclick="closeSalesExportScreen()" style="background:none; border:none; color:var(--text-main, #333); font-size:30px; cursor:pointer; padding:0; margin-right:15px; display:flex; align-items:center;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:18px; box-sizing:border-box; background:#ffffff;">
+        <div style="position:relative;">
+            <label style="position:absolute; top:-9px; left:12px; background:#ffffff; padding:0 4px; font-size:11px; font-weight:700; color:var(--text-dim, #666); z-index:1;">Item Name</label>
+            <select id="sxItemSelect" class="rpt-select" style="padding:16px 38px 12px 14px; font-size:15px;">
+                <option value="">All Items</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button onclick="document.getElementById('sxStartHidden').showPicker ? document.getElementById('sxStartHidden').showPicker() : document.getElementById('sxStartHidden').click()" style="flex:1; display:flex; align-items:center; gap:10px; padding:14px 12px; border-radius:12px; border:1.5px solid var(--border, #e0e0e0); background:var(--panel, #ffffff); color:var(--text-main, #333); font-size:13px; font-weight:600; cursor:pointer;">
+                <i class="fas fa-calendar-alt" style="color:var(--text-dim, #666); font-size:16px;"></i>
+                <div style="text-align:left;">
+                    <div style="font-size:10px; color:var(--text-dim, #666); font-weight:700;">Start Date:</div>
+                    <div id="sxStartLabel" style="font-size:13px; font-weight:700; color:var(--text-main, #333);">-- Select --</div>
+                </div>
+            </button>
+            <input type="date" id="sxStartHidden" style="display:none;" onchange="updateSxLabel('start')">
+            <button onclick="document.getElementById('sxEndHidden').showPicker ? document.getElementById('sxEndHidden').showPicker() : document.getElementById('sxEndHidden').click()" style="flex:1; display:flex; align-items:center; gap:10px; padding:14px 12px; border-radius:12px; border:1.5px solid var(--border, #e0e0e0); background:var(--panel, #ffffff); color:var(--text-main, #333); font-size:13px; font-weight:600; cursor:pointer;">
+                <i class="fas fa-calendar-alt" style="color:var(--text-dim, #666); font-size:16px;"></i>
+                <div style="text-align:left;">
+                    <div style="font-size:10px; color:var(--text-dim, #666); font-weight:700;">End Date:</div>
+                    <div id="sxEndLabel" style="font-size:13px; font-weight:700; color:var(--text-main, #333);">-- Select --</div>
+                </div>
+            </button>
+            <input type="date" id="sxEndHidden" style="display:none;" onchange="updateSxLabel('end')">
+            <button onclick="runSalesExport()" style="flex-shrink:0; padding:14px 22px; border-radius:50px; background:var(--teal, #0d9488); color:#fff; border:none; font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 4px 12px rgba(13,148,136,0.35);">Export</button>
+        </div>
+        <div id="sxStatus" style="display:none; text-align:center; padding:14px; border-radius:12px; background:rgba(14,165,233,0.08); border:1px solid var(--border, #e0e0e0); color:var(--text-dim, #666); font-size:13px; font-weight:600;"></div>
+    </div>
+</div>
+
+<script>
+let currentReportFilter = 'thisMonth';
+let rptRange = { from: '', to: '' }; // ISO yyyy-mm-dd of the report currently on screen
+
+async function openReportPanel() {
+    const panel = document.getElementById('reportPanel');
+    panel.style.display = 'flex';
+    history.pushState({ type: 'sidePanel', panelId: 'reportPanel' }, '', '');
+
+    // Item dropdown: default "All Items"
+    const sel = document.getElementById('rptItemSelect');
+    sel.innerHTML = '<option value="">All Items</option>';
+    try {
+        const snap = await db.ref('stocks').once('value');
+        const stocks = snap.val() || {};
+        Object.entries(stocks)
+            .filter(([id, s]) => s && s.name)
+            .sort((a, b) => a[1].name.localeCompare(b[1].name))
+            .forEach(([id, s]) => {
+                const o = document.createElement('option');
+                o.value = id; o.textContent = s.name;
+                sel.appendChild(o);
+            });
+    } catch (e) { console.error(e); }
+    sel.value = '';
+    setReportFilter('thisMonth'); // default view
+}
+
+function closeReportPanel() {
+    const panel = document.getElementById('reportPanel');
+    if (panel && panel.style.display !== 'none' && panel.style.display !== '') {
+        history.back();
+    }
+}
+
+function onReportItemChange() {
+    if (currentReportFilter === 'manually' && !rptRange.from && !rptRange.to) return;
+    loadReport();
+}
+
+function rptComputeRange(mode) {
+    const now = new Date();
+    if (mode === 'today') return { from: _fmtISO(now), to: _fmtISO(now) };
+    if (mode === 'yesterday') { const y = new Date(); y.setDate(y.getDate() - 1); return { from: _fmtISO(y), to: _fmtISO(y) }; }
+    if (mode === 'thisMonth') return { from: _fmtISO(new Date(now.getFullYear(), now.getMonth(), 1)), to: _fmtISO(new Date(now.getFullYear(), now.getMonth() + 1, 0)) };
+    return { from: document.getElementById('rptFromDate').value, to: document.getElementById('rptToDate').value };
+}
+
+function setReportFilter(mode) {
+    const ids = { today: 'rptBtnToday', yesterday: 'rptBtnYesterday', thisMonth: 'rptBtnMonth', manually: 'rptBtnManual' };
+    Object.values(ids).forEach(id => document.getElementById(id).classList.remove('rpt-active'));
+    document.getElementById(ids[mode]).classList.add('rpt-active');
+    currentReportFilter = mode;
+
+    const box = document.getElementById('rptManualBox');
+    if (mode === 'manually') {
+        box.style.display = 'flex'; // wait for Apply
+        rptRange = { from: '', to: '' };
+        document.getElementById('reportBody').innerHTML = '';
+        document.getElementById('rptSummary').textContent = 'Select a date range and tap Apply.';
+        document.getElementById('rptFooterQty').textContent = '0';
+        document.getElementById('rptFooterTotal').textContent = '0.00';
+        return;
+    }
+    box.style.display = 'none';
+    rptRange = rptComputeRange(mode);
+    loadReport();
+}
+
+function applyReportManual() {
+    const from = document.getElementById('rptFromDate').value;
+    const to = document.getElementById('rptToDate').value;
+    if (!from && !to) { showToast('Please select a date range'); return; }
+    if (from && to && from > to) { showToast('Start date must be before End date ⚠️'); return; }
+    currentReportFilter = 'manually';
+    rptRange = { from, to };
+    loadReport();
+}
+
+function rptFmtQty(n) {
+    return Number.isInteger(n) ? String(n) : String(parseFloat(n.toFixed(3)));
+}
+
+// Fetch + group transfers (sold items) for an item (or all) within an ISO date range
+async function getSalesRows(itemId, fromISO, toISO) {
+    const snap = await db.ref('transfers').once('value');
+    const data = snap.val() || {};
+    const groups = {};
+    Object.keys(data).forEach(id => {
+        const t = data[id];
+        if (!t || !t.date) return;
+        if (itemId && t.itemId !== itemId) return;
+        if (!isDateInRange(t.date, fromISO, toISO)) return;
+
+        // same price logic as Distribution cards: live stock price, else saved price; minus discount
+        const live = (typeof stockPriceMap !== 'undefined') ? stockPriceMap[t.itemId] : undefined;
+        const price = (live !== undefined && live !== null) ? (parseFloat(live) || 0) : (parseFloat(t.price) || 0);
+        const disc = parseFloat(t.discount) || 0;
+        const qty = parseFloat(t.qty) || 0;
+        const total = Math.max(0, price * qty - disc);
+
+        const key = (t.itemId || t.itemName || '') + '|' + t.date + '|' + (t.unit || '');
+        if (!groups[key]) groups[key] = { name: t.itemName || '-', date: t.date, unit: t.unit || '', qty: 0, total: 0, disc: 0, prices: new Set() };
+        groups[key].qty += qty;
+        groups[key].total += total;
+        groups[key].disc += disc;
+        groups[key].prices.add(price);
+    });
+    return Object.values(groups).map(g => ({
+        name: g.name, date: g.date, unit: g.unit, qty: g.qty, total: g.total, disc: g.disc,
+        price: g.prices.size === 1 ? [...g.prices][0] : (g.qty ? g.total / g.qty : 0)
+    }));
+}
+
+async function loadReport() {
+    const body = document.getElementById('reportBody');
+    const summary = document.getElementById('rptSummary');
+    body.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-dim); padding:24px;'>Loading...</td></tr>";
+
+    const itemId = document.getElementById('rptItemSelect').value;
+    let rows = [];
+    try { rows = await getSalesRows(itemId, rptRange.from, rptRange.to); }
+    catch (e) { console.error(e); body.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--danger); padding:24px;'>Failed to load data.</td></tr>"; return; }
+
+    rows.sort((a, b) => {
+        const d = parseDMYDate(b.date) - parseDMYDate(a.date);
+        return d !== 0 ? d : a.name.localeCompare(b.name);
+    });
+
+    if (!rows.length) {
+        body.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-dim); padding:28px;'>No sales found.</td></tr>";
+        summary.textContent = '0 records';
+        document.getElementById('rptFooterQty').textContent = '0';
+        document.getElementById('rptFooterTotal').textContent = '0.00';
+        return;
+    }
+
+    const unitTotals = {};
+    let grand = 0;
+    body.innerHTML = rows.map(r => {
+        unitTotals[r.unit] = (unitTotals[r.unit] || 0) + r.qty;
+        grand += r.total;
+        return `<tr>
+            <td class="rpt-item">${escapeHtml(r.name)}</td>
+            <td class="rpt-date">${escapeHtml(r.date)}</td>
+            <td class="rpt-qty rpt-r">${rptFmtQty(r.qty)} <small style="font-size:10px; font-weight:600; color:var(--text-dim);">${escapeHtml(r.unit)}</small></td>
+            <td class="rpt-amt rpt-r">${r.total.toFixed(2)}${r.price ? `<small>@ ${r.price.toFixed(2)}</small>` : ''}</td>
+        </tr>`;
+    }).join('');
+
+    summary.textContent = rows.length + (rows.length === 1 ? ' record' : ' records');
+    document.getElementById('rptFooterQty').textContent = Object.keys(unitTotals).map(u => rptFmtQty(unitTotals[u]) + ' ' + u).join(' • ');
+    document.getElementById('rptFooterTotal').textContent = grand.toFixed(2);
+}
+
+// ---------- Export to Excel (Sales Report) ----------
+function openSalesExportScreen() {
+    const sx = document.getElementById('sxItemSelect');
+    sx.innerHTML = document.getElementById('rptItemSelect').innerHTML; // same items, "All Items" first
+    sx.value = document.getElementById('rptItemSelect').value;
+
+    const r = (rptRange.from || rptRange.to) ? rptRange : rptComputeRange('thisMonth');
+    const today = _fmtISO(new Date());
+    document.getElementById('sxStartHidden').value = r.from || r.to;
+    document.getElementById('sxEndHidden').value = r.to || r.from || today;
+    updateSxLabel('start'); updateSxLabel('end');
+    document.getElementById('sxStatus').style.display = 'none';
+
+    document.getElementById('salesExportPanel').style.display = 'flex';
+    history.pushState({ type: 'sidePanel', panelId: 'salesExportPanel' }, '', '');
+}
+
+function closeSalesExportScreen() {
+    const p = document.getElementById('salesExportPanel');
+    if (p && p.style.display !== 'none' && p.style.display !== '') history.back();
+}
+
+function updateSxLabel(which) {
+    if (which === 'start') document.getElementById('sxStartLabel').textContent = _fmtDisplay(document.getElementById('sxStartHidden').value);
+    else document.getElementById('sxEndLabel').textContent = _fmtDisplay(document.getElementById('sxEndHidden').value);
+}
+
+async function runSalesExport() {
+    const sel = document.getElementById('sxItemSelect');
+    const itemId = sel.value;
+    const itemLabel = itemId ? sel.selectedOptions[0].textContent : 'All Items';
+    const startStr = document.getElementById('sxStartHidden').value;
+    const endStr = document.getElementById('sxEndHidden').value;
+
+    if (!startStr || !endStr) { showToast('Please select start and end dates ⚠️'); return; }
+    if (startStr > endStr) { showToast('Start date must be before End date ⚠️'); return; }
+
+    const statusEl = document.getElementById('sxStatus');
+    statusEl.style.display = 'block';
+    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching data...';
+
+    try {
+        const list = await getSalesRows(itemId, startStr, endStr);
+        if (!list.length) { statusEl.innerHTML = '⚠️ No data found for selected range.'; return; }
+
+        list.sort((a, b) => {
+            const d = parseDMYDate(a.date) - parseDMYDate(b.date);
+            return d !== 0 ? d : a.name.localeCompare(b.name);
+        });
+
+        const mn = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+        const rows = list.map(r => {
+            const d = parseDMYDate(r.date);
+            return {
+                'Date':         `${d.getDate()}-${mn[d.getMonth()]}-${d.getFullYear()}`,
+                'Item Name':    r.name,
+                'Price':        parseFloat(r.price.toFixed(2)),
+                'Qty Sold':     parseFloat(r.qty.toFixed(3)),
+                'Unit':         r.unit,
+                'Discount':     parseFloat(r.disc.toFixed(2)),
+                'Total Amount': parseFloat(r.total.toFixed(2))
+            };
+        });
+        const grand = list.reduce((s, r) => s + r.total, 0);
+        rows.push({ 'Date': '', 'Item Name': '', 'Price': '', 'Qty Sold': '', 'Unit': '', 'Discount': '', 'Total Amount': '' });
+        rows.push({ 'Date': 'TOTAL', 'Item Name': '', 'Price': '', 'Qty Sold': '', 'Unit': '', 'Discount': '', 'Total Amount': parseFloat(grand.toFixed(2)) });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [{wch:15},{wch:20},{wch:10},{wch:12},{wch:10},{wch:10},{wch:15}];
+        XLSX.utils.book_append_sheet(wb, ws, 'sales report');
+        XLSX.writeFile(wb, `Sales_Report_${itemLabel}_${_fmtDisplay(startStr)}_to_${_fmtDisplay(endStr)}.xlsx`);
+
+        statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a;"></i> Export successful!';
+        setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+    } catch (e) {
         console.error(e);
         statusEl.innerHTML = '❌ Export failed. Please try again.';
     }
