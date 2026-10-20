@@ -6332,7 +6332,7 @@ async function exportBackupJSON() {
         const a = document.createElement('a');
         const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
         a.href = url;
-        a.download = `ash-inventory-backup-${dateStr}.json`;
+        a.download = `kp-inventory-backup-${dateStr}.json`;
         a.click();
         URL.revokeObjectURL(url);
         btn.innerHTML = '<i class="fas fa-check"></i> Export Done!';
