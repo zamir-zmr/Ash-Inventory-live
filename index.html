@@ -477,8 +477,51 @@
 
      
     </style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0E1116">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="KP Inventory">
+    <link rel="icon" type="image/png" href="favicon-64.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <style>
+    /* ===== Splash (KP HARDWARE) ===== */
+    #splash{--sp-bg:#0E1116;--sp-text:#E9EAEE;--sp-accent:#FBBF24;--sp-surface:#1D2230;position:fixed;inset:0;z-index:2147483000;background:var(--sp-bg);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .7s ease,transform .7s cubic-bezier(.4,0,.2,1),visibility .7s}
+    #splash.hide{opacity:0;visibility:hidden;transform:scale(1.12)}
+    #splash::before,#splash::after{content:'';position:absolute;width:380px;height:380px;border-radius:50%;pointer-events:none}
+    #splash::before{top:10%;left:-130px;background:radial-gradient(circle,rgba(14,165,233,.26),transparent 65%);animation:spOrb1 7s ease-in-out infinite alternate}
+    #splash::after{bottom:8%;right:-130px;background:radial-gradient(circle,rgba(251,191,36,.20),transparent 65%);animation:spOrb2 7s ease-in-out infinite alternate}
+    .splash-stage{position:relative;width:110px;height:110px;animation:spFloat 3s .9s ease-in-out infinite}
+    .splash-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(14,165,233,.65);opacity:0;animation:spRing 2.2s .9s ease-out infinite}
+    .splash-ring.r2{animation-delay:2s}
+    .splash-logo{position:relative;display:block;width:110px;height:110px;border-radius:50%;object-fit:cover;filter:drop-shadow(0 10px 28px rgba(14,165,233,.45));animation:spPop 1s cubic-bezier(.2,.9,.25,1.25) both}
+    .splash-name{position:relative;font-weight:800;font-size:24px;letter-spacing:.02em;background:linear-gradient(90deg,var(--sp-text) 0%,var(--sp-accent) 50%,var(--sp-text) 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:spNameIn 1s .35s cubic-bezier(.2,.8,.2,1) both,spShimmer 2.4s 1.4s linear infinite}
+    .splash-bar{position:relative;width:130px;height:3px;border-radius:3px;background:var(--sp-surface);overflow:hidden;animation:spFadeUp .8s .6s both}
+    .splash-bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,#0EA5E9,var(--sp-accent));border-radius:3px;animation:spSlide 1s ease-in-out infinite}
+    @keyframes spPop{from{opacity:0;transform:scale(.4) rotate(-16deg)}to{opacity:1;transform:none}}
+    @keyframes spFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes spRing{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.2);opacity:0}}
+    @keyframes spNameIn{from{opacity:0;letter-spacing:.4em;transform:translateY(10px)}to{opacity:1;letter-spacing:.02em;transform:none}}
+    @keyframes spShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+    @keyframes spOrb1{to{transform:translate(130px,90px) scale(1.25)}}
+    @keyframes spOrb2{to{transform:translate(-130px,-80px) scale(1.2)}}
+    @keyframes spSlide{from{transform:translateX(-110%)}to{transform:translateX(280%)}}
+    @keyframes spFadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    </style>
 </head>
 <body>
+<div id="splash"><div class="splash-stage"><i class="splash-ring"></i><i class="splash-ring r2"></i><img class="splash-logo" src="icon-192.png" alt="KP Hardware" width="110" height="110"></div><div class="splash-name">KP HARDWARE</div><div class="splash-bar"><i></i></div></div>
+<script>
+(function () {
+  var sp = document.getElementById('splash');
+  function hide() { setTimeout(function () { sp.classList.add('hide'); setTimeout(function () { sp.remove(); }, 800); }, 1900); }
+  if (document.readyState === 'complete') hide(); else window.addEventListener('load', hide);
+  setTimeout(function () { if (sp.isConnected) { sp.classList.add('hide'); setTimeout(function () { sp.remove(); }, 700); } }, 5000);
+})();
+if ('serviceWorker' in navigator && location.protocol !== 'file:' && location.protocol !== 'content:') {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
 
 <div class="container">
     <div class="app-header">
@@ -611,10 +654,10 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
     </div>
 
   
-    <!-- Row 1: Item Name | Quantity | Unit (Pcs) -->
+    <!-- Row 1: Item Name | Price | Unit (Pcs) -->
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
         <input type="text" id="stockName" placeholder="Item Name" style="margin-bottom:0;">
-        <input type="number" id="stockQty" placeholder="Quantity" style="margin-bottom:0;">
+        <input type="number" id="stockPrice" placeholder="Price" step="any" inputmode="decimal" style="margin-bottom:0;">
         <select id="itemUnit" style="padding:12px; margin-bottom:0; border-radius:12px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main); outline:none;">
         </select>
     </div>
@@ -998,7 +1041,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 
         <input type="text" id="editName" placeholder="Item Name" style="width:100%; margin-bottom:5px; padding:12px; border-radius:10px; border:1px solid var(--border);">
 
-<input type="number" id="editQty" placeholder="Quantity" style="width:100%; margin-bottom:5px; padding:12px; border-radius:10px; border:1px solid var(--border);">
+<input type="number" id="editPrice" placeholder="Price" step="any" inputmode="decimal" style="width:100%; margin-bottom:5px; padding:12px; border-radius:10px; border:1px solid var(--border);">
 
 <select id="editItemUnit" style="width:100%; padding:12px;margin-bottom:5px; border-radius:10px; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main);">
     </select>
@@ -1900,7 +1943,8 @@ function updateMenuLoginLogout() {
 async function addStock() {
     const c = document.getElementById('catDropdown').value;
     const n = document.getElementById('stockName').value.trim();
-    const q = document.getElementById('stockQty').value;
+    const q = "0"; // Quantity ab Purchase se aayegi
+    const price = parseFloat(document.getElementById('stockPrice').value) || 0;
     
     // YAHAN DHAYAN DEIN: Dropdown ki ID 'itemUnit' honi chahiye
     const unitDropdown = document.getElementById('itemUnit');
@@ -1911,6 +1955,7 @@ async function addStock() {
             catId: c, 
             name: n, 
             qty: q, 
+            price: price,
             unit: u, // Ab yahan dropdown wali value hi jayegi
             img: finalImageData, 
             by: currentUser, 
@@ -1938,7 +1983,7 @@ async function addStock() {
             });
 
             document.getElementById('stockName').value = ""; 
-            document.getElementById('stockQty').value = "";
+            document.getElementById('stockPrice').value = "";
             document.getElementById('fileName').innerText = "Add Photo";
             document.getElementById('addPreviewBox').style.display = 'none';
             document.getElementById('addImgPreview').src = "";
@@ -1958,9 +2003,9 @@ async function addStock() {
 }
 
 // --- 2. OPEN EDIT (LOADING DATA FOR UPDATE) ---
-function openEdit(id, cId, name, qty, currentImg, currentUnit) {
+function openEdit(id, cId, name, qty, currentImg, currentUnit, currentPrice) {
     document.getElementById('editName').value = name;
-    document.getElementById('editQty').value = qty;
+    document.getElementById('editPrice').value = (currentPrice && currentPrice !== 'undefined' && currentPrice !== 'null') ? currentPrice : '';
     document.getElementById('editCatDropdown').value = cId;
     
     const editUnitDropdown = document.getElementById('editItemUnit');
@@ -1975,16 +2020,20 @@ function openEdit(id, cId, name, qty, currentImg, currentUnit) {
         previewCont.style.display = 'block';
     }
     
+    db.ref('stocks/' + id + '/price').once('value').then(function(ps) {
+        const v = ps.val();
+        document.getElementById('editPrice').value = (v !== null && v !== undefined) ? v : '';
+    });
     openModalWithHistory('editModal');
     
     document.getElementById('saveEditBtn').onclick = async function() {
         const updatedUnit = document.getElementById('editItemUnit') ? document.getElementById('editItemUnit').value : "Pcs";
-        const newQty = parseFloat(document.getElementById('editQty').value) || 0;
+        const newPrice = parseFloat(document.getElementById('editPrice').value) || 0;
         
         let updateData = {
             catId: document.getElementById('editCatDropdown').value,
             name: document.getElementById('editName').value,
-            qty: newQty,
+            price: newPrice,
             unit: updatedUnit,
             by: currentUser,
             time: new Date().toLocaleString()
@@ -1996,35 +2045,7 @@ function openEdit(id, cId, name, qty, currentImg, currentUnit) {
             // Step 1: Main stock update
             await db.ref("stocks/" + id).update(updateData);
 
-            // Step 2: History/Ledger sync
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate());
-            const monthKey = `${year}-${month}`;
-
-            const snap = await db.ref(`inventory_history/${id}/${monthKey}/${day}`).once('value');
-            const existing = snap.val() || { inward: 0, outward: 0, waste: 0 };
-
-            const inVal    = parseFloat(existing.inward  || 0);
-            const outVal   = parseFloat(existing.outward || 0);
-            const wasteVal = parseFloat(existing.waste   || 0);
-
-            // Formula: Nayi Quantity se subah ka stock nikaalna
-            const calculatedOpening = newQty - inVal + outVal + wasteVal;
-
-            await db.ref(`inventory_history/${id}/${monthKey}/${day}`).update({
-                inward:  inVal,
-                outward: outVal,
-                waste:   wasteVal,
-                opening: calculatedOpening, // Ledger ke 'Open' column ke liye
-                manualQty: newQty
-            });
-
-            // Push this day's closing forward as next day's opening (and into
-            // next month's day 1 if this was the month's last day), and drop
-            // the cached ledger so the table re-reads fresh from Firebase.
-            triggerDailyCarryover(id, monthKey, parseInt(day));
+            // (Quantity is no longer edited here, so no ledger sync needed)
 
             finalImageData = ""; 
             closeModals();
@@ -2663,7 +2684,7 @@ function generateStockCardHtml(sId, s, cId) {
             </div>
 
             <div style="display: ${isManageMode ? 'flex' : 'none'}; gap: 8px; margin-left: 5px;">
-                <button onclick="event.stopPropagation(); openEdit('${sId}','${cId}','${s.name}','${s.qty}','${s.img}', '${s.unit}')" style="background:#0ea5e9; color:#fff; border:none; width:32px; height:32px; border-radius:8px;"><i class="fas fa-pen"></i></button>
+                <button onclick="event.stopPropagation(); openEdit('${sId}','${cId}','${s.name}','${s.qty}','${s.img}', '${s.unit}', '${s.price !== undefined ? s.price : ''}')" style="background:#0ea5e9; color:#fff; border:none; width:32px; height:32px; border-radius:8px;"><i class="fas fa-pen"></i></button>
                 <button onclick="event.stopPropagation(); askDelete('${sId}')" style="background:#e11d48; color:#fff; border:none; width:32px; height:32px; border-radius:8px;"><i class="fas fa-trash"></i></button>
             </div>
         </div>`;
@@ -2681,7 +2702,7 @@ function generateStockCardHtml(sId, s, cId) {
         </div>
         <div class="manage-overlay" style="display: ${isManageMode ? 'flex' : 'none'}; position: absolute; inset: 0; background: rgba(0,0,0,0.12); align-items: center; justify-content: center; z-index: 10;">
             <div style="display: flex; gap: 12px;">
-                <div class="action-circle" style="background:#0ea5e9; color:#fff; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="event.stopPropagation(); openEdit('${sId}','${cId}','${s.name}','${s.qty}','${s.img}', '${s.unit}')"><i class="fas fa-pen"></i></div>
+                <div class="action-circle" style="background:#0ea5e9; color:#fff; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="event.stopPropagation(); openEdit('${sId}','${cId}','${s.name}','${s.qty}','${s.img}', '${s.unit}', '${s.price !== undefined ? s.price : ''}')"><i class="fas fa-pen"></i></div>
                 <div class="action-circle" style="background:#e11d48; color:#fff; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="event.stopPropagation(); askDelete('${sId}')"><i class="fas fa-trash"></i></div>
             </div>
         </div>
@@ -3705,7 +3726,7 @@ function populateDropdown(elementId) {
         for(let id in stocks) {
             const nm = (stocks[id].name || "").trim().toLowerCase();
             if(!stocks[id].name || nm === "undefined" || nm === "undefine" || !stocks[id].catId || stocks[id].catId === "undefined") continue;
-            opts += `<option value="${id}" data-qty="${stocks[id].qty}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
+            opts += `<option value="${id}" data-qty="${stocks[id].qty}" data-unit="${stocks[id].unit || 'Pcs'}" data-price="${stocks[id].price || 0}">${stocks[id].name}</option>`;
         }
         document.getElementById(elementId).innerHTML = opts;
     });
@@ -3772,13 +3793,22 @@ function populateShareDropdown() {
         for(let id in stocks) {
             const nm = (stocks[id].name || "").trim().toLowerCase();
             if(!stocks[id].name || nm === "undefined" || nm === "undefine" || !stocks[id].catId || stocks[id].catId === "undefined") continue;
-            opts += `<option value="${id}" data-qty="${stocks[id].qty}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
+            opts += `<option value="${id}" data-qty="${stocks[id].qty}" data-unit="${stocks[id].unit || 'Pcs'}" data-price="${stocks[id].price || 0}">${stocks[id].name}</option>`;
         }
         document.getElementById('shareItemSelect').innerHTML = opts;
     });
 }
 
 function updateShareMaxQty() { refreshShareStock(); }
+
+// Total = (Price x Qty) - Discount
+function updateShareTotal() {
+    const price = parseFloat((document.getElementById('sharePrice') || {}).value) || 0;
+    const disc  = parseFloat((document.getElementById('shareDiscount') || {}).value) || 0;
+    const qty   = parseFloat((document.getElementById('shareQty') || {}).value) || 0;
+    const el = document.getElementById('shareTotalVal');
+    if (el) el.innerText = Math.max(0, price * qty - disc).toFixed(2);
+}
 
 // Selecting an item OR a branch calls this. If a branch is chosen, "Current Stock"
 // shows total qty distributed to that branch so far for the selected item.
@@ -3787,6 +3817,9 @@ async function refreshShareStock() {
     const sel = document.getElementById('shareItemSelect');
     const opt = sel.options[sel.selectedIndex];
     const stockSpan = document.getElementById('maxAvailable');
+    const _pInp = document.getElementById('sharePrice');
+    if (_pInp) _pInp.value = (opt && opt.value) ? (parseFloat(opt.getAttribute('data-price')) || 0) : '';
+    updateShareTotal();
     if(!opt || !opt.value) { if(stockSpan) stockSpan.innerText = "0"; return; }
 
     const unit = opt.getAttribute('data-unit');
@@ -3830,6 +3863,9 @@ async function processStockShare() {
     const unit = opt.getAttribute('data-unit');
     const commentInput = document.getElementById('shareComment');
     const comment = commentInput ? commentInput.value.trim() : "";
+    const sharePriceVal = parseFloat(opt.getAttribute('data-price')) || 0;
+    const shareDiscVal = parseFloat(document.getElementById('shareDiscount').value) || 0;
+    const shareTotalVal = Math.max(0, sharePriceVal * sendQty - shareDiscVal);
 
     if(sendQty > currentQty) {
         Swal.fire({ title: "Low Stock", icon: "error", target: panelTarget });
@@ -3869,6 +3905,9 @@ async function processStockShare() {
             branch: branch,
             qty: sendQty,
             unit: unit,
+            price: sharePriceVal,
+            discount: shareDiscVal,
+            total: shareTotalVal,
             comment: comment,
             received: false,
             receivedBy: "",
@@ -3881,6 +3920,7 @@ async function processStockShare() {
         Swal.fire({ title: "Sent!", icon: "success", timer: 1000, showConfirmButton: false, target: panelTarget });
         qtyInput.value = "";
         if (commentInput) commentInput.value = "";
+        const _dI = document.getElementById('shareDiscount'); if (_dI) _dI.value = "";
         populateShareDropdown();
         refreshShareStock();
         render();
@@ -3891,8 +3931,61 @@ async function processStockShare() {
     }
 }
 
+// ---- Live price helpers: price shown in history always = item's CURRENT price ----
+let stockPriceMap = {};
+let lastTransfersSnap = null;
+
+function distPriceHtml(t) {
+    const live = stockPriceMap[t.itemId];
+    const price = (live !== undefined && live !== null) ? (parseFloat(live) || 0) : (parseFloat(t.price) || 0);
+    const disc = parseFloat(t.discount) || 0;
+    const qty = parseFloat(t.qty) || 0;
+    const total = Math.max(0, price * qty - disc);
+    if (!price && !disc) return '';
+    return `<div style="margin-top:6px; font-size:10px; font-weight:700; color:var(--text-dim);">Price: ${price.toFixed(2)}${disc ? ` | Discount: ${disc.toFixed(2)}` : ''} | Total: <span style="color:var(--teal);">${total.toFixed(2)}</span></div>`;
+}
+
+function startLivePriceSync() {
+    if (window._priceSyncStarted) return;
+    window._priceSyncStarted = true;
+    db.ref("stocks").on("value", snap => {
+        const st = snap.val() || {};
+        stockPriceMap = {};
+        for (const id in st) stockPriceMap[id] = st[id].price;
+
+        // keep dropdown options + price fields in sync
+        ['shareItemSelect', 'editDistItemSelect'].forEach(selId => {
+            const sel = document.getElementById(selId);
+            if (!sel) return;
+            Array.from(sel.options).forEach(o => {
+                if (o.value && stockPriceMap[o.value] !== undefined) o.setAttribute('data-price', stockPriceMap[o.value] || 0);
+            });
+        });
+        const sSel = document.getElementById('shareItemSelect');
+        const sInp = document.getElementById('sharePrice');
+        if (sSel && sInp && sSel.value) { sInp.value = parseFloat(stockPriceMap[sSel.value]) || 0; updateShareTotal(); }
+        const eSel = document.getElementById('editDistItemSelect');
+        const eInp = document.getElementById('editDistPrice');
+        if (eSel && eInp && eSel.value) { eInp.value = parseFloat(stockPriceMap[eSel.value]) || 0; updateEditDistTotal(); }
+
+        // re-draw history so every card shows the latest price/total
+        const branchSel = document.getElementById('branchFilter');
+        const filtered = (typeof currentActiveDateFilter !== 'undefined' && currentActiveDateFilter !== 'all') || (branchSel && branchSel.value);
+        if (filtered && typeof filterData === 'function') filterData('branch');
+        else if (lastTransfersSnap) renderTransferHistory(lastTransfersSnap);
+    });
+}
+
 function loadTransferHistory() {
+    startLivePriceSync();
     db.ref("transfers").limitToLast(15).on("value", snap => {
+        lastTransfersSnap = snap;
+        renderTransferHistory(snap);
+    });
+}
+
+function renderTransferHistory(snap) {
+    {
         const data = snap.val();
         const panelHistoryDiv = document.getElementById('transferHistory');
         const summaryContainer = document.getElementById('recentTransfersList');
@@ -3927,6 +4020,7 @@ function loadTransferHistory() {
                         </div>
                     </div>
                 </div>
+                ${distPriceHtml(t)}
                 ${t.comment ? `<div class="comment-box"><i class="fas fa-comment-dots" style="margin-right:4px;"></i>${escapeHtml(t.comment)}</div>` : ''}
                 <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
                     <div style="font-size:10px; color:var(--text-main);">
@@ -3950,7 +4044,7 @@ function loadTransferHistory() {
 
         if(panelHistoryDiv) panelHistoryDiv.innerHTML = html;
         if(summaryContainer) summaryContainer.innerHTML = html;
-    });
+    }
 }
 
 // Any user can tap the tick to mark a distribution "Received" (name + time
@@ -4066,7 +4160,7 @@ async function populateEditDistItemSelect(selectedId) {
     for (let id in stocks) {
         const nm = (stocks[id].name || "").trim().toLowerCase();
         if(!stocks[id].name || nm === "undefined" || nm === "undefine" || !stocks[id].catId || stocks[id].catId === "undefined") continue;
-        opts += `<option value="${id}" data-unit="${stocks[id].unit || 'Pcs'}">${stocks[id].name}</option>`;
+        opts += `<option value="${id}" data-unit="${stocks[id].unit || 'Pcs'}" data-price="${stocks[id].price || 0}">${stocks[id].name}</option>`;
     }
     const sel = document.getElementById('editDistItemSelect');
     sel.innerHTML = opts;
@@ -4085,6 +4179,25 @@ async function populateEditDistBranchSelect(selectedBranch) {
     if (selectedBranch) sel.value = selectedBranch;
 }
 
+// Auto price in Edit Distribution: keeps the saved price of this record unless the item is changed
+function refreshEditDistPrice(forceFromItem) {
+    const sel = document.getElementById('editDistItemSelect');
+    const opt = sel ? sel.options[sel.selectedIndex] : null;
+    const pInp = document.getElementById('editDistPrice');
+    if (!pInp) return;
+    // Price is always the item's CURRENT price (live)
+    pInp.value = opt && opt.value ? (parseFloat(opt.getAttribute('data-price')) || 0) : '';
+    updateEditDistTotal();
+}
+
+function updateEditDistTotal() {
+    const price = parseFloat((document.getElementById('editDistPrice') || {}).value) || 0;
+    const disc  = parseFloat((document.getElementById('editDistDiscount') || {}).value) || 0;
+    const qty   = parseFloat((document.getElementById('editDistQty') || {}).value) || 0;
+    const el = document.getElementById('editDistTotalVal');
+    if (el) el.innerText = Math.max(0, price * qty - disc).toFixed(2);
+}
+
 async function editTransfer(tId) {
     const snap = await db.ref(`transfers/${tId}`).once("value");
     const oldData = snap.val();
@@ -4098,6 +4211,8 @@ async function editTransfer(tId) {
 
     document.getElementById('editDistQty').value = oldData.qty || '';
     document.getElementById('editDistComment').value = oldData.comment || '';
+    document.getElementById('editDistDiscount').value = oldData.discount || '';
+    refreshEditDistPrice(false);
 
     openModalWithHistory('editDistModal');
 }
@@ -4117,6 +4232,9 @@ async function saveEditDist() {
     const newBranch = document.getElementById('editDistBranch').value;
     const newQty = parseFloat(document.getElementById('editDistQty').value);
     const comment = document.getElementById('editDistComment').value.trim();
+    const editPriceVal = parseFloat(document.getElementById('editDistPrice').value) || 0;
+    const editDiscVal = parseFloat(document.getElementById('editDistDiscount').value) || 0;
+    const editTotalVal = Math.max(0, editPriceVal * (parseFloat(document.getElementById('editDistQty').value) || 0) - editDiscVal);
 
     if (!newItemId || !newBranch || isNaN(newQty) || newQty <= 0) {
         Swal.fire({ title: "Error", text: "Please fill all fields correctly!", icon: "error", target: panelTarget });
@@ -4203,6 +4321,9 @@ async function saveEditDist() {
             itemName: newItemName,
             branch: newBranch,
             qty: newQty,
+            price: editPriceVal,
+            discount: editDiscVal,
+            total: editTotalVal,
             comment: comment
         });
 
@@ -4494,6 +4615,7 @@ function filterData(type) {
                             </div>
                         </div>
                     </div>
+                    ${distPriceHtml(t)}
                     ${t.comment ? `<div class="comment-box"><i class="fas fa-comment-dots" style="margin-right:4px;"></i>${escapeHtml(t.comment)}</div>` : ''}
                     <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center;">
                         <div style="font-size:10px; color:var(--text-main);">
@@ -5714,10 +5836,21 @@ openPetrolPanel = function() {
                 </div>
             </div>
 
+            <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">PRICE (AUTO)</label>
+                    <input type="number" id="sharePrice" placeholder="0.00" readonly style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main); font-weight:700;">
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">DISCOUNT (ON TOTAL)</label>
+                    <input type="number" id="shareDiscount" placeholder="0" step="any" inputmode="decimal" oninput="updateShareTotal()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main); font-weight:700;">
+                </div>
+            </div>
+
             <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div class="input-group">
                     <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QTY</label>
-                    <input type="number" id="shareQty" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--teal); font-weight:700;">
+                    <input type="number" id="shareQty" oninput="updateShareTotal()" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--teal); font-weight:700;">
                 </div>
                 <div class="input-group">
                     <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
@@ -5725,6 +5858,7 @@ openPetrolPanel = function() {
                 </div>
             </div>
             
+                    <div id="shareTotalInfo" style="font-size:15px; font-weight:700; color:var(--text-main); margin-top:8px;">Total: <span id="shareTotalVal">0.00</span></div>
                     <div id="shareStockInfo" style="padding:0px; font-size:17px;
                     margin-bottom:5px;
                     color:var(--CurrentStockColor); font-weight:600;">
@@ -5981,16 +6115,25 @@ openPetrolPanel = function() {
         <div id="editDistSection" style="display: flex; flex-direction: column; gap: 1px; background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
             <div class="input-group">
                 <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">CHOOSE ITEM</label>
-                <select id="editDistItemSelect" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
+                <select id="editDistItemSelect" onchange="refreshEditDistPrice(true)" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
             </div>
             <div class="input-group">
                 <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">CHOOSE BRANCH</label>
                 <select id="editDistBranch" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
             </div>
             <div class="input-group">
-                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QUANTITY</label>
-                <input type="number" id="editDistQty" placeholder="0.00" step="0.01" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--teal); font-weight:700;">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">PRICE (AUTO)</label>
+                <input type="number" id="editDistPrice" placeholder="0.00" readonly style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main); font-weight:700;">
             </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">DISCOUNT (ON TOTAL)</label>
+                <input type="number" id="editDistDiscount" placeholder="0" step="any" inputmode="decimal" oninput="updateEditDistTotal()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main); font-weight:700;">
+            </div>
+            <div class="input-group">
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700;">QUANTITY</label>
+                <input type="number" id="editDistQty" oninput="updateEditDistTotal()" placeholder="0.00" step="0.01" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--teal); font-weight:700;">
+            </div>
+            <div style="font-size:15px; font-weight:700; color:var(--text-main); margin:6px 0;">Total: <span id="editDistTotalVal">0.00</span></div>
             <div class="input-group">
                 <label style="color:var(--text-dim); font-size:10px; font-weight:700;">COMMENT (OPTIONAL)</label>
                 <input type="text" id="editDistComment" placeholder="Add a comment..." style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
