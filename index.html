@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KP inventory Live</title>
+    <title>Ash inventory Live</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     
@@ -2642,6 +2642,7 @@ function populateBranchSelect(selectId, defaultLabel) {
             const name = data[id].name;
             opts += `<option value="${name}">${name}</option>`;
         }
+        if (selectId === 'shareBranch') opts += '<option value="__new__">+ New Customer</option>';
         el.innerHTML = opts;
         if (prevVal && [...el.options].some(o => o.value === prevVal)) el.value = prevVal;
     });
@@ -2649,8 +2650,8 @@ function populateBranchSelect(selectId, defaultLabel) {
 
 // Refresh every branch dropdown present in the app (distribution input + all filter bars)
 function refreshAllBranchDropdowns() {
-    if (document.getElementById('shareBranch')) populateBranchSelect('shareBranch', 'Choose Branch...');
-    if (document.getElementById('branchFilter')) populateBranchSelect('branchFilter', 'All Branch');
+    if (document.getElementById('shareBranch')) populateBranchSelect('shareBranch', 'Choose Customer...');
+    if (document.getElementById('branchFilter')) populateBranchSelect('branchFilter', 'All Customer');
     if (document.getElementById('purchaseBranchFilter')) populateBranchSelect('purchaseBranchFilter', 'All Branch');
     if (document.getElementById('wasteBranchFilter')) populateBranchSelect('wasteBranchFilter', 'All Branch');
 }
@@ -2836,7 +2837,7 @@ function render() {
 
                 let dashboardHtml = lowStockItemsHtml ? `<div style="margin-bottom:0px;"><h3 style="font-size:11px; color:#e11d48; margin-bottom:0px; padding-left:10px; font-weight:800;">LOW STOCK ALERT</h3><div style="display:flex; gap:10px; overflow-x:auto; padding:5px 10px; scrollbar-width:none;">${lowStockItemsHtml}</div></div>` : "";
                 
-                document.getElementById('contentAreaTop').innerHTML = dashboardHtml + historyHtml;
+                document.getElementById('contentAreaTop').innerHTML = dashboardHtml;
                 document.getElementById('contentAreaBottom').innerHTML = html;
                 
                 if(document.getElementById('search').value !== "") filter();
@@ -3106,12 +3107,12 @@ function openSharePanel() {
     if(typeof isAdmin !== 'undefined' && isAdmin) {
         if(inputSection) inputSection.style.display = 'flex';
         populateShareDropdown();
-        populateBranchSelect('shareBranch', 'Choose Branch...');
+        populateBranchSelect('shareBranch', 'Choose Customer...');
     } else {
         if(inputSection) inputSection.style.display = 'none';
     }
 
-    populateBranchSelect('branchFilter', 'All Branch');
+    populateBranchSelect('branchFilter', 'All Customer');
     loadTransferHistory(); 
     if (typeof filterData === 'function') {
         filterData('all');
@@ -3815,46 +3816,51 @@ function updateShareTotal() {
     const qty   = parseFloat((document.getElementById('shareQty') || {}).value) || 0;
     const el = document.getElementById('shareTotalVal');
     if (el) el.innerText = Math.max(0, price * qty - disc).toFixed(2);
+    renderShareStock();
 }
 
-// Selecting an item OR a branch calls this. If a branch is chosen, "Current Stock"
-// shows total qty distributed to that branch so far for the selected item.
-// If no branch is chosen yet, it falls back to the item's central warehouse stock.
+function renderShareStock() {
+    const sel = document.getElementById('shareItemSelect');
+    const stockSpan = document.getElementById('maxAvailable');
+    if (!sel || !stockSpan) return;
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.value) { stockSpan.innerText = "0"; stockSpan.style.color = ''; return; }
+    const unit = opt.getAttribute('data-unit') || '';
+    const have = parseFloat(opt.getAttribute('data-qty')) || 0;
+    const qty = parseFloat((document.getElementById('shareQty') || {}).value) || 0;
+    const left = have - qty;
+    stockSpan.innerText = left.toFixed(2) + " " + unit;
+    stockSpan.style.color = left < 0 ? 'var(--danger)' : '';
+}
+
 async function refreshShareStock() {
     const sel = document.getElementById('shareItemSelect');
     const opt = sel.options[sel.selectedIndex];
-    const stockSpan = document.getElementById('maxAvailable');
     const _pInp = document.getElementById('sharePrice');
     if (_pInp) _pInp.value = (opt && opt.value) ? (parseFloat(opt.getAttribute('data-price')) || 0) : '';
     updateShareTotal();
-    if(!opt || !opt.value) { if(stockSpan) stockSpan.innerText = "0"; return; }
+}
 
-    const unit = opt.getAttribute('data-unit');
-    const branchSel = document.getElementById('shareBranch');
-    const branch = branchSel ? branchSel.value : "";
+function onShareCustomerChange() {
+    const v = document.getElementById('shareBranch').value;
+    const box = document.getElementById('shareNewCustomerBox');
+    if (box) box.style.display = (v === '__new__') ? 'grid' : 'none';
+    refreshShareStock();
+}
 
-    if(!branch) {
-        stockSpan.innerText = opt.getAttribute('data-qty') + " " + unit;
-        return;
-    }
-
-    try {
-        const snap = await db.ref('transfers').once('value');
-        const data = snap.val() || {};
-        let total = 0;
-        Object.values(data).forEach(t => {
-            if (t.itemId === opt.value && t.branch === branch) total += parseFloat(t.qty) || 0;
-        });
-        stockSpan.innerText = total.toFixed(2) + " " + unit;
-    } catch(e) {
-        stockSpan.innerText = "0 " + unit;
-    }
+function onEditCustomerChange() {
+    const v = document.getElementById('editDistBranch').value;
+    const box = document.getElementById('editDistNewCustomerBox');
+    if (box) box.style.display = (v === '__new__') ? 'flex' : 'none';
 }
 
 async function processStockShare() {
     const panelTarget = document.getElementById('sharePanel');
     const sId = document.getElementById('shareItemSelect').value; 
-    const branch = document.getElementById('shareBranch').value;
+    const branchSelVal = document.getElementById('shareBranch').value;
+    const isNewCust = (branchSelVal === '__new__');
+    const branch = isNewCust ? document.getElementById('shareNewName').value.trim() : branchSelVal;
+    const custPhone = isNewCust ? document.getElementById('shareNewPhone').value.trim() : '';
     const qtyInput = document.getElementById('shareQty');
     const sendQty = parseFloat(qtyInput.value);
     const sel = document.getElementById('shareItemSelect');
@@ -3910,6 +3916,8 @@ async function processStockShare() {
             itemId: sId,
             itemName: itemName,
             branch: branch,
+            ...(custPhone ? { customerPhone: custPhone } : {}),
+            ...(isNewCust ? { newCustomer: true } : {}),
             qty: sendQty,
             unit: unit,
             price: sharePriceVal,
@@ -3926,6 +3934,12 @@ async function processStockShare() {
         // STEP 4: Success
         Swal.fire({ title: "Sent!", icon: "success", timer: 1000, showConfirmButton: false, target: panelTarget });
         qtyInput.value = "";
+        if (isNewCust) {
+            document.getElementById('shareBranch').value = '';
+            document.getElementById('shareNewName').value = '';
+            document.getElementById('shareNewPhone').value = '';
+            document.getElementById('shareNewCustomerBox').style.display = 'none';
+        }
         if (commentInput) commentInput.value = "";
         const _dI = document.getElementById('shareDiscount'); if (_dI) _dI.value = "";
         populateShareDropdown();
@@ -3991,6 +4005,11 @@ function loadTransferHistory() {
     });
 }
 
+function distCustomerHtml(t) {
+    const ph = t.customerPhone ? ' • ' + escapeHtml(String(t.customerPhone)) : '';
+    return '<i class="fas fa-user"></i> Customer: ' + escapeHtml(String(t.branch || '')) + ph;
+}
+
 function renderTransferHistory(snap) {
     {
         const data = snap.val();
@@ -4018,7 +4037,7 @@ function renderTransferHistory(snap) {
                     <div style="flex:1;">
                         <b style="color:var(--text-main); font-size:14px; display:block;">${t.itemName}</b>
                         <div style="color:var(--teal); font-size:10px; font-weight:700; margin-top:3px;">
-                            <i class="fas fa-location-dot"></i> To: ${t.branch}
+                            ${distCustomerHtml(t)}
                         </div>
                     </div>
                     <div style="text-align:right;">
@@ -4177,10 +4196,11 @@ async function populateEditDistItemSelect(selectedId) {
 async function populateEditDistBranchSelect(selectedBranch) {
     const snap = await db.ref('branches').once('value');
     const data = snap.val() || {};
-    let opts = '<option value="">Choose Branch...</option>';
+    let opts = '<option value="">Choose Customer...</option>';
     for (let id in data) {
         opts += `<option value="${data[id].name}">${data[id].name}</option>`;
     }
+    opts += '<option value="__new__">+ New Customer</option>';
     const sel = document.getElementById('editDistBranch');
     sel.innerHTML = opts;
     if (selectedBranch) sel.value = selectedBranch;
@@ -4215,6 +4235,22 @@ async function editTransfer(tId) {
 
     await populateEditDistItemSelect(oldData.itemId);
     await populateEditDistBranchSelect(oldData.branch);
+    {
+        const bSel = document.getElementById('editDistBranch');
+        const known = oldData.branch && [...bSel.options].some(o => o.value === oldData.branch && o.value !== '__new__');
+        const box = document.getElementById('editDistNewCustomerBox');
+        if (known) {
+            bSel.value = oldData.branch;
+            box.style.display = 'none';
+            document.getElementById('editDistNewName').value = '';
+            document.getElementById('editDistNewPhone').value = '';
+        } else {
+            bSel.value = '__new__';
+            box.style.display = 'flex';
+            document.getElementById('editDistNewName').value = oldData.branch || '';
+            document.getElementById('editDistNewPhone').value = oldData.customerPhone || '';
+        }
+    }
 
     document.getElementById('editDistQty').value = oldData.qty || '';
     document.getElementById('editDistComment').value = oldData.comment || '';
@@ -4236,7 +4272,10 @@ async function saveEditDist() {
     const itemSel = document.getElementById('editDistItemSelect');
     const newItemId = itemSel.value;
     const newItemName = itemSel.options[itemSel.selectedIndex] ? itemSel.options[itemSel.selectedIndex].text : '';
-    const newBranch = document.getElementById('editDistBranch').value;
+    const editBranchVal = document.getElementById('editDistBranch').value;
+    const editIsNew = (editBranchVal === '__new__');
+    const newBranch = editIsNew ? document.getElementById('editDistNewName').value.trim() : editBranchVal;
+    const editCustPhone = editIsNew ? document.getElementById('editDistNewPhone').value.trim() : '';
     const newQty = parseFloat(document.getElementById('editDistQty').value);
     const comment = document.getElementById('editDistComment').value.trim();
     const editPriceVal = parseFloat(document.getElementById('editDistPrice').value) || 0;
@@ -4327,6 +4366,8 @@ async function saveEditDist() {
             itemId: newItemId,
             itemName: newItemName,
             branch: newBranch,
+            customerPhone: editCustPhone || null,
+            newCustomer: editIsNew ? true : null,
             qty: newQty,
             price: editPriceVal,
             discount: editDiscVal,
@@ -4613,7 +4654,7 @@ function filterData(type) {
                         <div style="flex:1;">
                             <b style="color:var(--text-main); font-size:14px;">${t.itemName}</b>
                             <div style="color:var(--teal); font-size:10px; font-weight:700; margin-top:3px;">
-                                <i class="fas fa-location-dot"></i> To: ${t.branch}
+                                ${distCustomerHtml(t)}
                             </div>
                         </div>
                         <div style="text-align:right;">
@@ -5836,11 +5877,16 @@ openPetrolPanel = function() {
                     <select id="shareItemSelect" onchange="refreshShareStock()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px;"></select>
                 </div>
                 <div class="input-group">
-                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">BRANCH</label>
-                    <select id="shareBranch" onchange="refreshShareStock()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
-                        <option value="">Choose Branch...</option>
+                    <label style="color:var(--text-dim); font-size:10px; font-weight:700;">CUSTOMER</label>
+                    <select id="shareBranch" onchange="onShareCustomerChange()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main);">
+                        <option value="">Choose Customer...</option>
                     </select>
                 </div>
+            </div>
+
+            <div id="shareNewCustomerBox" style="display:none; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                <input type="text" id="shareNewName" placeholder="Customer name" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main); box-sizing:border-box;">
+                <input type="tel" id="shareNewPhone" placeholder="Number" inputmode="tel" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main); box-sizing:border-box;">
             </div>
 
             <div class="responsive-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
@@ -5876,7 +5922,7 @@ openPetrolPanel = function() {
   display: block; margin: 0 auto;
   padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; 
               font-weight:700; font-size:14px;">
-                SEND TO BRANCH
+                SELL TO CUSTOMER
 </button>
             
         </div>
@@ -6125,8 +6171,12 @@ openPetrolPanel = function() {
                 <select id="editDistItemSelect" onchange="refreshEditDistPrice(true)" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
             </div>
             <div class="input-group">
-                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">CHOOSE BRANCH</label>
-                <select id="editDistBranch" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
+                <label style="color:var(--text-dim); font-size:10px; font-weight:700; margin-bottom:4px; display:block;">CHOOSE CUSTOMER</label>
+                <select id="editDistBranch" onchange="onEditCustomerChange()" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); font-size:14px; color:var(--text-main);"></select>
+                <div id="editDistNewCustomerBox" style="display:none; flex-direction:column; gap:6px; margin-top:6px;">
+                    <input type="text" id="editDistNewName" placeholder="Customer name" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main); box-sizing:border-box;">
+                    <input type="tel" id="editDistNewPhone" placeholder="Number" inputmode="tel" style="width:100%; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text-main); box-sizing:border-box;">
+                </div>
             </div>
             <div class="input-group">
                 <label style="color:var(--text-dim); font-size:10px; font-weight:700;">PRICE (AUTO)</label>
@@ -6332,7 +6382,7 @@ async function exportBackupJSON() {
         const a = document.createElement('a');
         const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
         a.href = url;
-        a.download = `kp-inventory-backup-${dateStr}.json`;
+        a.download = `ash-inventory-backup-${dateStr}.json`;
         a.click();
         URL.revokeObjectURL(url);
         btn.innerHTML = '<i class="fas fa-check"></i> Export Done!';
