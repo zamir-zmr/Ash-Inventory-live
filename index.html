@@ -887,7 +887,7 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
      
           
           <button onclick="openBranchModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
-                <i class="fas fa-code-branch" style="color:var(--teal); font-size:18px; width:20px;"></i> Branch
+                <i class="fas fa-user-tag" style="color:var(--teal); font-size:18px; width:20px;"></i> Customer
             </button>
             <button onclick="openCatModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
                 <i class="fas fa-tags" style="color:var(--accent); font-size:18px; width:20px;"></i> Category
@@ -955,16 +955,18 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 
 
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-    <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Branches</h3>
+    <h3 style="margin:0; color:var(--text-main); font-size: 1.2rem;">Manage Customers</h3>
     <i class="fas fa-times" onclick="closeModals()" style="cursor:pointer; color:var(--text-main);margin-right:12px;font-size: 30px;"></i>
 </div>
 
 
       
         <div id="addBranchBox" style="background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 20px; flex-shrink: 0;">
-            <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">Add New Branch</label>
-            <div style="display:flex; gap:8px;">
-                <input type="text" id="newBranchInput" placeholder="Enter branch name..."
+            <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">Add New Customer</label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <input type="text" id="newBranchInput" placeholder="Customer name..."
+                    style="flex:1 1 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 14px; outline: none;">
+                <input type="tel" id="newBranchPhone" placeholder="Phone number..." inputmode="tel"
                     style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 14px; outline: none;">
                 <button onclick="processAddBranch()"
                     style="background: var(--teal); color: white; border: none; padding: 0 20px; border-radius: 10px; cursor: pointer; font-weight: 600;">
@@ -2528,82 +2530,131 @@ function loadCompanyName() {
         .catch(() => {});
 }
 
+// Customer profiles (stored under "branches": {name, phone})
+let customerProfiles = {};
+let customerPhoneMap = {};
+
+function findCustomerByName(name) {
+    const n = String(name || '').trim().toLowerCase();
+    if (!n) return null;
+    for (const id in customerProfiles) {
+        if (String(customerProfiles[id].name || '').trim().toLowerCase() === n) return id;
+    }
+    return null;
+}
+
+// Save a new customer (or add a missing phone to an existing one) so it stays in the dropdown
+async function ensureCustomerSaved(name, phone) {
+    name = String(name || '').trim();
+    phone = String(phone || '').trim();
+    if (!name || !db) return;
+    const snap = await db.ref('branches').once('value');
+    const data = snap.val() || {};
+    for (const id in data) {
+        if (String(data[id].name || '').trim().toLowerCase() === name.toLowerCase()) {
+            if (phone && !data[id].phone) await db.ref('branches/' + id).update({ phone: phone });
+            return;
+        }
+    }
+    await db.ref('branches').push(phone ? { name: name, phone: phone } : { name: name });
+}
+
 function loadBranchList() {
-    const listArea = document.getElementById('branchListArea');
-    if (!db || !listArea) return;
+    if (!db || window._branchListenerStarted) return;
+    window._branchListenerStarted = true;
 
     db.ref("branches").on("value", snap => {
+        const listArea = document.getElementById('branchListArea');
         const branches = snap.val();
+        customerProfiles = branches || {};
+        customerPhoneMap = {};
+        for (const id in customerProfiles) customerPhoneMap[customerProfiles[id].name] = customerProfiles[id].phone || '';
         let listHtml = "";
 
         if (!branches) {
-            listHtml = '<p style="color:var(--text-dim); text-align:center; padding:20px;">No Branches Found.</p>';
+            listHtml = '<p style="color:var(--text-dim); text-align:center; padding:20px;">No Customers Found.</p>';
         } else {
             for (let id in branches) {
+                const ph = branches[id].phone ? `<div style="color:var(--text-dim); font-size:12px; margin-top:2px;"><i class="fas fa-phone" style="font-size:10px;"></i> ${escapeHtml(String(branches[id].phone))}</div>` : '';
                 listHtml += `
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:8px; border:1px solid var(--border);">
-                    <span style="color:var(--text-main) !important; font-weight: 600; font-size: 14px;">${branches[id].name}</span>
+                    <div>
+                        <span style="color:var(--text-main) !important; font-weight: 600; font-size: 14px;">${escapeHtml(String(branches[id].name || ''))}</span>
+                        ${ph}
+                    </div>
                     <div style="display:flex; gap:15px;">
-                        <i class="fas fa-edit" style="color:var(--accent); cursor:pointer;" onclick="renameBranch('${id}', '${branches[id].name}')"></i>
-                        <i class="fas fa-trash-alt" style="color:var(--danger); cursor:pointer;" onclick="deleteBranch('${id}', '${branches[id].name}')"></i>
+                        <i class="fas fa-edit" style="color:var(--accent); cursor:pointer;" onclick="renameBranch('${id}')"></i>
+                        <i class="fas fa-trash-alt" style="color:var(--danger); cursor:pointer;" onclick="deleteBranch('${id}')"></i>
                     </div>
                 </div>`;
             }
         }
-        listArea.innerHTML = listHtml;
+        if (listArea) listArea.innerHTML = listHtml;
         refreshAllBranchDropdowns();
+        if (lastTransfersSnap && typeof renderTransferHistory === 'function') {
+            const bs = document.getElementById('branchFilter');
+            const filtered = (typeof currentActiveDateFilter !== 'undefined' && currentActiveDateFilter !== 'all') || (bs && bs.value);
+            if (filtered && typeof filterData === 'function') filterData('branch'); else renderTransferHistory(lastTransfersSnap);
+        }
     });
 }
 
 function processAddBranch() {
     const input = document.getElementById('newBranchInput');
+    const phoneInput = document.getElementById('newBranchPhone');
     const name = input.value.trim();
-    if (name) {
-        db.ref("branches").push({ name: name }).then(() => {
-            input.value = "";
-            showToast(`Branch "${name}" Added! ✅`);
-        }).catch(() => {
-            showToast("Error adding branch! ❌");
-        });
-    } else {
-
-Swal.fire({ title: "Error", text: "Please enter a branch name", icon: "error" });
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    if (!name) {
+        Swal.fire({ title: "Error", text: "Please enter customer name", icon: "error" });
         return;
-      
     }
+    if (findCustomerByName(name)) {
+        Swal.fire({ title: "Error", text: "Customer already exists", icon: "error" });
+        return;
+    }
+    db.ref("branches").push(phone ? { name: name, phone: phone } : { name: name }).then(() => {
+        input.value = "";
+        if (phoneInput) phoneInput.value = "";
+        showToast(`Customer "${name}" Added! ✅`);
+    }).catch(() => {
+        showToast("Error adding customer! ❌");
+    });
 }
 
-function renameBranch(id, oldName) {
+function renameBranch(id) {
+    const cur = customerProfiles[id] || {};
+    const oldName = cur.name || '';
+    const oldPhone = cur.phone || '';
     Swal.fire({
-        title: 'Rename Branch',
-        input: 'text',
-        inputValue: oldName,
-        inputPlaceholder: 'Enter new branch name',
+        title: 'Edit Customer',
+        html: `<input id="swCustName" class="swal2-input" placeholder="Customer name" value="${escapeHtml(oldName)}">
+               <input id="swCustPhone" class="swal2-input" placeholder="Phone number" inputmode="tel" value="${escapeHtml(oldPhone)}">`,
         showCancelButton: true,
         confirmButtonColor: 'var(--teal)',
         cancelButtonColor: 'var(--danger)',
         confirmButtonText: 'Update',
         background: 'var(--panel)',
         color: 'var(--text-main)',
-        inputAttributes: { autocapitalize: 'off' },
-        preConfirm: (newName) => {
-            if (!newName || newName.trim() === "") {
-                Swal.showValidationMessage('Name cannot be empty!');
-            }
-            return newName.trim();
+        focusConfirm: false,
+        preConfirm: () => {
+            const n = document.getElementById('swCustName').value.trim();
+            const ph = document.getElementById('swCustPhone').value.trim();
+            if (!n) { Swal.showValidationMessage('Name cannot be empty!'); return false; }
+            return { name: n, phone: ph };
         }
     }).then((result) => {
-        if (result.isConfirmed && result.value !== oldName) {
-            db.ref("branches/" + id).update({ name: result.value }).then(() => {
-                showToast("Branch Updated! ✅");
+        if (result.isConfirmed && result.value) {
+            db.ref("branches/" + id).update({ name: result.value.name, phone: result.value.phone || null }).then(() => {
+                showToast("Customer Updated! ✅");
             });
         }
     });
 }
 
-function deleteBranch(id, name) {
+function deleteBranch(id) {
+    const name = (customerProfiles[id] && customerProfiles[id].name) || '';
     Swal.fire({
-        title: '<span style="font-size: 18px;">Delete Branch?</span>',
+        title: '<span style="font-size: 18px;">Delete Customer?</span>',
         html: `
             <div style="margin-top: -10px;">
                 <i class="fas fa-code-branch" style="font-size: 2.5rem; color: var(--danger); margin-bottom: 10px; display: block;"></i>
@@ -2624,7 +2675,7 @@ function deleteBranch(id, name) {
     }).then((result) => {
         if (result.isConfirmed) {
             db.ref("branches/" + id).remove().then(() => {
-                showToast("Branch Deleted! 🗑️");
+                showToast("Customer Deleted! 🗑️");
             });
         }
     });
@@ -2639,8 +2690,8 @@ function populateBranchSelect(selectId, defaultLabel) {
         const prevVal = el.value;
         let opts = `<option value="">${defaultLabel || 'Choose Branch...'}</option>`;
         for (let id in data) {
-            const name = data[id].name;
-            opts += `<option value="${name}">${name}</option>`;
+            const name = escapeHtml(String(data[id].name || ''));
+            opts += `<option value="${name}" data-phone="${escapeHtml(String(data[id].phone || ''))}">${name}</option>`;
         }
         if (selectId === 'shareBranch') opts += '<option value="__new__">+ New Customer</option>';
         el.innerHTML = opts;
@@ -3860,7 +3911,7 @@ async function processStockShare() {
     const branchSelVal = document.getElementById('shareBranch').value;
     const isNewCust = (branchSelVal === '__new__');
     const branch = isNewCust ? document.getElementById('shareNewName').value.trim() : branchSelVal;
-    const custPhone = isNewCust ? document.getElementById('shareNewPhone').value.trim() : '';
+    let custPhone = isNewCust ? document.getElementById('shareNewPhone').value.trim() : (customerPhoneMap[branchSelVal] || '');
     const qtyInput = document.getElementById('shareQty');
     const sendQty = parseFloat(qtyInput.value);
     const sel = document.getElementById('shareItemSelect');
@@ -3911,13 +3962,16 @@ async function processStockShare() {
         // AUTO CARRYOVER: Sync this day's closing to next day's opening
         triggerDailyCarryover(sId, monthKey, parseInt(day));
 
+        // Keep new customer in the customer list (dropdown + Manage > Customer)
+        if (isNewCust) { await ensureCustomerSaved(branch, custPhone); }
+        else if (custPhone === '') { custPhone = ''; }
+
         // STEP 3: Save to transfers log
         await db.ref("transfers").push({
             itemId: sId,
             itemName: itemName,
             branch: branch,
             ...(custPhone ? { customerPhone: custPhone } : {}),
-            ...(isNewCust ? { newCustomer: true } : {}),
             qty: sendQty,
             unit: unit,
             price: sharePriceVal,
@@ -3999,6 +4053,7 @@ function startLivePriceSync() {
 
 function loadTransferHistory() {
     startLivePriceSync();
+    loadBranchList();
     db.ref("transfers").limitToLast(15).on("value", snap => {
         lastTransfersSnap = snap;
         renderTransferHistory(snap);
@@ -4006,7 +4061,8 @@ function loadTransferHistory() {
 }
 
 function distCustomerHtml(t) {
-    const ph = t.customerPhone ? ' • ' + escapeHtml(String(t.customerPhone)) : '';
+    const livePhone = customerPhoneMap[t.branch] || t.customerPhone || '';
+    const ph = livePhone ? ' • ' + escapeHtml(String(livePhone)) : '';
     return '<i class="fas fa-user"></i> Customer: ' + escapeHtml(String(t.branch || '')) + ph;
 }
 
@@ -4198,7 +4254,8 @@ async function populateEditDistBranchSelect(selectedBranch) {
     const data = snap.val() || {};
     let opts = '<option value="">Choose Customer...</option>';
     for (let id in data) {
-        opts += `<option value="${data[id].name}">${data[id].name}</option>`;
+        const nm = escapeHtml(String(data[id].name || ''));
+        opts += `<option value="${nm}" data-phone="${escapeHtml(String(data[id].phone || ''))}">${nm}</option>`;
     }
     opts += '<option value="__new__">+ New Customer</option>';
     const sel = document.getElementById('editDistBranch');
@@ -4275,7 +4332,7 @@ async function saveEditDist() {
     const editBranchVal = document.getElementById('editDistBranch').value;
     const editIsNew = (editBranchVal === '__new__');
     const newBranch = editIsNew ? document.getElementById('editDistNewName').value.trim() : editBranchVal;
-    const editCustPhone = editIsNew ? document.getElementById('editDistNewPhone').value.trim() : '';
+    const editCustPhone = editIsNew ? document.getElementById('editDistNewPhone').value.trim() : (customerPhoneMap[editBranchVal] || '');
     const newQty = parseFloat(document.getElementById('editDistQty').value);
     const comment = document.getElementById('editDistComment').value.trim();
     const editPriceVal = parseFloat(document.getElementById('editDistPrice').value) || 0;
@@ -4361,13 +4418,14 @@ async function saveEditDist() {
             triggerDailyCarryover(newItemId, monthKey, day);
         }
 
+        if (editIsNew) { await ensureCustomerSaved(newBranch, editCustPhone); }
+
         // STEP 3: Save the updated distribution record
         await db.ref(`transfers/${tId}`).update({
             itemId: newItemId,
             itemName: newItemName,
             branch: newBranch,
             customerPhone: editCustPhone || null,
-            newCustomer: editIsNew ? true : null,
             qty: newQty,
             price: editPriceVal,
             discount: editDiscVal,
