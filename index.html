@@ -507,7 +507,15 @@
     @keyframes spOrb2{to{transform:translate(-130px,-80px) scale(1.2)}}
     @keyframes spSlide{from{transform:translateX(-110%)}to{transform:translateX(280%)}}
     @keyframes spFadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-    </style>
+    
+    /* ===== POS / Inventory switch (shared header) ===== */
+    .nav-switch { display:flex; flex-direction:column; gap:4px; margin-right:2px; }
+    .nav-sw-btn { border:1px solid var(--border); background:var(--panel); color:var(--accent); font-weight:800; font-size:11px; line-height:1; padding:8px 10px; border-radius:10px; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px; font-family:inherit; }
+    .nav-sw-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    #posFrame { position:fixed; left:0; right:0; bottom:0; top:90px; width:100%; height:auto; border:0; background:#fff; z-index:800; display:block; }
+    body.mode-pos .container > *:not(.app-header):not(#headerSpacer):not(#hamburgerMenu):not(#petrolPanel):not(script) { display:none !important; }
+    body.mode-pos { overflow:hidden; }
+</style>
 </head>
 <body>
 <div id="splash"><div class="splash-stage"><i class="splash-ring"></i><i class="splash-ring r2"></i><img class="splash-logo" src="icon-192.png" alt="KP Hardware" width="110" height="110"></div><div class="splash-name">KP HARDWARE</div><div class="splash-bar"><i></i></div></div>
@@ -550,6 +558,10 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:' && location.pr
         
 <div class="header-actions">
             
+            <div class="nav-switch">
+                <button type="button" id="navPos" class="nav-sw-btn active" onclick="setAppMode('pos')"><i class="fas fa-cash-register"></i> POS System</button>
+                <button type="button" id="navInv" class="nav-sw-btn" onclick="setAppMode('inv')"><i class="fas fa-boxes-stacked"></i> Inventory</button>
+            </div>
             <!-- HAMBURGER BUTTON -->
             <button id="hamburgerBtn" onclick="toggleHamburger(event)" style="background:var(--panel); border:1px solid var(--border); color:var(--accent); width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
                 <i class="fas fa-bars" style="font-size:16px;"></i>
@@ -558,6 +570,31 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:' && location.pr
     </div>
 
     <div id="headerSpacer"></div>
+<iframe id="posFrame" src="pos_system.html" title="POS System" allow="clipboard-write; camera; fullscreen"></iframe>
+<script>
+function positionPosFrame(){
+    var h=document.querySelector('.app-header'), f=document.getElementById('posFrame');
+    if(!h||!f) return;
+    f.style.top=(h.getBoundingClientRect().bottom+4)+'px';
+}
+function setAppMode(m){
+    var pos=(m!=='inv');
+    document.body.classList.toggle('mode-pos',pos);
+    var f=document.getElementById('posFrame');
+    if(f) f.style.display=pos?'block':'none';
+    var bp=document.getElementById('navPos'), bi=document.getElementById('navInv');
+    if(bp) bp.classList.toggle('active',pos);
+    if(bi) bi.classList.toggle('active',!pos);
+    positionPosFrame();
+    window.scrollTo(0,0);
+    if(!pos && typeof adjustHeaderSpacer==='function') adjustHeaderSpacer();
+}
+setAppMode('pos'); // default page: POS System
+window.addEventListener('load',positionPosFrame);
+window.addEventListener('resize',positionPosFrame);
+window.addEventListener('orientationchange',positionPosFrame);
+if(window.ResizeObserver){ new ResizeObserver(positionPosFrame).observe(document.querySelector('.app-header')); }
+</script>
 
 <!-- HAMBURGER DROPDOWN MENU -->
 <div id="hamburgerMenu" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999;" onclick="closeHamburger()">
@@ -7165,5 +7202,34 @@ async function runSalesExport() {
 }
 </script>
 
+
+<script>
+/* ===== Inventory -> POS stock sync bridge ===== */
+(function(){
+    var frame=document.getElementById('posFrame');
+    var stocksCache=null, catsCache={};
+    function send(){
+        if(!stocksCache||!frame||!frame.contentWindow) return;
+        try{ frame.contentWindow.postMessage({type:'INV_SYNC',stocks:stocksCache,categories:catsCache},'*'); }catch(e){}
+    }
+    db.ref('stocks').on('value',function(s){ stocksCache=s.val()||{}; send(); });
+    db.ref('categories').on('value',function(s){ catsCache=s.val()||{}; send(); });
+    if(frame) frame.addEventListener('load',send);
+    window.addEventListener('message',function(e){
+        if(!frame||e.source!==frame.contentWindow) return;
+        var d=e.data; if(!d||!d.type) return;
+        if(d.type==='POS_READY') send();
+        if(d.type==='POS_STOCK_DELTA' && Array.isArray(d.deltas)){
+            d.deltas.forEach(function(x){
+                if(!x||!x.id||!isFinite(x.delta)) return;
+                db.ref('stocks/'+x.id+'/qty').transaction(function(q){
+                    if(q===null) return q;
+                    return Math.max(0,(parseFloat(q)||0)+Number(x.delta)).toFixed(2);
+                });
+            });
+        }
+    });
+})();
+</script>
 </body>
 </html>
