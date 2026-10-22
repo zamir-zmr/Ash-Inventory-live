@@ -1677,6 +1677,7 @@ async function openLedgerOptimized(monthName, monthIdx) {
 
     let allHistory;
     try {
+        if (!window._ledgerRefreshing) await reconcileLedgerWithStock(currentSelectedId);
         allHistory = await loadItemHistoryBatch(currentSelectedId);
         cachedLedgerData[currentSelectedId] = allHistory;
         lastLedgerItemId = currentSelectedId;
@@ -1795,6 +1796,30 @@ function closeMonthPicker() {
     closeModalWithHistory('monthPickerModal');
 }
 
+// Safety net: make the ledger's Current always equal the live stock for an item.
+// Any unexplained difference is booked on today's row (decrease -> Out, increase -> In).
+async function reconcileLedgerWithStock(itemId){
+    try {
+        const qSnap = await db.ref('stocks/' + itemId + '/qty').once('value');
+        if (!qSnap.exists()) return false;
+        const stockQty = parseFloat(qSnap.val()) || 0;
+        const all = await loadItemHistoryBatch(itemId);
+        if (!all || !Object.keys(all).length) return false;
+        const now = new Date(), y = now.getFullYear(), mi = now.getMonth();
+        const closing = computeMonthClosingStockSync(all, y, mi);
+        const diff = parseFloat((stockQty - closing).toFixed(2));
+        if (Math.abs(diff) < 0.01) return false;
+        const mk = y + '-' + String(mi + 1).padStart(2, '0'), day = String(now.getDate());
+        await db.ref('inventory_history/' + itemId + '/' + mk + '/' + day).transaction(function(c){
+            c = c || {};
+            c.inward = parseFloat(c.inward) || 0; c.outward = parseFloat(c.outward) || 0; c.waste = parseFloat(c.waste) || 0;
+            if (diff < 0) c.outward += -diff; else c.inward += diff;
+            return c;
+        });
+        try { triggerDailyCarryover(itemId, mk, parseInt(day)); } catch(e){}
+        return true;
+    } catch(e) { console.error('Ledger reconcile failed', e); return false; }
+}
 var _ledgerLive = null;
 function detachLedgerLive(){
     if (_ledgerLive) { try { db.ref('inventory_history/' + _ledgerLive.id).off('value', _ledgerLive.cb); } catch(e){} clearTimeout(_ledgerLive.t); _ledgerLive = null; }
@@ -7284,6 +7309,11 @@ async function runSalesExport() {
         var now=new Date(), mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'), day=String(now.getDate());
         db.ref('inventory_history/'+r.key+'/'+mk+'/'+day).update({opening:0,manualQty:0,inward:0,outward:0,waste:0});
     }
+    var reconTimers={};
+    function scheduleRecon(id){
+        clearTimeout(reconTimers[id]);
+        reconTimers[id]=setTimeout(function(){ reconcileLedgerWithStock(id); },2500);
+    }
     function posHistory(id, reason, hd){
         if(!hd||!isFinite(hd)) return;
         var now=new Date(), mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'), day=String(now.getDate());
@@ -7357,7 +7387,8 @@ async function runSalesExport() {
                     if(q===null) return q;
                     return Math.max(0,(parseFloat(q)||0)+Number(x.delta)).toFixed(2);
                 });
-                posHistory(x.id, x.reason||'manual', (x.histDelta!==undefined&&isFinite(x.histDelta))?Number(x.histDelta):Number(x.delta));
+                try{ posHistory(x.id, x.reason||'manual', (x.histDelta!==undefined&&isFinite(x.histDelta))?Number(x.histDelta):Number(x.delta)); }catch(e){}
+                scheduleRecon(x.id);
             });
         }
     });
