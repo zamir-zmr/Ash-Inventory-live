@@ -4277,6 +4277,77 @@ input[type="checkbox"] { accent-color: #0d9488; }
         Object.keys(snapCats).forEach(function(n){ if (!presentCats[n]) post({ type: 'POS_DELETE_CAT', name: n }); });
         snap();
     };
+
+    /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password'];
+    var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
+    var applyingRemote = false, timers = {}, remoteSeen = false;
+    var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
+    function isSync(k){ return SYNC_KEYS.indexOf(k) !== -1; }
+    function pushKey(k){
+        var v = null; try { v = localStorage.getItem(k); } catch(e){}
+        post({ type: 'POS_SYNC_SET', key: k, value: v });
+    }
+    function schedule(k){
+        if (!remoteSeen) return;
+        clearTimeout(timers[k]);
+        timers[k] = setTimeout(function(){ pushKey(k); }, 250);
+    }
+    Storage.prototype.setItem = function(k, v){
+        _origSet.call(this, k, v);
+        if (!applyingRemote && this === window.localStorage && isSync(k)) schedule(k);
+    };
+    Storage.prototype.removeItem = function(k){
+        _origRemove.call(this, k);
+        if (!applyingRemote && this === window.localStorage && isSync(k)) schedule(k);
+    };
+    function refreshAfterRemote(changed){
+        try {
+            var t = changed.some(function(k){ return /ticket/.test(k); });
+            if (t && typeof loadTicketState === 'function') {
+                loadTicketState();
+                var tp = document.getElementById('ticketPage');
+                if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
+            }
+            if (changed.indexOf('asb_sales_logs') !== -1) {
+                var dp = document.getElementById('dashPage');
+                if (dp && dp.offsetParent !== null && typeof renderSalesDashboard === 'function') renderSalesDashboard(typeof _repCurrentFilter !== 'undefined' ? _repCurrentFilter : 'today');
+            }
+            if (changed.some(function(k){ return /stock_add_log|waste_log/.test(k); }) && typeof renderInvHistory === 'function') {
+                var ih = document.getElementById('invHistoryList');
+                if (ih && ih.offsetParent !== null && window._invTab) renderInvHistory(window._invTab);
+            }
+        } catch(e){}
+    }
+    function mergeArr(a, b){
+        var seen = {}, out = [];
+        (a || []).concat(b || []).forEach(function(x){ var s = JSON.stringify(x); if (!seen[s]) { seen[s] = 1; out.push(x); } });
+        return out;
+    }
+    function applyRemoteAll(data){
+        data = data || {};
+        var first = !remoteSeen; remoteSeen = true;
+        var changed = [], toPush = [];
+        SYNC_KEYS.forEach(function(k){
+            var rv = (data[k] === undefined) ? null : data[k];
+            var lv = null; try { lv = localStorage.getItem(k); } catch(e){}
+            if (rv === lv) return;
+            if (rv === null) { if (lv !== null) toPush.push(k); return; }   // remote empty: seed from this device
+            if (first && ARRAY_KEYS[k] && lv) {                              // first connect: merge both sides
+                try {
+                    var merged = JSON.stringify(mergeArr(JSON.parse(lv), JSON.parse(rv)));
+                    if (merged !== rv) toPush.push(k);
+                    rv = merged;
+                } catch(e){}
+            }
+            applyingRemote = true;
+            try { _origSet.call(localStorage, k, rv); } catch(e){}
+            applyingRemote = false;
+            changed.push(k);
+        });
+        if (changed.length) refreshAfterRemote(changed);
+        toPush.forEach(function(k){ if (first && ARRAY_KEYS[k] || true) pushKey(k); });
+    }
     function applyLogo(logo){
         try {
             if (logo) {
@@ -4296,6 +4367,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
         if (!d) return;
         if (d.type === 'INV_SYNC') applySync(d);
         if (d.type === 'LOGO_SYNC') applyLogo(d.logo || null);
+        if (d.type === 'POS_SYNC_ALL') applyRemoteAll(d.data);
         if (d.type === 'POS_LINK') {
             var m = menu.find(function(x){ return x.id === d.localId; });
             if (m) { m.invId = d.invId; persist(); snap(); }
