@@ -1,19 +1,19 @@
-<!DOCTYPE html>
+<span data-json-text="pos_text_00000"></span>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KP HARDWARE POS</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title><span data-json-text="pos_text_00001"></span></title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Poppins:wght@600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<style>
         :root {
             --primary: #0d9488; --primary-dark: #0f766e; --primary-light: #14b8a6;
             --secondary: #4f46e5; --secondary-light: #6366f1;
@@ -272,423 +272,334 @@
     </style>
 </head>
 <body onload="initApp()">
-
-    <div id="ticketPage">
-        <div class="ticket-header">
-            <b style="font-size:20px; color:var(--primary)">SELECT TICKET NUMBER</b>
-            <div class="ticket-tabs">
-                <div class="ticket-tab active" id="tTab1" onclick="switchTicketTab(1)">1-50</div>
-                <div class="ticket-tab" id="tTab2" onclick="switchTicketTab(2)">51-100</div>
-            </div>
-        </div>
-        <div class="ticket-grid-wrap"><div class="ticket-grid" id="ticketGrid"></div></div>
-    </div>
-
-    <div class="h">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-            <div class="logo-box">
-                <button id="hb" onclick="history.back()" style="background:#f1f5f9; border:none; padding:8px; border-radius:10px; display:none">🏠</button>
-                <div class="logo-circle" id="main-logo-container"><b>KP</b><span>HARDWARE</span></div>
-                <b style="font-size:20px; color:var(--primary)">KP HARDWARE</b>
-            </div>
-            <div style="display:flex;gap:8px; align-items:center">
-                <div class="ticket-badge" id="ticketBadge" onclick="showTicketPage()">🎫 --</div>
-                <button onclick="showDashboard()" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">📊</button>
-                <button onclick="show('settingsM')" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">⚙️</button>
-                <button onclick="showAdd()" style="background:var(--primary);color:#fff;border:none;padding:10px 15px;border-radius:10px;font-weight:bold">+ ITEM</button>
-            </div>
-        </div>
-        <div id="posNavSwitch" style="display:none;gap:8px;margin-top:10px">
-            <button type="button" style="flex:1;border:none;background:var(--primary);color:#fff;padding:10px;border-radius:10px;font-weight:800;font-size:13px">🧾 POS System</button>
-            <button type="button" onclick="try{parent.postMessage({type:'GO_INV'},'*')}catch(e){}" style="flex:1;border:1px solid var(--primary);background:#fff;color:var(--primary);padding:10px;border-radius:10px;font-weight:800;font-size:13px">📦 Inventory</button>
-        </div>
-        <input type="text" id="s" placeholder="Search product..." onkeyup="render()">
-    </div>
-    <script>try{ if(window.parent!==window) document.getElementById('posNavSwitch').style.display='flex'; }catch(e){}</script>
-
-    <div id="eb" style="display:none; background:#fff; padding:12px 16px; border-bottom:1px solid #ddd; justify-content:space-between; align-items:center; position: sticky; top: 0; z-index: 100;">
-        <b id="sc">0 Selected</b>
-        <div style="display:flex; gap:8px">
-            <button id="edBtn" onclick="handleEdit()" style="background:var(--w); color:white; border:none; padding:8px 15px; border-radius:8px; display:none">Edit</button>
-            <button id="delBtn" onclick="handleDeleteAsk()" style="background:var(--d); color:white; border:none; padding:8px 15px; border-radius:8px; opacity:0.5" disabled>Delete</button>
-            <button onclick="exitMulti()" style="background:var(--slate); color:white; border:none; padding:8px 15px; border-radius:8px">Exit</button>
-        </div>
-    </div>
-
-    <div class="mw"><div id="m" class="pg"></div></div>
-
-
-  <div class="cart-bar" id="bottom-cart-bar" onclick="toggleCart(true)">
-        <span id="cart-count">0 ITEMS</span>
-        <span id="cart-total">OMR 0.000</span>
-    </div>
-
-      
-<div id="cart-panel" style="font-family: 'Inter', sans-serif; display: grid; grid-template-rows: auto auto 1fr auto; height: 100dvh; background: #ffffff;">
-    <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <b style="font-size: 22px; color: #1e293b; letter-spacing: -0.5px;">ORDER BILL</b>
-
-        </div>
-        <button onclick="toggleCart(false)" style="border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 12px; font-size: 20px; color: #64748b; cursor: pointer;">×</button>
-    </div>
-
-    <div style="padding: 0 20px 12px;">
-        <input type="tel" id="cust-phone" placeholder="📞 Customer Phone Number" style="width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; font-weight:600; outline:none;">
-    </div>
-
-    <div id="cart-list" style="flex: 1; overflow-y: auto; padding: 15px;">
-        </div>
-
-    <div style="padding: 20px; background: #fff; border-top: 1px solid #f1f5f9;">
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
-            <div style="display: flex; justify-content: space-between; font-size: 14px; color: #64748b;">
-                <span>Subtotal</span>
-                <span id="sub-total-disp" style="color: #1e293b; font-weight: 600;">0.000</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
-                <span>Discount (OMR)</span>
-                <input type="number" id="disc-val" oninput="updateCartUI()" value="0" min="0" step="0.001" style="width: 80px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;">
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
-                <span>Delivery (OMR)</span>
-                <input type="number" id="deliv-val" oninput="updateCartUI()" step="0.1" value="0" style="width: 60px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;">
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
-                <span>VAT (%)</span>
-                <input type="number" id="vat-perc" oninput="updateCartUI()" value="0" min="0" step="0.1" style="width: 80px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;">
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 14px; color: #64748b;">
-                <span>VAT Amount</span>
-                <span id="vat-total" style="color: #1e293b; font-weight: 600;">0.000</span>
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 6px 10px;">
-            <span style="font-weight: 800; color: #1e293b; font-size: 14px; flex-shrink:0;">GRAND TOTAL</span>
-            <span id="grand-total" style="font-size: 24px; font-weight: 900; color: #00C7C7; text-align:right; margin-left:auto; white-space:nowrap;">0.000 <small style="font-size: 12px;">OMR</small></span>
-        </div>
-
-        <div style="display: flex; gap: 12px;">
-            <button onclick="executePrint()" style="flex: 2; background: #00C7C7; color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 10px 20px -5px rgba(0,199,199,0.3);">PRINT RECEIPT</button>
-            <button onclick="clearCart()" style="flex: 1; background: #f1f5f9; color: #1e293b; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; cursor: pointer;">RESET</button>
-        </div>
-    </div>
+<div id="ticketPage">
+<div class="ticket-header">
+<b style="font-size:20px; color:var(--primary)"><span data-json-text="pos_text_00002"></span></b>
+<div class="ticket-tabs">
+<div class="ticket-tab active" id="tTab1" onclick="switchTicketTab(1)"><span data-json-text="pos_text_00003"></span></div>
+<div class="ticket-tab" id="tTab2" onclick="switchTicketTab(2)"><span data-json-text="pos_text_00004"></span></div>
 </div>
-
-
-    <div class="ov" id="ov" onclick="closeM()"></div>
-    <div class="modal" id="logoM">
-        <h3>Update Logo</h3>
-        <div id="logo-preview-box">Box</div>
-        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="previewFile()">
-        <button class="btn" style="background:var(--secondary); width:100%; margin:10px 0" onclick="document.getElementById('fileInput').click()">📁 CHOOSE FROM GALLERY</button>
-        <div class="flex-btn"><button class="btn" style="background:var(--a)" onclick="saveLogo()">SAVE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div>
-    </div>
-    <div class="modal" id="catM" style="max-height:90vh; overflow-y:auto;">
-        <h3 id="catTitle" style="margin:0 0 12px;">Category</h3>
-        
-        <!-- Category Name -->
-        <input type="text" id="cn" placeholder="Category Name" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box; margin-bottom:12px;">
-        
-        <!-- Gallery Photo -->
-        <div style="margin-bottom:14px; text-align:center;">
-            <div style="position:relative; width:90px; height:90px; margin:0 auto 10px;">
-                <div id="catPhotoPreview" style="width:90px; height:90px; border-radius:14px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;" onclick="document.getElementById('catPhotoInput').click()">
-                    <span id="catPhotoPlaceholder" style="font-size:32px;">📷</span>
-                    <img id="catPhotoImg" style="display:none; width:100%; height:100%; object-fit:cover;">
-                </div>
-                <!-- Remove X button on corner -->
-                <button id="catRemoveBtn" onclick="clearCatPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;">✕</button>
-            </div>
-            <input type="file" id="catPhotoInput" accept="image/*" style="display:none" onchange="previewCatPhoto(this)">
-            <button onclick="document.getElementById('catPhotoInput').click()" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">CHOOSE FROM GALLERY</button>
-        </div>
-
-        <div class="flex-btn">
-            <button class="btn" style="background:var(--a)" onclick="saveCat()">SAVE</button>
-            <button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button>
-        </div>
-    </div>
-    <div class="modal" id="am" style="max-height:90vh; overflow-y:auto;">
-        <h3 id="modalTitle" style="margin:0 0 12px;">Product</h3>
-        
-        <!-- Product Photo with corner X -->
-        <div style="margin-bottom:12px; text-align:center;">
-            <div style="position:relative; width:90px; height:90px; margin:0 auto 10px;">
-                <div id="itemPhotoPreview" style="width:90px; height:90px; border-radius:16px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;" onclick="document.getElementById('itemPhotoInput').click()">
-                    <span id="itemPhotoPlaceholder" style="font-size:32px;">🖼️</span>
-                    <img id="itemPhotoImg" style="display:none; width:100%; height:100%; object-fit:cover;">
-                </div>
-                <!-- Remove X button on corner -->
-                <button id="itemRemoveBtn" onclick="clearItemPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;">✕</button>
-            </div>
-            <input type="file" id="itemPhotoInput" accept="image/*" style="display:none" onchange="previewItemPhoto(this)">
-            <button onclick="document.getElementById('itemPhotoInput').click()" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">CHOOSE FROM GALLERY</button>
-        </div>
-
-        <input type="text" id="nn" placeholder="Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;">
-        <input type="number" id="np" placeholder="Price" step="0.001" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;">
-        <select id="nc" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;"></select>
-        <div class="flex-btn">
-            <button class="btn" style="background:var(--a)" onclick="saveItem()">SAVE</button>
-            <button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button>
-        </div>
-    </div>
-
+</div>
+<div class="ticket-grid-wrap"><div class="ticket-grid" id="ticketGrid"></div></div>
+</div>
+<div class="h">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div class="logo-box">
+<button id="hb" onclick="history.back()" style="background:#f1f5f9; border:none; padding:8px; border-radius:10px; display:none"><span data-json-text="pos_text_00005"></span></button>
+<div class="logo-circle" id="main-logo-container"><b><span data-json-text="pos_text_00006"></span></b><span><span data-json-text="pos_text_00007"></span></span></div>
+<b style="font-size:20px; color:var(--primary)"><span data-json-text="pos_text_00008"></span></b>
+</div>
+<div style="display:flex;gap:8px; align-items:center">
+<div class="ticket-badge" id="ticketBadge" onclick="showTicketPage()"><span data-json-text="pos_text_00009"></span></div>
+<button onclick="showDashboard()" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px"><span data-json-text="pos_text_00010"></span></button>
+<button onclick="show('settingsM')" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px"><span data-json-text="pos_text_00011"></span></button>
+<button onclick="showAdd()" style="background:var(--primary);color:#fff;border:none;padding:10px 15px;border-radius:10px;font-weight:bold"><span data-json-text="pos_text_00012"></span></button>
+</div>
+</div>
+<div id="posNavSwitch" style="display:none;gap:8px;margin-top:10px">
+<button style="flex:1;border:none;background:var(--primary);color:#fff;padding:10px;border-radius:10px;font-weight:800;font-size:13px" type="button"><span data-json-text="pos_text_00013"></span></button>
+<button onclick="try{parent.postMessage({type:'GO_INV'},'*')}catch(e){}" style="flex:1;border:1px solid var(--primary);background:#fff;color:var(--primary);padding:10px;border-radius:10px;font-weight:800;font-size:13px" type="button"><span data-json-text="pos_text_00014"></span></button>
+</div>
+<input data-json-placeholder="pos_attr_00266" id="s" onkeyup="render()" type="text"/>
+</div>
+<script>try{ if(window.parent!==window) document.getElementById('posNavSwitch').style.display='flex'; }catch(e){}</script>
+<div id="eb" style="display:none; background:#fff; padding:12px 16px; border-bottom:1px solid #ddd; justify-content:space-between; align-items:center; position: sticky; top: 0; z-index: 100;">
+<b id="sc"><span data-json-text="pos_text_00015"></span></b>
+<div style="display:flex; gap:8px">
+<button id="edBtn" onclick="handleEdit()" style="background:var(--w); color:white; border:none; padding:8px 15px; border-radius:8px; display:none"><span data-json-text="pos_text_00016"></span></button>
+<button disabled="" id="delBtn" onclick="handleDeleteAsk()" style="background:var(--d); color:white; border:none; padding:8px 15px; border-radius:8px; opacity:0.5"><span data-json-text="pos_text_00017"></span></button>
+<button onclick="exitMulti()" style="background:var(--slate); color:white; border:none; padding:8px 15px; border-radius:8px"><span data-json-text="pos_text_00018"></span></button>
+</div>
+</div>
+<div class="mw"><div class="pg" id="m"></div></div>
+<div class="cart-bar" id="bottom-cart-bar" onclick="toggleCart(true)">
+<span id="cart-count"><span data-json-text="pos_text_00019"></span></span>
+<span id="cart-total"><span data-json-text="pos_text_00020"></span></span>
+</div>
+<div id="cart-panel" style="font-family: 'Inter', sans-serif; display: grid; grid-template-rows: auto auto 1fr auto; height: 100dvh; background: #ffffff;">
+<div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+<div>
+<b style="font-size: 22px; color: #1e293b; letter-spacing: -0.5px;"><span data-json-text="pos_text_00021"></span></b>
+</div>
+<button onclick="toggleCart(false)" style="border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 12px; font-size: 20px; color: #64748b; cursor: pointer;"><span data-json-text="pos_text_00022"></span></button>
+</div>
+<div style="padding: 0 20px 12px;">
+<input data-json-placeholder="pos_attr_00267" id="cust-phone" style="width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; font-weight:600; outline:none;" type="tel"/>
+</div>
+<div id="cart-list" style="flex: 1; overflow-y: auto; padding: 15px;">
+</div>
+<div style="padding: 20px; background: #fff; border-top: 1px solid #f1f5f9;">
+<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #64748b;">
+<span><span data-json-text="pos_text_00023"></span></span>
+<span id="sub-total-disp" style="color: #1e293b; font-weight: 600;"><span data-json-text="pos_text_00024"></span></span>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
+<span><span data-json-text="pos_text_00025"></span></span>
+<input id="disc-val" min="0" oninput="updateCartUI()" step="0.001" style="width: 80px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;" type="number" value="0"/>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
+<span><span data-json-text="pos_text_00026"></span></span>
+<input id="deliv-val" oninput="updateCartUI()" step="0.1" style="width: 60px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;" type="number" value="0"/>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
+<span><span data-json-text="pos_text_00027"></span></span>
+<input id="vat-perc" min="0" oninput="updateCartUI()" step="0.1" style="width: 80px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;" type="number" value="0"/>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #64748b;">
+<span><span data-json-text="pos_text_00028"></span></span>
+<span id="vat-total" style="color: #1e293b; font-weight: 600;"><span data-json-text="pos_text_00029"></span></span>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 6px 10px;">
+<span style="font-weight: 800; color: #1e293b; font-size: 14px; flex-shrink:0;"><span data-json-text="pos_text_00030"></span></span>
+<span id="grand-total" style="font-size: 24px; font-weight: 900; color: #00C7C7; text-align:right; margin-left:auto; white-space:nowrap;"><span data-json-text="pos_text_00031"></span><small style="font-size: 12px;"><span data-json-text="pos_text_00032"></span></small></span>
+</div>
+<div style="display: flex; gap: 12px;">
+<button onclick="executePrint()" style="flex: 2; background: #00C7C7; color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 10px 20px -5px rgba(0,199,199,0.3);"><span data-json-text="pos_text_00033"></span></button>
+<button onclick="clearCart()" style="flex: 1; background: #f1f5f9; color: #1e293b; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; cursor: pointer;"><span data-json-text="pos_text_00034"></span></button>
+</div>
+</div>
+</div>
+<div class="ov" id="ov" onclick="closeM()"></div>
+<div class="modal" id="logoM">
+<h3><span data-json-text="pos_text_00035"></span></h3>
+<div id="logo-preview-box"><span data-json-text="pos_text_00036"></span></div>
+<input accept="image/*" id="fileInput" onchange="previewFile()" style="display:none" type="file"/>
+<button class="btn" onclick="document.getElementById('fileInput').click()" style="background:var(--secondary); width:100%; margin:10px 0"><span data-json-text="pos_text_00037"></span></button>
+<div class="flex-btn"><button class="btn" onclick="saveLogo()" style="background:var(--a)"><span data-json-text="pos_text_00038"></span></button><button class="btn" onclick="closeM()" style="background:var(--slate)"><span data-json-text="pos_text_00039"></span></button></div>
+</div>
+<div class="modal" id="catM" style="max-height:90vh; overflow-y:auto;">
+<h3 id="catTitle" style="margin:0 0 12px;"><span data-json-text="pos_text_00040"></span></h3>
+<!-- Category Name -->
+<input data-json-placeholder="pos_attr_00268" id="cn" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box; margin-bottom:12px;" type="text"/>
+<!-- Gallery Photo -->
+<div style="margin-bottom:14px; text-align:center;">
+<div style="position:relative; width:90px; height:90px; margin:0 auto 10px;">
+<div id="catPhotoPreview" onclick="document.getElementById('catPhotoInput').click()" style="width:90px; height:90px; border-radius:14px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;">
+<span id="catPhotoPlaceholder" style="font-size:32px;"><span data-json-text="pos_text_00041"></span></span>
+<img id="catPhotoImg" style="display:none; width:100%; height:100%; object-fit:cover;"/>
+</div>
+<!-- Remove X button on corner -->
+<button id="catRemoveBtn" onclick="clearCatPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;"><span data-json-text="pos_text_00042"></span></button>
+</div>
+<input accept="image/*" id="catPhotoInput" onchange="previewCatPhoto(this)" style="display:none" type="file"/>
+<button onclick="document.getElementById('catPhotoInput').click()" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;"><span data-json-text="pos_text_00043"></span></button>
+</div>
+<div class="flex-btn">
+<button class="btn" onclick="saveCat()" style="background:var(--a)"><span data-json-text="pos_text_00044"></span></button>
+<button class="btn" onclick="closeM()" style="background:var(--slate)"><span data-json-text="pos_text_00045"></span></button>
+</div>
+</div>
+<div class="modal" id="am" style="max-height:90vh; overflow-y:auto;">
+<h3 id="modalTitle" style="margin:0 0 12px;"><span data-json-text="pos_text_00046"></span></h3>
+<!-- Product Photo with corner X -->
+<div style="margin-bottom:12px; text-align:center;">
+<div style="position:relative; width:90px; height:90px; margin:0 auto 10px;">
+<div id="itemPhotoPreview" onclick="document.getElementById('itemPhotoInput').click()" style="width:90px; height:90px; border-radius:16px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;">
+<span id="itemPhotoPlaceholder" style="font-size:32px;"><span data-json-text="pos_text_00047"></span></span>
+<img id="itemPhotoImg" style="display:none; width:100%; height:100%; object-fit:cover;"/>
+</div>
+<!-- Remove X button on corner -->
+<button id="itemRemoveBtn" onclick="clearItemPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;"><span data-json-text="pos_text_00048"></span></button>
+</div>
+<input accept="image/*" id="itemPhotoInput" onchange="previewItemPhoto(this)" style="display:none" type="file"/>
+<button onclick="document.getElementById('itemPhotoInput').click()" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;"><span data-json-text="pos_text_00049"></span></button>
+</div>
+<input data-json-placeholder="pos_attr_00269" id="nn" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;" type="text"/>
+<input data-json-placeholder="pos_attr_00270" id="np" step="0.001" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;" type="number"/>
+<select id="nc" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;"></select>
+<div class="flex-btn">
+<button class="btn" onclick="saveItem()" style="background:var(--a)"><span data-json-text="pos_text_00050"></span></button>
+<button class="btn" onclick="closeM()" style="background:var(--slate)"><span data-json-text="pos_text_00051"></span></button>
+</div>
+</div>
 <!-- Settings Modal with Import & Export Buttons -->
-
 <!-- Settings Modal -->
 <div class="modal" id="settingsM">
-    <h3>Settings</h3>
-    <button class="btn" style="background:var(--primary); width:100%; margin-bottom:10px" onclick="closeM(); show('logoM')">🖼️ UPDATE LOGO</button>
-    <button class="btn" style="background:var(--a); width:100%; margin-bottom:10px" onclick="closeM(); showCatM()">➕ ADD CATEGORY</button>
-    <button class="btn" style="background:var(--w); width:100%; margin-bottom:10px" onclick="enableCatMulti()">🗑️ DELETE CATEGORIES</button>
-    <button class="btn" style="background:var(--secondary); width:100%; margin-bottom:10px" onclick="toggleMulti()">🛠️ MULTI-SELECT ITEMS</button>
-    
-    <button class="btn" style="background:#8b5cf6; width:100%; margin-bottom:10px" onclick="exportMenuJSON()">📤 EXPORT JSON (BACKUP)</button>
-    <button class="btn" style="background:#0284c7; width:100%; margin-bottom:10px" onclick="document.getElementById('importMenuFile').click()">📥 IMPORT JSON FILE</button>
-    <input type="file" id="importMenuFile" accept=".json" style="display:none" onchange="importMenuJSON(event)">
-
-    <!-- Naya Paste JSON Text Button -->
-    <button class="btn" style="background:#059669; width:100%; margin-bottom:10px" onclick="openJsonPasteModal()">📋 PASTE JSON TEXT</button>
-
-    <!-- ===== Security Password (Bill Delete Protection) ===== -->
-    <button class="btn" style="background:#0f172a; width:100%; margin-bottom:10px" onclick="openPwManageModal()">🔒 SECURITY PASSWORD</button>
-
-    <button class="btn" style="width:100%; background:var(--slate)" onclick="closeM()">CLOSE</button>
+<h3><span data-json-text="pos_text_00052"></span></h3>
+<button class="btn" onclick="closeM(); show('logoM')" style="background:var(--primary); width:100%; margin-bottom:10px"><span data-json-text="pos_text_00053"></span></button>
+<button class="btn" onclick="closeM(); showCatM()" style="background:var(--a); width:100%; margin-bottom:10px"><span data-json-text="pos_text_00054"></span></button>
+<button class="btn" onclick="enableCatMulti()" style="background:var(--w); width:100%; margin-bottom:10px"><span data-json-text="pos_text_00055"></span></button>
+<button class="btn" onclick="toggleMulti()" style="background:var(--secondary); width:100%; margin-bottom:10px"><span data-json-text="pos_text_00056"></span></button>
+<button class="btn" onclick="exportMenuJSON()" style="background:#8b5cf6; width:100%; margin-bottom:10px"><span data-json-text="pos_text_00057"></span></button>
+<button class="btn" onclick="document.getElementById('importMenuFile').click()" style="background:#0284c7; width:100%; margin-bottom:10px"><span data-json-text="pos_text_00058"></span></button>
+<input accept=".json" id="importMenuFile" onchange="importMenuJSON(event)" style="display:none" type="file"/>
+<!-- Naya Paste JSON Text Button -->
+<button class="btn" onclick="openJsonPasteModal()" style="background:#059669; width:100%; margin-bottom:10px"><span data-json-text="pos_text_00059"></span></button>
+<!-- ===== Security Password (Bill Delete Protection) ===== -->
+<button class="btn" onclick="openPwManageModal()" style="background:#0f172a; width:100%; margin-bottom:10px"><span data-json-text="pos_text_00060"></span></button>
+<button class="btn" onclick="closeM()" style="width:100%; background:var(--slate)"><span data-json-text="pos_text_00061"></span></button>
 </div>
-
 <!-- Naya Modal Text Paste Karne Ke Liye -->
 <div class="modal" id="pasteJsonM" style="display:none;">
-    <h3>Paste JSON Text</h3>
-    <textarea id="jsonTextInput" rows="8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family:monospace; margin-bottom:10px;" placeholder='[&#10;  {&#10;    "category": "cake",&#10;    "item": "tiramisu",&#10;    "price": 2.5&#10;  }&#10;]'></textarea>
-    
-    <button class="btn" style="background:#059669; width:100%; margin-bottom:10px;" onclick="processPastedJson()">✅ ADD ITEMS</button>
-    <button class="btn" style="width:100%; background:var(--slate)" onclick="document.getElementById('pasteJsonM').style.display='none'">CANCEL</button>
+<h3><span data-json-text="pos_text_00062"></span></h3>
+<textarea data-json-placeholder="pos_attr_00271" id="jsonTextInput" rows="8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family:monospace; margin-bottom:10px;"></textarea>
+<button class="btn" onclick="processPastedJson()" style="background:#059669; width:100%; margin-bottom:10px;"><span data-json-text="pos_text_00063"></span></button>
+<button class="btn" onclick="document.getElementById('pasteJsonM').style.display='none'" style="width:100%; background:var(--slate)"><span data-json-text="pos_text_00064"></span></button>
 </div>
-
 <!-- Professional Custom Alert Modal -->
-
 <!-- Updated Custom Alert Modal with Dynamic Action Buttons -->
-
 <!-- Fully Detailed Custom Alert Modal -->
 <div class="modal" id="appAlertM" style="display:none; text-align:left; max-width:90%; width:380px; z-index:200000 !important;">
-    <h3 id="appAlertTitle" style="margin-bottom:12px; font-size: 1.2rem; font-weight:700;">Notification</h3>
-    
-    <!-- Detailed Items Summary Box -->
-    <div id="appAlertMsg" style="margin-bottom:18px; max-height:220px; overflow-y:auto; font-size:0.9rem; line-height:1.4;"></div>
-    
-    <!-- Buttons -->
-    <div id="alertSingleBtn">
-        <button class="btn" style="width:100%; background:var(--primary, #0ea5e9); padding:12px; font-weight:600; border-radius:10px;" onclick="closeAppAlert()">OK</button>
-    </div>
-    
-    <div id="alertDoubleBtn" style="display:none; gap:10px;">
-        <button class="btn" style="flex:1; background:#059669; color:#fff; padding:12px; font-weight:600; border-radius:10px;" onclick="reOpenJsonModal()">MODIFY</button>
-        <button class="btn" style="flex:1; background:var(--slate, #64748b); color:#fff; padding:12px; font-weight:600; border-radius:10px;" onclick="closeAppAlert()">CANCEL</button>
-    </div>
+<h3 id="appAlertTitle" style="margin-bottom:12px; font-size: 1.2rem; font-weight:700;"><span data-json-text="pos_text_00065"></span></h3>
+<!-- Detailed Items Summary Box -->
+<div id="appAlertMsg" style="margin-bottom:18px; max-height:220px; overflow-y:auto; font-size:0.9rem; line-height:1.4;"></div>
+<!-- Buttons -->
+<div id="alertSingleBtn">
+<button class="btn" onclick="closeAppAlert()" style="width:100%; background:var(--primary, #0ea5e9); padding:12px; font-weight:600; border-radius:10px;"><span data-json-text="pos_text_00066"></span></button>
 </div>
-
-
-    <div class="modal" id="previewM"><h3>Receipt</h3><div id="preview-content"></div><div class="flex-btn"><button class="btn" style="background:var(--primary)" onclick="executePrint()">PRINT</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
-  
-    <div class="ov" id="receiptOv" style="z-index:9000;" onclick="closeReceiptModal()"></div>
-
-  
-    
-
-  <div class="modal" id="receiptPrintM" style="z-index:90500; width:90%; max-width:440px; height:auto; max-height:85vh; padding:0; overflow:hidden; border-radius:26px; display:none; flex-direction:column; top:0; left:50%; transform:translateX(-50%) scale(0.95); transform-origin:top center; position:fixed; margin:0; background:#fff; box-shadow:0 24px 60px rgba(15,23,42,.35);">
-
-
-
-  
-        
-
-    <div style="border:1.5px solid #e2e8f0; border-radius:18px; margin:10px 10px 0; flex:1; overflow:hidden; display:flex; flex-direction:column; min-height:0; background:#fff;">
-    <div style="padding:10px 14px; border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-        <b style="font-size:15px; color:#1e293b;">Receipt Preview</b>
-    </div>
-    
-    <!-- Smooth Scroll Container -->
-    <div id="receiptFrameWrap" style="background:#f1f5f9; padding:8px; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0;">
-        <iframe id="receiptFrame" style="width:100%; height:100%; min-height:480px; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:block;"></iframe>
-    </div>
+<div id="alertDoubleBtn" style="display:none; gap:10px;">
+<button class="btn" onclick="reOpenJsonModal()" style="flex:1; background:#059669; color:#fff; padding:12px; font-weight:600; border-radius:10px;"><span data-json-text="pos_text_00067"></span></button>
+<button class="btn" onclick="closeAppAlert()" style="flex:1; background:var(--slate, #64748b); color:#fff; padding:12px; font-weight:600; border-radius:10px;"><span data-json-text="pos_text_00068"></span></button>
 </div>
-
+</div>
+<div class="modal" id="previewM"><h3><span data-json-text="pos_text_00069"></span></h3><div id="preview-content"></div><div class="flex-btn"><button class="btn" onclick="executePrint()" style="background:var(--primary)"><span data-json-text="pos_text_00070"></span></button><button class="btn" onclick="closeM()" style="background:var(--slate)"><span data-json-text="pos_text_00071"></span></button></div></div>
+<div class="ov" id="receiptOv" onclick="closeReceiptModal()" style="z-index:9000;"></div>
+<div class="modal" id="receiptPrintM" style="z-index:90500; width:90%; max-width:440px; height:auto; max-height:85vh; padding:0; overflow:hidden; border-radius:26px; display:none; flex-direction:column; top:0; left:50%; transform:translateX(-50%) scale(0.95); transform-origin:top center; position:fixed; margin:0; background:#fff; box-shadow:0 24px 60px rgba(15,23,42,.35);">
+<div style="border:1.5px solid #e2e8f0; border-radius:18px; margin:10px 10px 0; flex:1; overflow:hidden; display:flex; flex-direction:column; min-height:0; background:#fff;">
+<div style="padding:10px 14px; border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+<b style="font-size:15px; color:#1e293b;"><span data-json-text="pos_text_00072"></span></b>
+</div>
+<!-- Smooth Scroll Container -->
+<div id="receiptFrameWrap" style="background:#f1f5f9; padding:8px; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0;">
+<iframe id="receiptFrame" style="width:100%; height:100%; min-height:480px; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:block;"></iframe>
+</div>
+</div>
 <!-- Bottom Buttons Container -->
 <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 10px 12px; flex-shrink:0;">
-    <button onclick="downloadReceiptPDF()" style="flex:1; max-width:85px; height:46px; border-radius:12px; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; box-shadow:0 4px 12px rgba(16,185,129,.25); font-size:10px; font-weight:800; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer;">
-        <span style="font-size:15px; line-height:1;">⬇️</span>PDF
-    </button>
-    <button id="smartPrintBtn" onclick="smartPrint()" style="flex:1.2; max-width:100px; height:52px; border-radius:14px; background:linear-gradient(135deg,#1e293b,#0f172a); color:#fff; border:none; box-shadow:0 6px 14px rgba(15,23,42,.3); font-size:11px; font-weight:800; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer;">
-        <span style="font-size:18px; line-height:1;">🖨️</span>Print
-    </button>
-    <button onclick="closeM()" style="flex:1; max-width:85px; height:46px; border-radius:12px; background:linear-gradient(135deg,#64748b,#475569); color:#fff; border:none; box-shadow:0 4px 12px rgba(100,116,139,.25); font-size:10px; font-weight:800; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer;">
-        <span style="font-size:15px; line-height:1;">✕</span>Cancel
-    </button>
+<button onclick="downloadReceiptPDF()" style="flex:1; max-width:85px; height:46px; border-radius:12px; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; box-shadow:0 4px 12px rgba(16,185,129,.25); font-size:10px; font-weight:800; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer;">
+<span style="font-size:15px; line-height:1;"><span data-json-text="pos_text_00073"></span></span><span data-json-text="pos_text_00074"></span></button>
+<button id="smartPrintBtn" onclick="smartPrint()" style="flex:1.2; max-width:100px; height:52px; border-radius:14px; background:linear-gradient(135deg,#1e293b,#0f172a); color:#fff; border:none; box-shadow:0 6px 14px rgba(15,23,42,.3); font-size:11px; font-weight:800; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer;">
+<span style="font-size:18px; line-height:1;"><span data-json-text="pos_text_00075"></span></span><span data-json-text="pos_text_00076"></span></button>
+<button onclick="closeM()" style="flex:1; max-width:85px; height:46px; border-radius:12px; background:linear-gradient(135deg,#64748b,#475569); color:#fff; border:none; box-shadow:0 4px 12px rgba(100,116,139,.25); font-size:10px; font-weight:800; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer;">
+<span style="font-size:15px; line-height:1;"><span data-json-text="pos_text_00077"></span></span><span data-json-text="pos_text_00078"></span></button>
 </div>
 </div>
-
-
-
-  
-    <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
-    <div class="modal" id="dupM"><div style="text-align:center"><h3>⚠️ Duplicated</h3><p id="dupMsg"></p><button class="btn" style="background:var(--secondary); width:100%" onclick="closeDup()">OK</button></div></div>
-
-   
-   
-   
-    <div id="dashPage" class="full-page">
-    <div class="dash-header"><b style="font-size: 22px;">DASHBOARD</b><button onclick="closeDash()" style="border:none; background:#f1f5f9; 
-width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
-    <div class="dash-container">
-        <div class="dash-tile bg-reports" onclick="showReports()"><span>📊</span>Reports</div>
-        <div class="dash-tile bg-reports" onclick="showTopSelling()"><span>🏆</span>Top Selling</div>
-        <div class="dash-tile bg-reports" onclick="showItemManage()"><span>📋</span>Manage Items</div>
-        <div class="dash-tile bg-reports" onclick="showInventoryDash()"><span>📦</span>Inventory</div>
-        <div class="dash-tile bg-pos" onclick="closeDash()"><span>🖥️</span>POS</div>
-        <div class="dash-tile bg-logout" onclick="location.reload()"><span>⬅️</span>Logout</div>
-        
-        
-        <div style="background: #fff; padding: 15px; border-radius: 15px; margin: 10px 20px 80px 20px; border: 1px solid #fecaca; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);">
-    <b style="display:block; margin-bottom:10px; color: #dc2626">⚠️ DANGER ZONE (RESET):</b>
-    
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <span style="font-size:14px; font-weight:bold;">Safety Lock:</span>
-        <button id="lockBtn" onclick="toggleResetLock()" style="background:#64748b; color:white; border:none; padding:10px 18px; border-radius:20px; font-size:12px; font-weight:bold;">LOCKED (OFF)</button>
-    </div>
-
-    <button id="realResetBtn" onclick="confirmFullReset()" disabled style="width:100%; background:#ef4444; color:white; border:none; padding:15px; border-radius:12px; font-weight:bold; opacity: 0.3; cursor: not-allowed; font-size: 14px;">
-        🗑️ RESET ALL SALES DATA
-    </button>
+<div class="modal" id="delConfirmM"><h3><span data-json-text="pos_text_00079"></span></h3><div class="flex-btn"><button class="btn" onclick="confirmDelete()" style="background:var(--d)"><span data-json-text="pos_text_00080"></span></button><button class="btn" onclick="closeM()" style="background:var(--slate)"><span data-json-text="pos_text_00081"></span></button></div></div>
+<div class="modal" id="dupM"><div style="text-align:center"><h3><span data-json-text="pos_text_00082"></span></h3><p id="dupMsg"></p><button class="btn" onclick="closeDup()" style="background:var(--secondary); width:100%"><span data-json-text="pos_text_00083"></span></button></div></div>
+<div class="full-page" id="dashPage">
+<div class="dash-header"><b style="font-size: 22px;"><span data-json-text="pos_text_00084"></span></b><button onclick="closeDash()" style="border:none; background:#f1f5f9; 
+width:40px; height:40px; border-radius:50%; font-size:24px"><span data-json-text="pos_text_00085"></span></button></div>
+<div class="dash-container">
+<div class="dash-tile bg-reports" onclick="showReports()"><span><span data-json-text="pos_text_00086"></span></span><span data-json-text="pos_text_00087"></span></div>
+<div class="dash-tile bg-reports" onclick="showTopSelling()"><span><span data-json-text="pos_text_00088"></span></span><span data-json-text="pos_text_00089"></span></div>
+<div class="dash-tile bg-reports" onclick="showItemManage()"><span><span data-json-text="pos_text_00090"></span></span><span data-json-text="pos_text_00091"></span></div>
+<div class="dash-tile bg-reports" onclick="showInventoryDash()"><span><span data-json-text="pos_text_00092"></span></span><span data-json-text="pos_text_00093"></span></div>
+<div class="dash-tile bg-pos" onclick="closeDash()"><span><span data-json-text="pos_text_00094"></span></span><span data-json-text="pos_text_00095"></span></div>
+<div class="dash-tile bg-logout" onclick="location.reload()"><span><span data-json-text="pos_text_00096"></span></span><span data-json-text="pos_text_00097"></span></div>
+<div style="background: #fff; padding: 15px; border-radius: 15px; margin: 10px 20px 80px 20px; border: 1px solid #fecaca; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);">
+<b style="display:block; margin-bottom:10px; color: #dc2626"><span data-json-text="pos_text_00098"></span></b>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+<span style="font-size:14px; font-weight:bold;"><span data-json-text="pos_text_00099"></span></span>
+<button id="lockBtn" onclick="toggleResetLock()" style="background:#64748b; color:white; border:none; padding:10px 18px; border-radius:20px; font-size:12px; font-weight:bold;"><span data-json-text="pos_text_00100"></span></button>
 </div>
-        
-        
-        
-        
-    </div>
+<button disabled="" id="realResetBtn" onclick="confirmFullReset()" style="width:100%; background:#ef4444; color:white; border:none; padding:15px; border-radius:12px; font-weight:bold; opacity: 0.3; cursor: not-allowed; font-size: 14px;"><span data-json-text="pos_text_00101"></span></button>
 </div>
-
-
-
-  <div id="reportsPage" class="full-page" style="background: #f8fafc; overflow: hidden; display: none; flex-direction: column;">
-    <!-- Header -->
-    <div class="dash-header" style="background: white; padding: 8px 15px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
-        <b style="font-size: 16px; color: #1e293b;">📊 SALES ANALYTICS</b>
-        <button onclick="closeReports()" style="border:none; background:#eff6ff; color:#3b82f6; padding:6px 15px; border-radius:8px; font-weight:bold; font-size:12px; cursor:pointer;">Back</button>
-    </div>
-
-    <!-- Scrollable Body Container -->
-    <div style="flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px;">
-
-        <!-- 1. Live Sales Dashboard Filters -->
-        <div>
-            <div id="repFilterRow" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px;">
-                <button class="rep-filter-btn active" data-f="today" onclick="renderSalesDashboard('today')">Today</button>
-                <button class="rep-filter-btn" data-f="yesterday" onclick="renderSalesDashboard('yesterday')">Yesterday</button>
-                <button class="rep-filter-btn" data-f="week" onclick="renderSalesDashboard('week')">This Week</button>
-                <button class="rep-filter-btn" data-f="month" onclick="renderSalesDashboard('month')">This Month</button>
-                <button class="rep-filter-btn" data-f="manual" onclick="toggleRepManualPicker()">Manual 📅</button>
-            </div>
-            <div id="repManualPicker" style="display:none; gap:6px; align-items:center; margin-bottom:8px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:6px; width:fit-content;">
-                <input type="date" id="repManualStart" style="flex:none; width:128px; height:32px; padding:0 6px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px;">
-                <input type="date" id="repManualEnd" style="flex:none; width:128px; height:32px; padding:0 6px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px;">
-                <button onclick="applyRepManualFilter()" style="flex:none; height:32px; padding:0 12px; border-radius:8px; border:none; background:#00C7C7; color:#fff; font-weight:700; font-size:11.5px; cursor:pointer; white-space:nowrap;">Apply</button>
-            </div>
-        </div>
-
-        <!-- Total Revenue Banner -->
-        <div style="background:linear-gradient(135deg,#1e293b,#334155); color:#fff; padding:16px; border-radius:14px; text-align:center;">
-            <small style="opacity:0.8; font-weight:bold; font-size:10px; letter-spacing:1px;" id="repPeriodLabel">TODAY</small>
-            <div style="font-size:24px; font-weight:900;" id="repTotalRevenue">0.000 <span style="font-size:12px; opacity:0.7;">OMR</span></div>
-        </div>
-
-        <!-- Orders & AOV Stats -->
-        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px;">
-            <div style="background:#fff; border:1px solid #e2e8f0; border-left:4px solid #3b82f6; padding:10px; border-radius:10px;">
-                <small style="color:#64748b; font-weight:800; font-size:9px;">🧾 TOTAL ORDERS</small>
-                <div style="font-size:16px; font-weight:800; color:#1e293b;" id="repTotalOrders">0</div>
-            </div>
-            <div style="background:#fff; border:1px solid #e2e8f0; border-left:4px solid #00C7C7; padding:10px; border-radius:10px;">
-                <small style="color:#64748b; font-weight:800; font-size:9px;">📈 AVG ORDER VALUE</small>
-                <div style="font-size:16px; font-weight:800; color:#1e293b;" id="repAov">0.000</div>
-            </div>
-        </div>
-
-        <!-- Payment Breakdown -->
-        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
-            <div style="background:#f0fdf4; border:1px solid #dcfce7; padding:8px 4px; border-radius:10px; text-align:center;">
-                <small style="color:#166534; font-weight:800; font-size:8px;">🏦 TRANSFER</small>
-                <div style="font-size:12px; font-weight:700; color:#14532d;" id="repCashTransfer">0.000</div>
-            </div>
-            <div style="background:#f0f9ff; border:1px solid #e0f2fe; padding:8px 4px; border-radius:10px; text-align:center;">
-                <small style="color:#075985; font-weight:800; font-size:8px;">💳 ATM CARD</small>
-                <div style="font-size:12px; font-weight:700; color:#0c4a6e;" id="repCashAtm">0.000</div>
-            </div>
-            <div style="background:#fffbeb; border:1px solid #fef3c7; padding:8px 4px; border-radius:10px; text-align:center;">
-                <small style="color:#92400e; font-weight:800; font-size:8px;">💵 CASH</small>
-                <div style="font-size:12px; font-weight:700; color:#78350f;" id="repCashCash">0.000</div>
-            </div>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:8px 4px; border-radius:10px; text-align:center;">
-                <small style="color:#475569; font-weight:800; font-size:8px;">⏳ PENDING</small>
-                <div style="font-size:12px; font-weight:700; color:#334155;" id="repCashPending">0.000</div>
-            </div>
-        </div>
-
-        <!-- 2. Today / Month / Year Cards -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-            <div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #10b981; cursor: pointer;">
-                <small style="color:#64748b; font-weight:bold; font-size: 10px; display:block;">TODAY</small>
-                <h2 id="daySale" style="font-size:18px; margin:4px 0; color:#1e293b">0.000</h2>
-                <span style="color:#10b981; font-size:9px;">● Live</span>
-            </div>
-
-            <div onclick="showDetails('month')" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #3b82f6; cursor: pointer;">
-                <small style="color:#64748b; font-weight:bold; font-size: 10px; display:block;">MONTH</small>
-                <h2 id="monthSale" style="font-size:18px; margin:4px 0; color:#1e293b">0.000</h2>
-                <span style="color:#3b82f6; font-size:9px;">● Progress</span>
-            </div>
-
-            <div onclick="showDetails('year')" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #f59e0b; cursor: pointer;">
-                <small style="color:#64748b; font-weight:bold; font-size: 10px; display:block;">YEAR</small>
-                <h2 id="yearSale" style="font-size:18px; margin:4px 0; color:#1e293b">0.000</h2>
-                <span style="color:#f59e0b; font-size:9px;">● Summary</span>
-            </div>
-        </div>
-
-        <!-- 3. Date Range Section -->
-        <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-            <b style="color: #64748b; font-size:10px; display:block; margin-bottom:8px">📅 DATE RANGE</b>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <input type="date" id="exportStart" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
-                <input type="date" id="exportEnd" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
-                <button class="pos-btn" style="background:#3b82f6; height: 36px; font-size:11px; border-radius:6px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="setTodayDate()">TODAY</button>
-                <button class="pos-btn" style="background:#10b981; height: 36px; font-size:11px; border-radius:6px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="exportToExcel()">EXCEL</button>
-            </div>
-        </div>
-
-        <!-- 4. Backup Section -->
-        <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
-            <b style="display:block; margin-bottom:8px; color: #64748b; font-size:10px;">📦 BACKUP</b>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <button class="pos-btn" style="background:#8b5cf6; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="exportFullBackup()">📤 EXPORT</button>
-                <button class="pos-btn" style="background:#475569; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="document.getElementById('importFile').click()">📥 IMPORT</button>
-                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importFullBackup(event)">
-            </div>
-        </div>
-
-    </div>
 </div>
-
+</div>
+<div class="full-page" id="reportsPage" style="background: #f8fafc; overflow: hidden; display: none; flex-direction: column;">
+<!-- Header -->
+<div class="dash-header" style="background: white; padding: 8px 15px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+<b style="font-size: 16px; color: #1e293b;"><span data-json-text="pos_text_00102"></span></b>
+<button onclick="closeReports()" style="border:none; background:#eff6ff; color:#3b82f6; padding:6px 15px; border-radius:8px; font-weight:bold; font-size:12px; cursor:pointer;"><span data-json-text="pos_text_00103"></span></button>
+</div>
+<!-- Scrollable Body Container -->
+<div style="flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px;">
+<!-- 1. Live Sales Dashboard Filters -->
+<div>
+<div id="repFilterRow" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px;">
+<button class="rep-filter-btn active" data-f="today" onclick="renderSalesDashboard('today')"><span data-json-text="pos_text_00104"></span></button>
+<button class="rep-filter-btn" data-f="yesterday" onclick="renderSalesDashboard('yesterday')"><span data-json-text="pos_text_00105"></span></button>
+<button class="rep-filter-btn" data-f="week" onclick="renderSalesDashboard('week')"><span data-json-text="pos_text_00106"></span></button>
+<button class="rep-filter-btn" data-f="month" onclick="renderSalesDashboard('month')"><span data-json-text="pos_text_00107"></span></button>
+<button class="rep-filter-btn" data-f="manual" onclick="toggleRepManualPicker()"><span data-json-text="pos_text_00108"></span></button>
+</div>
+<div id="repManualPicker" style="display:none; gap:6px; align-items:center; margin-bottom:8px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:6px; width:fit-content;">
+<input id="repManualStart" style="flex:none; width:128px; height:32px; padding:0 6px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px;" type="date"/>
+<input id="repManualEnd" style="flex:none; width:128px; height:32px; padding:0 6px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px;" type="date"/>
+<button onclick="applyRepManualFilter()" style="flex:none; height:32px; padding:0 12px; border-radius:8px; border:none; background:#00C7C7; color:#fff; font-weight:700; font-size:11.5px; cursor:pointer; white-space:nowrap;"><span data-json-text="pos_text_00109"></span></button>
+</div>
+</div>
+<!-- Total Revenue Banner -->
+<div style="background:linear-gradient(135deg,#1e293b,#334155); color:#fff; padding:16px; border-radius:14px; text-align:center;">
+<small id="repPeriodLabel" style="opacity:0.8; font-weight:bold; font-size:10px; letter-spacing:1px;"><span data-json-text="pos_text_00110"></span></small>
+<div id="repTotalRevenue" style="font-size:24px; font-weight:900;"><span data-json-text="pos_text_00111"></span><span style="font-size:12px; opacity:0.7;"><span data-json-text="pos_text_00112"></span></span></div>
+</div>
+<!-- Orders & AOV Stats -->
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px;">
+<div style="background:#fff; border:1px solid #e2e8f0; border-left:4px solid #3b82f6; padding:10px; border-radius:10px;">
+<small style="color:#64748b; font-weight:800; font-size:9px;"><span data-json-text="pos_text_00113"></span></small>
+<div id="repTotalOrders" style="font-size:16px; font-weight:800; color:#1e293b;"><span data-json-text="pos_text_00114"></span></div>
+</div>
+<div style="background:#fff; border:1px solid #e2e8f0; border-left:4px solid #00C7C7; padding:10px; border-radius:10px;">
+<small style="color:#64748b; font-weight:800; font-size:9px;"><span data-json-text="pos_text_00115"></span></small>
+<div id="repAov" style="font-size:16px; font-weight:800; color:#1e293b;"><span data-json-text="pos_text_00116"></span></div>
+</div>
+</div>
+<!-- Payment Breakdown -->
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
+<div style="background:#f0fdf4; border:1px solid #dcfce7; padding:8px 4px; border-radius:10px; text-align:center;">
+<small style="color:#166534; font-weight:800; font-size:8px;"><span data-json-text="pos_text_00117"></span></small>
+<div id="repCashTransfer" style="font-size:12px; font-weight:700; color:#14532d;"><span data-json-text="pos_text_00118"></span></div>
+</div>
+<div style="background:#f0f9ff; border:1px solid #e0f2fe; padding:8px 4px; border-radius:10px; text-align:center;">
+<small style="color:#075985; font-weight:800; font-size:8px;"><span data-json-text="pos_text_00119"></span></small>
+<div id="repCashAtm" style="font-size:12px; font-weight:700; color:#0c4a6e;"><span data-json-text="pos_text_00120"></span></div>
+</div>
+<div style="background:#fffbeb; border:1px solid #fef3c7; padding:8px 4px; border-radius:10px; text-align:center;">
+<small style="color:#92400e; font-weight:800; font-size:8px;"><span data-json-text="pos_text_00121"></span></small>
+<div id="repCashCash" style="font-size:12px; font-weight:700; color:#78350f;"><span data-json-text="pos_text_00122"></span></div>
+</div>
+<div style="background:#f8fafc; border:1px solid #e2e8f0; padding:8px 4px; border-radius:10px; text-align:center;">
+<small style="color:#475569; font-weight:800; font-size:8px;"><span data-json-text="pos_text_00123"></span></small>
+<div id="repCashPending" style="font-size:12px; font-weight:700; color:#334155;"><span data-json-text="pos_text_00124"></span></div>
+</div>
+</div>
+<!-- 2. Today / Month / Year Cards -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+<div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #10b981; cursor: pointer;">
+<small style="color:#64748b; font-weight:bold; font-size: 10px; display:block;"><span data-json-text="pos_text_00125"></span></small>
+<h2 id="daySale" style="font-size:18px; margin:4px 0; color:#1e293b"><span data-json-text="pos_text_00126"></span></h2>
+<span style="color:#10b981; font-size:9px;"><span data-json-text="pos_text_00127"></span></span>
+</div>
+<div onclick="showDetails('month')" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #3b82f6; cursor: pointer;">
+<small style="color:#64748b; font-weight:bold; font-size: 10px; display:block;"><span data-json-text="pos_text_00128"></span></small>
+<h2 id="monthSale" style="font-size:18px; margin:4px 0; color:#1e293b"><span data-json-text="pos_text_00129"></span></h2>
+<span style="color:#3b82f6; font-size:9px;"><span data-json-text="pos_text_00130"></span></span>
+</div>
+<div onclick="showDetails('year')" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #f59e0b; cursor: pointer;">
+<small style="color:#64748b; font-weight:bold; font-size: 10px; display:block;"><span data-json-text="pos_text_00131"></span></small>
+<h2 id="yearSale" style="font-size:18px; margin:4px 0; color:#1e293b"><span data-json-text="pos_text_00132"></span></h2>
+<span style="color:#f59e0b; font-size:9px;"><span data-json-text="pos_text_00133"></span></span>
+</div>
+</div>
+<!-- 3. Date Range Section -->
+<div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+<b style="color: #64748b; font-size:10px; display:block; margin-bottom:8px"><span data-json-text="pos_text_00134"></span></b>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+<input id="exportStart" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;" type="date"/>
+<input id="exportEnd" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;" type="date"/>
+<button class="pos-btn" onclick="setTodayDate()" style="background:#3b82f6; height: 36px; font-size:11px; border-radius:6px; color:#fff; border:none; font-weight:bold; cursor:pointer;"><span data-json-text="pos_text_00135"></span></button>
+<button class="pos-btn" onclick="exportToExcel()" style="background:#10b981; height: 36px; font-size:11px; border-radius:6px; color:#fff; border:none; font-weight:bold; cursor:pointer;"><span data-json-text="pos_text_00136"></span></button>
+</div>
+</div>
+<!-- 4. Backup Section -->
+<div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+<b style="display:block; margin-bottom:8px; color: #64748b; font-size:10px;"><span data-json-text="pos_text_00137"></span></b>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+<button class="pos-btn" onclick="exportFullBackup()" style="background:#8b5cf6; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;"><span data-json-text="pos_text_00138"></span></button>
+<button class="pos-btn" onclick="document.getElementById('importFile').click()" style="background:#475569; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;"><span data-json-text="pos_text_00139"></span></button>
+<input accept=".json" id="importFile" onchange="importFullBackup(event)" style="display: none;" type="file"/>
+</div>
+</div>
+</div>
+</div>
 <style>
     .rep-filter-btn { white-space:nowrap; padding:9px 16px; border-radius:18px; border:1.5px solid #e6e9f0; background:#f8fafc; color:#334155; font-weight:700; font-size:12px; cursor:pointer; transition:.15s; }
     .rep-filter-btn:hover { box-shadow:0 4px 10px rgba(15,23,42,.08); }
     .rep-filter-btn.active { background:linear-gradient(120deg,#0f766e,#0d9488); border-color:#0d9488; color:#fff; box-shadow:0 8px 18px rgba(13,148,136,.28); }
 </style>
-
-                
-
 <!-- <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px;">
     <div style="background: linear-gradient(135deg, #6366f1, #a855f7); padding: 15px; border-radius: 15px; color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
         <small style="opacity: 0.8; font-size: 10px; font-weight: bold; text-transform: uppercase;">Total Bills</small>
@@ -700,8 +611,6 @@ width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
     </div>
 </div>
  -->
-
-
 <script>
 
 // 1. Menu JSON Export Function (Category + Items Backup)
@@ -1038,13 +947,6 @@ function processPastedJson() {
 
 
 </script>
-
-
-</div>
-
-
-
-
 
 <script>
     // Safe localStorage polyfill — Acode/file:// me crash nahi karega
@@ -3717,481 +3619,380 @@ function deleteBill(billNo, dateKey, displayLabel){
 }
     
 </script>
-
-
 <!-- ===== NEW: TOP SELLING SCREEN ===== -->
-<div id="topSellingPage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; 
+<div class="full-page" id="topSellingPage" style="background:#f8fafc; overflow:hidden; display:none; 
   flex-direction:column;">
-    <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
-        <b style="font-size:17px; color:#1e293b;">Top Selling</b>
-        <button onclick="closeTopSelling()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button>
-    </div>
-
-    <div style="padding:12px 12px 0; flex-shrink:0;">
-        <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:10px;">
-            <button class="tsell-filter-btn active" data-f="today" onclick="renderTopSelling('today')">Today</button>
-            <button class="tsell-filter-btn" data-f="yesterday" onclick="renderTopSelling('yesterday')">Yesterday</button>
-            <button class="tsell-filter-btn" data-f="week" onclick="renderTopSelling('week')">This Week</button>
-            <button class="tsell-filter-btn" data-f="month" onclick="renderTopSelling('month')">This Month</button>
-            <button class="tsell-filter-btn" data-f="manual" onclick="toggleTopSellManualPicker()">Manual 📅</button>
-        </div>
-        <div id="topSellManualPicker" style="display:none; gap:8px; align-items:center; margin-bottom:8px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
-            <input type="date" id="topSellManualStart" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-            <input type="date" id="topSellManualEnd" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-            <button onclick="applyTopSellManualFilter()" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
-        </div>
-    </div>
-
-    <div id="topSellList" style="flex:1; overflow-y:auto; padding:6px 12px 16px;"></div>
-
-    <style>
+<div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
+<b style="font-size:17px; color:#1e293b;"><span data-json-text="pos_text_00140"></span></b>
+<button onclick="closeTopSelling()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;"><span data-json-text="pos_text_00141"></span></button>
+</div>
+<div style="padding:12px 12px 0; flex-shrink:0;">
+<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:10px;">
+<button class="tsell-filter-btn active" data-f="today" onclick="renderTopSelling('today')"><span data-json-text="pos_text_00142"></span></button>
+<button class="tsell-filter-btn" data-f="yesterday" onclick="renderTopSelling('yesterday')"><span data-json-text="pos_text_00143"></span></button>
+<button class="tsell-filter-btn" data-f="week" onclick="renderTopSelling('week')"><span data-json-text="pos_text_00144"></span></button>
+<button class="tsell-filter-btn" data-f="month" onclick="renderTopSelling('month')"><span data-json-text="pos_text_00145"></span></button>
+<button class="tsell-filter-btn" data-f="manual" onclick="toggleTopSellManualPicker()"><span data-json-text="pos_text_00146"></span></button>
+</div>
+<div id="topSellManualPicker" style="display:none; gap:8px; align-items:center; margin-bottom:8px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
+<input id="topSellManualStart" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;" type="date"/>
+<input id="topSellManualEnd" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;" type="date"/>
+<button onclick="applyTopSellManualFilter()" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;"><span data-json-text="pos_text_00147"></span></button>
+</div>
+</div>
+<div id="topSellList" style="flex:1; overflow-y:auto; padding:6px 12px 16px;"></div>
+<style>
         .tsell-filter-btn { white-space:nowrap; padding:9px 16px; border-radius:18px; border:1.5px solid #e6e9f0; background:#f8fafc; color:#334155; font-weight:700; font-size:12px; cursor:pointer; transition:.15s; }
         .tsell-filter-btn:hover { box-shadow:0 4px 10px rgba(15,23,42,.08); }
         .tsell-filter-btn.active { background:linear-gradient(120deg,#0f766e,#0d9488); border-color:#0d9488; color:#fff; box-shadow:0 8px 18px rgba(13,148,136,.28); }
     </style>
 </div>
-
 <!-- ===== NEW: MANAGE ITEMS (Add / Edit / Delete) SCREEN ===== -->
-<div id="itemManagePage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
-    <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
-        <b style="font-size:17px; color:#1e293b;">Manage Items</b>
-        <button onclick="closeItemManage()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button>
-    </div>
-
-    <div style="padding:12px 12px 0; flex-shrink:0;">
-        <div style="display:flex; align-items:center; justify-content:space-between; background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:10px;">
-            <span style="font-weight:700; font-size:13px; color:#1e293b;">👁️ Show Quantity on Home Page</span>
-            <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
-                <input type="checkbox" id="homeQtyToggle" onchange="toggleHomeQtyDisplay(this)" style="opacity:0; width:0; height:0;">
-                <span style="position:absolute; cursor:pointer; inset:0; background:#92400e; border-radius:24px; transition:0.2s;"></span>
-                <span style="position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
-            </label>
-        </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:10px;">
-            <div style="min-width:0;">
-                <div style="font-weight:700; font-size:13px; color:#1e293b;">⛔ Zero Stock Billing</div>
-                <div id="zeroStockHint" style="font-size:11px; color:#64748b; margin-top:2px;">OFF: billing allowed at zero stock</div>
-            </div>
-            <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
-                <input type="checkbox" id="zeroStockToggle" onchange="toggleZeroStockBlock(this)" style="opacity:0; width:0; height:0;">
-                <span id="zeroStockTrack" style="position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:24px; transition:0.2s;"></span>
-                <span id="zeroStockKnob" style="position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
-            </label>
-        </div>
-        <div style="position:relative; margin-bottom:10px;">
-            <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
-            <input type="text" id="itemManageSearch" placeholder="Search item to manage quantity..." oninput="renderItemManageList()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
-        </div>
-    </div>
-
-    <div id="itemManageList" style="flex:1; overflow-y:auto; padding:6px 12px 16px;"></div>
-
-    <style>
+<div class="full-page" id="itemManagePage" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
+<div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
+<b style="font-size:17px; color:#1e293b;"><span data-json-text="pos_text_00148"></span></b>
+<button onclick="closeItemManage()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;"><span data-json-text="pos_text_00149"></span></button>
+</div>
+<div style="padding:12px 12px 0; flex-shrink:0;">
+<div style="display:flex; align-items:center; justify-content:space-between; background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:10px;">
+<span style="font-weight:700; font-size:13px; color:#1e293b;"><span data-json-text="pos_text_00150"></span></span>
+<label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
+<input id="homeQtyToggle" onchange="toggleHomeQtyDisplay(this)" style="opacity:0; width:0; height:0;" type="checkbox"/>
+<span style="position:absolute; cursor:pointer; inset:0; background:#92400e; border-radius:24px; transition:0.2s;"></span>
+<span style="position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
+</label>
+</div>
+<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:10px;">
+<div style="min-width:0;">
+<div style="font-weight:700; font-size:13px; color:#1e293b;"><span data-json-text="pos_text_00151"></span></div>
+<div id="zeroStockHint" style="font-size:11px; color:#64748b; margin-top:2px;"><span data-json-text="pos_text_00152"></span></div>
+</div>
+<label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
+<input id="zeroStockToggle" onchange="toggleZeroStockBlock(this)" style="opacity:0; width:0; height:0;" type="checkbox"/>
+<span id="zeroStockTrack" style="position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:24px; transition:0.2s;"></span>
+<span id="zeroStockKnob" style="position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
+</label>
+</div>
+<div style="position:relative; margin-bottom:10px;">
+<span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;"><span data-json-text="pos_text_00153"></span></span>
+<input data-json-placeholder="pos_attr_00272" id="itemManageSearch" oninput="renderItemManageList()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;" type="text"/>
+</div>
+</div>
+<div id="itemManageList" style="flex:1; overflow-y:auto; padding:6px 12px 16px;"></div>
+<style>
         #homeQtyToggle:checked + span { background:#10b981; }
         #homeQtyToggle:checked + span + span { transform:translateX(20px); }
     </style>
 </div>
-
 <!-- Edit Quantity popup (Manage Items screen) -->
 <div id="editQtyOv" onclick="closeEditQtyModal()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
 <div id="editQtyBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:320px;background:#fff;border-radius:22px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
-    <div style="text-align:center;font-size:34px;margin-bottom:6px;">📦</div>
-    <h3 style="text-align:center;margin:0 0 4px;font-size:17px;color:#0f172a;font-weight:800;">Edit Quantity</h3>
-    <p id="editQtyItemName" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 16px;font-weight:700;"></p>
-    <input type="number" id="editQtyInput" step="1" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:14px;font-size:16px;box-sizing:border-box;text-align:center;">
-    <button onclick="saveEditQty()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">✅ Save</button>
-    <button onclick="closeEditQtyModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+<div style="text-align:center;font-size:34px;margin-bottom:6px;"><span data-json-text="pos_text_00154"></span></div>
+<h3 style="text-align:center;margin:0 0 4px;font-size:17px;color:#0f172a;font-weight:800;"><span data-json-text="pos_text_00155"></span></h3>
+<p id="editQtyItemName" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 16px;font-weight:700;"></p>
+<input id="editQtyInput" step="1" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:14px;font-size:16px;box-sizing:border-box;text-align:center;" type="number"/>
+<button onclick="saveEditQty()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;"><span data-json-text="pos_text_00156"></span></button>
+<button onclick="closeEditQtyModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;"><span data-json-text="pos_text_00157"></span></button>
 </div>
-
 <!-- Edit popup for Inventory history rows (Add/Sale/Waste) -->
 <div id="invRecEditOv" onclick="closeInvRecEdit()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
 <div id="invRecEditBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:320px;background:#fff;border-radius:22px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
-    <div style="text-align:center;font-size:34px;margin-bottom:6px;">✏️</div>
-    <h3 style="text-align:center;margin:0 0 4px;font-size:17px;color:#0f172a;font-weight:800;">Edit Quantity</h3>
-    <p id="invRecEditName" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 16px;font-weight:700;"></p>
-    <input type="number" id="invRecEditInput" step="1" min="0" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:14px;font-size:16px;box-sizing:border-box;text-align:center;">
-    <button onclick="saveInvRecEdit()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">✅ Save</button>
-    <button onclick="closeInvRecEdit()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+<div style="text-align:center;font-size:34px;margin-bottom:6px;"><span data-json-text="pos_text_00158"></span></div>
+<h3 style="text-align:center;margin:0 0 4px;font-size:17px;color:#0f172a;font-weight:800;"><span data-json-text="pos_text_00159"></span></h3>
+<p id="invRecEditName" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 16px;font-weight:700;"></p>
+<input id="invRecEditInput" min="0" step="1" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:14px;font-size:16px;box-sizing:border-box;text-align:center;" type="number"/>
+<button onclick="saveInvRecEdit()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;"><span data-json-text="pos_text_00160"></span></button>
+<button onclick="closeInvRecEdit()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;"><span data-json-text="pos_text_00161"></span></button>
 </div>
-
 <!-- Delete confirmation popup (Manage Items screen) -->
 <div id="itemDelOv" onclick="closeItemDelConfirm()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
 <div id="itemDelBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:320px;background:#fff;border-radius:22px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
-    <div style="text-align:center;font-size:38px;margin-bottom:8px;">🗑️</div>
-    <h3 style="text-align:center;margin:0 0 4px;font-size:18px;color:#0f172a;font-weight:800;">Remove from Inventory?</h3>
-    <p style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 4px;">Are you sure you want to delete</p>
-    <p id="itemDelConfirmName" style="text-align:center;color:#1e293b;font-size:14px;font-weight:800;margin:0 0 18px;"></p>
-    <button onclick="confirmDeleteItemFromManage()" style="width:100%;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">🗑️ Delete</button>
-    <button onclick="closeItemDelConfirm()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+<div style="text-align:center;font-size:38px;margin-bottom:8px;"><span data-json-text="pos_text_00162"></span></div>
+<h3 style="text-align:center;margin:0 0 4px;font-size:18px;color:#0f172a;font-weight:800;"><span data-json-text="pos_text_00163"></span></h3>
+<p style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 4px;"><span data-json-text="pos_text_00164"></span></p>
+<p id="itemDelConfirmName" style="text-align:center;color:#1e293b;font-size:14px;font-weight:800;margin:0 0 18px;"></p>
+<button onclick="confirmDeleteItemFromManage()" style="width:100%;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;"><span data-json-text="pos_text_00165"></span></button>
+<button onclick="closeItemDelConfirm()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;"><span data-json-text="pos_text_00166"></span></button>
 </div>
-
 <!-- ===== NEW: INVENTORY DASHBOARD (Add Item / Sale Item / Waste Item) ===== -->
-<div id="invDashPage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
-    <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
-        <b style="font-size:17px; color:#1e293b;">Inventory</b>
-        <button onclick="closeInventoryDash()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button>
-    </div>
-
-    <div style="display:flex; background:#fff; border-bottom:1px solid #e2e8f0; flex-shrink:0;">
-        <button class="inv-tab-btn active" data-tab="add" onclick="switchInvTab('add')" style="flex:1; padding:13px 4px; border:none; background:none; font-weight:800; font-size:12.5px; cursor:pointer; border-bottom:3px solid transparent;">➕ Add Item</button>
-        <button class="inv-tab-btn" data-tab="sale" onclick="switchInvTab('sale')" style="flex:1; padding:13px 4px; border:none; background:none; font-weight:800; font-size:12.5px; cursor:pointer; border-bottom:3px solid transparent;">🛒 Sale Item</button>
-        <button class="inv-tab-btn" data-tab="waste" onclick="switchInvTab('waste')" style="flex:1; padding:13px 4px; border:none; background:none; font-weight:800; font-size:12.5px; cursor:pointer; border-bottom:3px solid transparent;">🗑️ Waste Item</button>
-    </div>
-    <style>
+<div class="full-page" id="invDashPage" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
+<div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
+<b style="font-size:17px; color:#1e293b;"><span data-json-text="pos_text_00167"></span></b>
+<button onclick="closeInventoryDash()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;"><span data-json-text="pos_text_00168"></span></button>
+</div>
+<div style="display:flex; background:#fff; border-bottom:1px solid #e2e8f0; flex-shrink:0;">
+<button class="inv-tab-btn active" data-tab="add" onclick="switchInvTab('add')" style="flex:1; padding:13px 4px; border:none; background:none; font-weight:800; font-size:12.5px; cursor:pointer; border-bottom:3px solid transparent;"><span data-json-text="pos_text_00169"></span></button>
+<button class="inv-tab-btn" data-tab="sale" onclick="switchInvTab('sale')" style="flex:1; padding:13px 4px; border:none; background:none; font-weight:800; font-size:12.5px; cursor:pointer; border-bottom:3px solid transparent;"><span data-json-text="pos_text_00170"></span></button>
+<button class="inv-tab-btn" data-tab="waste" onclick="switchInvTab('waste')" style="flex:1; padding:13px 4px; border:none; background:none; font-weight:800; font-size:12.5px; cursor:pointer; border-bottom:3px solid transparent;"><span data-json-text="pos_text_00171"></span></button>
+</div>
+<style>
         .inv-tab-btn { color:#94a3b8; }
         .inv-tab-btn.active { color:#00C7C7; border-bottom-color:#00C7C7 !important; }
     </style>
-
-    <div style="flex:1; overflow-y:auto;">
-
-        <!-- ===== ADD ITEM TAB ===== -->
-        <div id="invTab-add" class="inv-tab-panel" style="padding:12px;">
-            <div style="position:relative; margin-bottom:10px;">
-                <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
-                <input type="text" id="invAddSearch" placeholder="Search product to add stock..." oninput="renderInvAddSearchResults()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
-            </div>
-
-            <div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
-                <button class="inv-filter-btn active" data-tab="add" data-f="today" onclick="renderInvHistory('add','today')">Today</button>
-                <button class="inv-filter-btn" data-tab="add" data-f="yesterday" onclick="renderInvHistory('add','yesterday')">Yesterday</button>
-                <button class="inv-filter-btn" data-tab="add" data-f="week" onclick="renderInvHistory('add','week')">This Week</button>
-                <button class="inv-filter-btn" data-tab="add" data-f="month" onclick="renderInvHistory('add','month')">This Month</button>
-                <button class="inv-filter-btn" data-tab="add" data-f="manual" onclick="toggleInvManualPicker('add')">Manually 📅</button>
-            </div>
-            <div id="invManualPicker-add" class="inv-manual-picker" style="display:none; gap:8px; align-items:center; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
-                <input type="date" id="invManualStart-add" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-                <input type="date" id="invManualEnd-add" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-                <button onclick="applyInvManualFilter('add')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
-            </div>
-
-            <div id="invAddSearchResults"></div>
-
-            <div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;">📜 ADD HISTORY</div>
-            <div id="invHistList-add"></div>
-        </div>
-
-        <!-- ===== SALE ITEM TAB ===== -->
-        <div id="invTab-sale" class="inv-tab-panel" style="padding:12px; display:none;">
-            <div style="position:relative; margin-bottom:10px;">
-                <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
-                <input type="text" id="invSaleSearch" placeholder="Search sold item..." oninput="renderInvHistory('sale', _invCurrentFilter.sale)" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
-            </div>
-
-            <div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
-                <button class="inv-filter-btn active" data-tab="sale" data-f="today" onclick="renderInvHistory('sale','today')">Today</button>
-                <button class="inv-filter-btn" data-tab="sale" data-f="yesterday" onclick="renderInvHistory('sale','yesterday')">Yesterday</button>
-                <button class="inv-filter-btn" data-tab="sale" data-f="week" onclick="renderInvHistory('sale','week')">This Week</button>
-                <button class="inv-filter-btn" data-tab="sale" data-f="month" onclick="renderInvHistory('sale','month')">This Month</button>
-                <button class="inv-filter-btn" data-tab="sale" data-f="manual" onclick="toggleInvManualPicker('sale')">Manually 📅</button>
-            </div>
-            <div id="invManualPicker-sale" class="inv-manual-picker" style="display:none; gap:8px; align-items:center; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
-                <input type="date" id="invManualStart-sale" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-                <input type="date" id="invManualEnd-sale" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-                <button onclick="applyInvManualFilter('sale')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
-            </div>
-
-            <div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;">📜 SALE HISTORY (auto from billing)</div>
-            <div id="invHistList-sale"></div>
-        </div>
-
-        <!-- ===== WASTE ITEM TAB ===== -->
-        <div id="invTab-waste" class="inv-tab-panel" style="padding:12px; display:none;">
-            <div style="position:relative; margin-bottom:10px;">
-                <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
-                <input type="text" id="invWasteSearch" placeholder="Search product to report waste..." oninput="renderInvWasteSearchResults()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
-            </div>
-
-            <div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
-                <button class="inv-filter-btn active" data-tab="waste" data-f="today" onclick="renderInvHistory('waste','today')">Today</button>
-                <button class="inv-filter-btn" data-tab="waste" data-f="yesterday" onclick="renderInvHistory('waste','yesterday')">Yesterday</button>
-                <button class="inv-filter-btn" data-tab="waste" data-f="week" onclick="renderInvHistory('waste','week')">This Week</button>
-                <button class="inv-filter-btn" data-tab="waste" data-f="month" onclick="renderInvHistory('waste','month')">This Month</button>
-                <button class="inv-filter-btn" data-tab="waste" data-f="manual" onclick="toggleInvManualPicker('waste')">Manually 📅</button>
-            </div>
-            <div id="invManualPicker-waste" class="inv-manual-picker" style="display:none; gap:8px; align-items:center; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
-                <input type="date" id="invManualStart-waste" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-                <input type="date" id="invManualEnd-waste" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-                <button onclick="applyInvManualFilter('waste')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
-            </div>
-
-            <div id="invWasteSearchResults"></div>
-
-            <div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;">📜 WASTE HISTORY</div>
-            <div id="invHistList-waste"></div>
-        </div>
-
-    </div>
-
-    <style>
+<div style="flex:1; overflow-y:auto;">
+<!-- ===== ADD ITEM TAB ===== -->
+<div class="inv-tab-panel" id="invTab-add" style="padding:12px;">
+<div style="position:relative; margin-bottom:10px;">
+<span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;"><span data-json-text="pos_text_00172"></span></span>
+<input data-json-placeholder="pos_attr_00273" id="invAddSearch" oninput="renderInvAddSearchResults()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;" type="text"/>
+</div>
+<div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
+<button class="inv-filter-btn active" data-f="today" data-tab="add" onclick="renderInvHistory('add','today')"><span data-json-text="pos_text_00173"></span></button>
+<button class="inv-filter-btn" data-f="yesterday" data-tab="add" onclick="renderInvHistory('add','yesterday')"><span data-json-text="pos_text_00174"></span></button>
+<button class="inv-filter-btn" data-f="week" data-tab="add" onclick="renderInvHistory('add','week')"><span data-json-text="pos_text_00175"></span></button>
+<button class="inv-filter-btn" data-f="month" data-tab="add" onclick="renderInvHistory('add','month')"><span data-json-text="pos_text_00176"></span></button>
+<button class="inv-filter-btn" data-f="manual" data-tab="add" onclick="toggleInvManualPicker('add')"><span data-json-text="pos_text_00177"></span></button>
+</div>
+<div class="inv-manual-picker" id="invManualPicker-add" style="display:none; gap:8px; align-items:center; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
+<input id="invManualStart-add" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;" type="date"/>
+<input id="invManualEnd-add" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;" type="date"/>
+<button onclick="applyInvManualFilter('add')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;"><span data-json-text="pos_text_00178"></span></button>
+</div>
+<div id="invAddSearchResults"></div>
+<div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;"><span data-json-text="pos_text_00179"></span></div>
+<div id="invHistList-add"></div>
+</div>
+<!-- ===== SALE ITEM TAB ===== -->
+<div class="inv-tab-panel" id="invTab-sale" style="padding:12px; display:none;">
+<div style="position:relative; margin-bottom:10px;">
+<span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;"><span data-json-text="pos_text_00180"></span></span>
+<input data-json-placeholder="pos_attr_00274" id="invSaleSearch" oninput="renderInvHistory('sale', _invCurrentFilter.sale)" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;" type="text"/>
+</div>
+<div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
+<button class="inv-filter-btn active" data-f="today" data-tab="sale" onclick="renderInvHistory('sale','today')"><span data-json-text="pos_text_00181"></span></button>
+<button class="inv-filter-btn" data-f="yesterday" data-tab="sale" onclick="renderInvHistory('sale','yesterday')"><span data-json-text="pos_text_00182"></span></button>
+<button class="inv-filter-btn" data-f="week" data-tab="sale" onclick="renderInvHistory('sale','week')"><span data-json-text="pos_text_00183"></span></button>
+<button class="inv-filter-btn" data-f="month" data-tab="sale" onclick="renderInvHistory('sale','month')"><span data-json-text="pos_text_00184"></span></button>
+<button class="inv-filter-btn" data-f="manual" data-tab="sale" onclick="toggleInvManualPicker('sale')"><span data-json-text="pos_text_00185"></span></button>
+</div>
+<div class="inv-manual-picker" id="invManualPicker-sale" style="display:none; gap:8px; align-items:center; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
+<input id="invManualStart-sale" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;" type="date"/>
+<input id="invManualEnd-sale" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;" type="date"/>
+<button onclick="applyInvManualFilter('sale')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;"><span data-json-text="pos_text_00186"></span></button>
+</div>
+<div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;"><span data-json-text="pos_text_00187"></span></div>
+<div id="invHistList-sale"></div>
+</div>
+<!-- ===== WASTE ITEM TAB ===== -->
+<div class="inv-tab-panel" id="invTab-waste" style="padding:12px; display:none;">
+<div style="position:relative; margin-bottom:10px;">
+<span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;"><span data-json-text="pos_text_00188"></span></span>
+<input data-json-placeholder="pos_attr_00275" id="invWasteSearch" oninput="renderInvWasteSearchResults()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;" type="text"/>
+</div>
+<div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
+<button class="inv-filter-btn active" data-f="today" data-tab="waste" onclick="renderInvHistory('waste','today')"><span data-json-text="pos_text_00189"></span></button>
+<button class="inv-filter-btn" data-f="yesterday" data-tab="waste" onclick="renderInvHistory('waste','yesterday')"><span data-json-text="pos_text_00190"></span></button>
+<button class="inv-filter-btn" data-f="week" data-tab="waste" onclick="renderInvHistory('waste','week')"><span data-json-text="pos_text_00191"></span></button>
+<button class="inv-filter-btn" data-f="month" data-tab="waste" onclick="renderInvHistory('waste','month')"><span data-json-text="pos_text_00192"></span></button>
+<button class="inv-filter-btn" data-f="manual" data-tab="waste" onclick="toggleInvManualPicker('waste')"><span data-json-text="pos_text_00193"></span></button>
+</div>
+<div class="inv-manual-picker" id="invManualPicker-waste" style="display:none; gap:8px; align-items:center; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
+<input id="invManualStart-waste" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;" type="date"/>
+<input id="invManualEnd-waste" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;" type="date"/>
+<button onclick="applyInvManualFilter('waste')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;"><span data-json-text="pos_text_00194"></span></button>
+</div>
+<div id="invWasteSearchResults"></div>
+<div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;"><span data-json-text="pos_text_00195"></span></div>
+<div id="invHistList-waste"></div>
+</div>
+</div>
+<style>
         .inv-filter-btn { white-space:nowrap; padding:8px 14px; border-radius:18px; border:1.5px solid #e2e8f0; background:#f8fafc; color:#334155; font-weight:700; font-size:11.5px; cursor:pointer; }
         .inv-filter-btn.active { background:#00C7C7; border-color:#00C7C7; color:#fff; }
     </style>
 </div>
-
-<div id="dateDetailsPage" class="full-page" style="background: #f1f5f9; display: none; flex-direction: column; overflow: hidden;">
-    <div class="dash-header" style="background: white; padding: 12px 20px; border-bottom: 2px solid #e2e8f0; flex-shrink: 0;">
-        <div style="display: flex; flex-direction: column;">
-            <b id="detailTitle" style="font-size: 16px; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">Sales Report</b>
-            <span style="font-size: 10px; color: #64748b; font-weight: bold;">VIEWING DATA ANALYTICS</span>
-        </div>
-        
-<button onclick="document.getElementById('dateDetailsPage').style.display='none'; document.getElementById('billDetailsM').style.display='none';" style="border:none; background:#fef2f2; color:#ef4444; width:32px; height:32px; border-radius:8px; font-weight:bold; cursor:pointer;">✕</button>
-
-      
-    </div>
+<div class="full-page" id="dateDetailsPage" style="background: #f1f5f9; display: none; flex-direction: column; overflow: hidden;">
+<div class="dash-header" style="background: white; padding: 12px 20px; border-bottom: 2px solid #e2e8f0; flex-shrink: 0;">
+<div style="display: flex; flex-direction: column;">
+<b id="detailTitle" style="font-size: 16px; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;"><span data-json-text="pos_text_00196"></span></b>
+<span style="font-size: 10px; color: #64748b; font-weight: bold;"><span data-json-text="pos_text_00197"></span></span>
+</div>
+<button onclick="document.getElementById('dateDetailsPage').style.display='none'; document.getElementById('billDetailsM').style.display='none';" style="border:none; background:#fef2f2; color:#ef4444; width:32px; height:32px; border-radius:8px; font-weight:bold; cursor:pointer;"><span data-json-text="pos_text_00198"></span></button>
+</div>
 <div id="dailyReportFilterBar" style="display:none; background:#fff; padding:10px 15px 8px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0;">
-    <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;">
-        <button id="dailyFilterBtn-month" class="rep-filter-btn active" onclick="showDailyReportsForFilter('month')">This Month</button>
-        <button id="dailyFilterBtn-manual" class="rep-filter-btn" onclick="toggleDailyManualPicker()">Manually 📅</button>
-    </div>
-    <div id="dailyManualPickerWrap" style="display:none; gap:6px; align-items:center; margin-top:8px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:6px; width:fit-content;">
-        <select id="dailyManualMonthSelect" style="flex:none; width:78px; height:32px; padding:0 4px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px; -webkit-appearance:none; appearance:none; background:#fff url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%2364748b%22><path d=%22M7 10l5 5 5-5z%22/></svg>') no-repeat right 4px center/11px;"></select>
-        <select id="dailyManualYearSelect" style="flex:none; width:74px; height:32px; padding:0 4px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px; -webkit-appearance:none; appearance:none; background:#fff url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%2364748b%22><path d=%22M7 10l5 5 5-5z%22/></svg>') no-repeat right 4px center/11px;"></select>
-        <button onclick="applyDailyManualDate()" style="flex:none; height:32px; padding:0 12px; border-radius:8px; border:none; background:#0f766e; color:#fff; font-size:11.5px; font-weight:800; cursor:pointer; white-space:nowrap;">
-            Apply
-        </button>
-    </div>
+<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;">
+<button class="rep-filter-btn active" id="dailyFilterBtn-month" onclick="showDailyReportsForFilter('month')"><span data-json-text="pos_text_00199"></span></button>
+<button class="rep-filter-btn" id="dailyFilterBtn-manual" onclick="toggleDailyManualPicker()"><span data-json-text="pos_text_00200"></span></button>
+</div>
+<div id="dailyManualPickerWrap" style="display:none; gap:6px; align-items:center; margin-top:8px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:6px; width:fit-content;">
+<select id="dailyManualMonthSelect" style="flex:none; width:78px; height:32px; padding:0 4px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px; -webkit-appearance:none; appearance:none; background:#fff url('data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%2364748b%22&gt;&lt;path d=%22M7 10l5 5 5-5z%22/&gt;&lt;/svg&gt;') no-repeat right 4px center/11px;"></select>
+<select id="dailyManualYearSelect" style="flex:none; width:74px; height:32px; padding:0 4px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px; -webkit-appearance:none; appearance:none; background:#fff url('data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%2364748b%22&gt;&lt;path d=%22M7 10l5 5 5-5z%22/&gt;&lt;/svg&gt;') no-repeat right 4px center/11px;"></select>
+<button onclick="applyDailyManualDate()" style="flex:none; height:32px; padding:0 12px; border-radius:8px; border:none; background:#0f766e; color:#fff; font-size:11.5px; font-weight:800; cursor:pointer; white-space:nowrap;"><span data-json-text="pos_text_00201"></span></button>
+</div>
 </div>
 <div id="dateList" style="flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; align-content: start;">
-    </div>
-
 </div>
-
-
-
-
-
-<div id="alertOverlay" class="ov" style="z-index: 3000;"></div>
-<div id="customAlert" class="modal" style="z-index: 3100; text-align: center;">
-    <div style="font-size: 50px; margin-bottom: 10px;">⚠️</div>
-    <h3 style="margin: 0 0 10px 0; color: #334155;">Selection Required</h3>
-    <p id="alertMessage" style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Please select both start and end dates to export.</p>
-    <button class="btn" style="background: var(--primary); width: 100%;" onclick="closeAlert()">GOT IT</button>
 </div>
-
-
-
-<div id="alertModalOverlay" class="ov" style="z-index: 6000;"></div>
-<div id="alertModal" class="modal" style="z-index: 6100; text-align: center; border-top: 5px solid #3b82f6;">
-    <div id="alertIcon" style="font-size: 40px; margin-bottom: 10px;">ℹ️</div>
-    <h3 id="alertTitle" style="margin: 0 0 10px 0; color: #1e293b;">Notification</h3>
-    <p id="alertMessage" style="color: #64748b; font-size: 14px; margin-bottom: 25px; line-height: 1.5;"></p>
-    <button class="btn" style="width: 100%; background: #3b82f6;" onclick="closeAlertModal()">UNDERSTOOD</button>
+<div class="ov" id="alertOverlay" style="z-index: 3000;"></div>
+<div class="modal" id="customAlert" style="z-index: 3100; text-align: center;">
+<div style="font-size: 50px; margin-bottom: 10px;"><span data-json-text="pos_text_00202"></span></div>
+<h3 style="margin: 0 0 10px 0; color: #334155;"><span data-json-text="pos_text_00203"></span></h3>
+<p id="alertMessage" style="color: #64748b; font-size: 14px; margin-bottom: 20px;"><span data-json-text="pos_text_00204"></span></p>
+<button class="btn" onclick="closeAlert()" style="background: var(--primary); width: 100%;"><span data-json-text="pos_text_00205"></span></button>
 </div>
-
-<div id="errorOverlay" class="ov" style="z-index: 5000;"></div>
-<div id="errorModal" class="modal" style="z-index: 5100; text-align: center; border-bottom: 5px solid #ef4444;">
-    <div style="font-size: 50px; margin-bottom: 10px;">⚠️</div>
-    <h3 style="margin: 0; color: #1e293b; font-size: 20px;">Already Exists!</h3>
-    <p id="errorText" style="color: #64748b; font-size: 14px; margin: 15px 0 25px 0; line-height: 1.5;"></p>
-    <button class="btn" style="background: #ef4444; width: 100%; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);" onclick="closeError()">OK, I WILL CHECK</button>
+<div class="ov" id="alertModalOverlay" style="z-index: 6000;"></div>
+<div class="modal" id="alertModal" style="z-index: 6100; text-align: center; border-top: 5px solid #3b82f6;">
+<div id="alertIcon" style="font-size: 40px; margin-bottom: 10px;"><span data-json-text="pos_text_00206"></span></div>
+<h3 id="alertTitle" style="margin: 0 0 10px 0; color: #1e293b;"><span data-json-text="pos_text_00207"></span></h3>
+<p id="alertMessage" style="color: #64748b; font-size: 14px; margin-bottom: 25px; line-height: 1.5;"></p>
+<button class="btn" onclick="closeAlertModal()" style="width: 100%; background: #3b82f6;"><span data-json-text="pos_text_00208"></span></button>
+</div>
+<div class="ov" id="errorOverlay" style="z-index: 5000;"></div>
+<div class="modal" id="errorModal" style="z-index: 5100; text-align: center; border-bottom: 5px solid #ef4444;">
+<div style="font-size: 50px; margin-bottom: 10px;"><span data-json-text="pos_text_00209"></span></div>
+<h3 style="margin: 0; color: #1e293b; font-size: 20px;"><span data-json-text="pos_text_00210"></span></h3>
+<p id="errorText" style="color: #64748b; font-size: 14px; margin: 15px 0 25px 0; line-height: 1.5;"></p>
+<button class="btn" onclick="closeError()" style="background: #ef4444; width: 100%; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);"><span data-json-text="pos_text_00211"></span></button>
 </div>
 <!-- ===== EDIT BILL - FULL ORDER BILL STYLE PANEL ===== -->
-<div id="editBillPanel" class="full-page" style="z-index: 30000; display:none; flex-direction:column; background:#ffffff; font-family:'Inter',sans-serif;">
-
-    <!-- Header -->
-    <div style="padding:20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-        <div>
-            <b style="font-size:22px; color:#1e293b; letter-spacing:-0.5px;">✏️ EDIT BILL</b>
-            <div id="editPanelBillLabel" style="font-size:12px; color:#64748b; font-weight:600; margin-top:2px;"></div>
-        </div>
-        <button onclick="closeEditBillPanel()" style="border:none; background:#f1f5f9; width:40px; height:40px; border-radius:12px; font-size:20px; color:#64748b; cursor:pointer;">×</button>
-    </div>
-
-    <!-- Customer Phone -->
-    <div style="padding:0 20px 12px; flex-shrink:0;">
-        <input type="tel" id="editCustPhone" placeholder="📞 Customer Phone Number" style="width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; font-weight:600; outline:none;">
-    </div>
-
-    <!-- Items List -->
-    <div id="editItemsList" style="flex:1; overflow-y:auto; padding:15px; -webkit-overflow-scrolling:touch;"></div>
-
-    <!-- Totals & Controls -->
-    <div style="padding:20px; background:#fff; border-top:1px solid #f1f5f9; flex-shrink:0;">
-        
-        <!-- Subtotal row -->
-        <div style="display:flex; justify-content:space-between; font-size:14px; color:#64748b; margin-bottom:8px;">
-            <span>Subtotal</span>
-            <span id="editSubTotal" style="color:#1e293b; font-weight:600;">0.000</span>
-        </div>
-
-        <!-- Discount -->
-        <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
-            <span>Discount (OMR)</span>
-            <input type="number" id="editDiscount" value="0" min="0" step="0.001"
-                   oninput="recalcEditTotals()"
-                   style="width:60px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;">
-        </div>
-
-        <!-- Delivery -->
-        <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
-            <span>Delivery (OMR)</span>
-            <input type="number" id="editDelivery" value="0" min="0" step="0.1"
-                   oninput="recalcEditTotals()"
-                   style="width:70px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;">
-        </div>
-
-        <!-- VAT -->
-        <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
-            <span>VAT (%)</span>
-            <input type="number" id="editVatPerc" value="0" min="0" step="0.1" oninput="recalcEditTotals()"
-                   style="width:70px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;">
-        </div>
-        <div style="display:flex; justify-content:space-between; font-size:14px; color:#64748b; margin-bottom:12px;">
-            <span>VAT Amount</span>
-            <span id="editVat" style="color:#1e293b; font-weight:600;">0.000</span>
-        </div>
-
-        <!-- Grand Total -->
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:6px 10px;">
-            <span style="font-weight:800; color:#1e293b; font-size:14px; flex-shrink:0;">GRAND TOTAL</span>
-            <span id="editGrandTotal" style="font-size:24px; font-weight:900; color:#00C7C7; text-align:right; margin-left:auto; white-space:nowrap;">0.000 <small style="font-size:12px;">OMR</small></span>
-        </div>
-
-        <!-- Payment Method -->
-        <div style="display:flex; gap:8px; margin-bottom:18px;">
-            <div onclick="setEditMethod('')" id="editLbl-p"
-                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
-                <span style="font-size:16px;">⏳</span><br>
-                <span style="font-size:9px; font-weight:800; color:#64748b;">PENDING</span>
-            </div>
-            <div onclick="setEditMethod('Transfer')" id="editLbl-t"
-                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
-                <span style="font-size:16px;">🏦</span><br>
-                <span style="font-size:9px; font-weight:800; color:#64748b;">TRANSFER</span>
-            </div>
-            <div onclick="setEditMethod('ATM')" id="editLbl-a"
-                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
-                <span style="font-size:16px;">💳</span><br>
-                <span style="font-size:9px; font-weight:800; color:#64748b;">ATM CARD</span>
-            </div>
-            <div onclick="setEditMethod('Cash')" id="editLbl-c"
-                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
-                <span style="font-size:16px;">💵</span><br>
-                <span style="font-size:9px; font-weight:800; color:#64748b;">CASH</span>
-            </div>
-        </div>
-
-        <!-- Save Button -->
-        <div style="display:flex; gap:12px;">
-            <button onclick="saveEditedBill()"
-                    style="flex:2; background:#00C7C7; color:white; border:none; padding:16px; border-radius:16px; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 10px 20px -5px rgba(0,199,199,0.3);">
-                ✅ SAVE CHANGES
-            </button>
-            <button onclick="closeEditBillPanel()"
-                    style="flex:1; background:#f1f5f9; color:#1e293b; border:none; padding:16px; border-radius:16px; font-weight:800; font-size:15px; cursor:pointer;">
-                CANCEL
-            </button>
-        </div>
-    </div>
-
-    <!-- Hidden fields -->
-    <input type="hidden" id="editBillNo">
-    <input type="hidden" id="editDateKey">
-    <input type="hidden" id="editDisplayLabel">
-    <input type="hidden" id="editSelectedMethod" value="">
+<div class="full-page" id="editBillPanel" style="z-index: 30000; display:none; flex-direction:column; background:#ffffff; font-family:'Inter',sans-serif;">
+<!-- Header -->
+<div style="padding:20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+<div>
+<b style="font-size:22px; color:#1e293b; letter-spacing:-0.5px;"><span data-json-text="pos_text_00212"></span></b>
+<div id="editPanelBillLabel" style="font-size:12px; color:#64748b; font-weight:600; margin-top:2px;"></div>
 </div>
-
-<div id="billDetailsM" class="modal" style="width: 100%; height: 100%; max-height: 100vh; top: 0; left: 0; transform: none; margin: 0; padding: 0; overflow: hidden; z-index: 20000; display: none; border-radius: 0; background: #fff; flex-direction: column;">
-    
-    <div style="position: sticky; top: 0; background: #fff; padding: 20px 15px; border-bottom: 2px solid #f1f5f9; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-        <div>
-            <h3 id="billModalTitle" style="margin:0; font-size: 18px; color: #1e293b; font-weight: 800; letter-spacing: 0.5px;">BILLS DETAIL</h3>
-            <small id="billModalSubTitle" style="color: #64748b; font-size: 13px; font-weight: 600;"></small>
-        </div>
-        
-        <button onclick="document.getElementById('billDetailsM').style.display='none'; document.getElementById('ov').style.display='none'; renderTicketGrid();" 
-                style="background: #ff4757; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(255,71,87,0.2); font-size: 14px;">
-            CLOSE ✕
-        </button>
-    </div>
-
-    <div style="position: sticky; top: 0; background: #fff; padding: 10px 15px 12px 15px; border-bottom: 1px solid #f1f5f9; z-index: 99;">
-        <div style="display:flex; gap:8px;">
-            <button id="billFilterBtn-today" onclick="openBillsForFilter('today')"
-                    style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#1e293b; color:#fff;">
-                Today
-            </button>
-            <button id="billFilterBtn-yesterday" onclick="openBillsForFilter('yesterday')"
-                    style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#f1f5f9; color:#475569;">
-                Yesterday
-            </button>
-            <button id="billFilterBtn-manual" onclick="toggleManualDatePicker()"
-                    style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#f1f5f9; color:#475569;">
-                Manually
-            </button>
-        </div>
-        <div id="manualDatePickerWrap" style="display:none; margin-top:10px; gap:8px; align-items:center;">
-            <input type="date" id="manualBillDateInput" style="flex:1; padding:9px 8px; border-radius:10px; border:1px solid #e2e8f0; font-size:12px; font-weight:600; color:#1e293b; outline:none;">
-            <button onclick="applyManualBillsDate()" style="padding:9px 16px; border-radius:10px; border:none; background:#0f766e; color:#fff; font-size:12px; font-weight:800; cursor:pointer;">
-                Apply
-            </button>
-        </div>
-    </div>
-
-    <div id="billListContent" style="flex: 1; overflow-y: auto; padding: 10px 15px 40px 15px; -webkit-overflow-scrolling: touch; background: #fff;">
-        </div>
+<button onclick="closeEditBillPanel()" style="border:none; background:#f1f5f9; width:40px; height:40px; border-radius:12px; font-size:20px; color:#64748b; cursor:pointer;"><span data-json-text="pos_text_00213"></span></button>
 </div>
-
+<!-- Customer Phone -->
+<div style="padding:0 20px 12px; flex-shrink:0;">
+<input data-json-placeholder="pos_attr_00276" id="editCustPhone" style="width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; font-weight:600; outline:none;" type="tel"/>
+</div>
+<!-- Items List -->
+<div id="editItemsList" style="flex:1; overflow-y:auto; padding:15px; -webkit-overflow-scrolling:touch;"></div>
+<!-- Totals & Controls -->
+<div style="padding:20px; background:#fff; border-top:1px solid #f1f5f9; flex-shrink:0;">
+<!-- Subtotal row -->
+<div style="display:flex; justify-content:space-between; font-size:14px; color:#64748b; margin-bottom:8px;">
+<span><span data-json-text="pos_text_00214"></span></span>
+<span id="editSubTotal" style="color:#1e293b; font-weight:600;"><span data-json-text="pos_text_00215"></span></span>
+</div>
+<!-- Discount -->
+<div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
+<span><span data-json-text="pos_text_00216"></span></span>
+<input id="editDiscount" min="0" oninput="recalcEditTotals()" step="0.001" style="width:60px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;" type="number" value="0"/>
+</div>
+<!-- Delivery -->
+<div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
+<span><span data-json-text="pos_text_00217"></span></span>
+<input id="editDelivery" min="0" oninput="recalcEditTotals()" step="0.1" style="width:70px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;" type="number" value="0"/>
+</div>
+<!-- VAT -->
+<div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
+<span><span data-json-text="pos_text_00218"></span></span>
+<input id="editVatPerc" min="0" oninput="recalcEditTotals()" step="0.1" style="width:70px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;" type="number" value="0"/>
+</div>
+<div style="display:flex; justify-content:space-between; font-size:14px; color:#64748b; margin-bottom:12px;">
+<span><span data-json-text="pos_text_00219"></span></span>
+<span id="editVat" style="color:#1e293b; font-weight:600;"><span data-json-text="pos_text_00220"></span></span>
+</div>
+<!-- Grand Total -->
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:6px 10px;">
+<span style="font-weight:800; color:#1e293b; font-size:14px; flex-shrink:0;"><span data-json-text="pos_text_00221"></span></span>
+<span id="editGrandTotal" style="font-size:24px; font-weight:900; color:#00C7C7; text-align:right; margin-left:auto; white-space:nowrap;"><span data-json-text="pos_text_00222"></span><small style="font-size:12px;"><span data-json-text="pos_text_00223"></span></small></span>
+</div>
+<!-- Payment Method -->
+<div style="display:flex; gap:8px; margin-bottom:18px;">
+<div id="editLbl-p" onclick="setEditMethod('')" style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+<span style="font-size:16px;"><span data-json-text="pos_text_00224"></span></span><br/>
+<span style="font-size:9px; font-weight:800; color:#64748b;"><span data-json-text="pos_text_00225"></span></span>
+</div>
+<div id="editLbl-t" onclick="setEditMethod('Transfer')" style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+<span style="font-size:16px;"><span data-json-text="pos_text_00226"></span></span><br/>
+<span style="font-size:9px; font-weight:800; color:#64748b;"><span data-json-text="pos_text_00227"></span></span>
+</div>
+<div id="editLbl-a" onclick="setEditMethod('ATM')" style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+<span style="font-size:16px;"><span data-json-text="pos_text_00228"></span></span><br/>
+<span style="font-size:9px; font-weight:800; color:#64748b;"><span data-json-text="pos_text_00229"></span></span>
+</div>
+<div id="editLbl-c" onclick="setEditMethod('Cash')" style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+<span style="font-size:16px;"><span data-json-text="pos_text_00230"></span></span><br/>
+<span style="font-size:9px; font-weight:800; color:#64748b;"><span data-json-text="pos_text_00231"></span></span>
+</div>
+</div>
+<!-- Save Button -->
+<div style="display:flex; gap:12px;">
+<button onclick="saveEditedBill()" style="flex:2; background:#00C7C7; color:white; border:none; padding:16px; border-radius:16px; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 10px 20px -5px rgba(0,199,199,0.3);"><span data-json-text="pos_text_00232"></span></button>
+<button onclick="closeEditBillPanel()" style="flex:1; background:#f1f5f9; color:#1e293b; border:none; padding:16px; border-radius:16px; font-weight:800; font-size:15px; cursor:pointer;"><span data-json-text="pos_text_00233"></span></button>
+</div>
+</div>
+<!-- Hidden fields -->
+<input id="editBillNo" type="hidden"/>
+<input id="editDateKey" type="hidden"/>
+<input id="editDisplayLabel" type="hidden"/>
+<input id="editSelectedMethod" type="hidden" value=""/>
+</div>
+<div class="modal" id="billDetailsM" style="width: 100%; height: 100%; max-height: 100vh; top: 0; left: 0; transform: none; margin: 0; padding: 0; overflow: hidden; z-index: 20000; display: none; border-radius: 0; background: #fff; flex-direction: column;">
+<div style="position: sticky; top: 0; background: #fff; padding: 20px 15px; border-bottom: 2px solid #f1f5f9; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+<div>
+<h3 id="billModalTitle" style="margin:0; font-size: 18px; color: #1e293b; font-weight: 800; letter-spacing: 0.5px;"><span data-json-text="pos_text_00234"></span></h3>
+<small id="billModalSubTitle" style="color: #64748b; font-size: 13px; font-weight: 600;"></small>
+</div>
+<button onclick="document.getElementById('billDetailsM').style.display='none'; document.getElementById('ov').style.display='none'; renderTicketGrid();" style="background: #ff4757; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(255,71,87,0.2); font-size: 14px;"><span data-json-text="pos_text_00235"></span></button>
+</div>
+<div style="position: sticky; top: 0; background: #fff; padding: 10px 15px 12px 15px; border-bottom: 1px solid #f1f5f9; z-index: 99;">
+<div style="display:flex; gap:8px;">
+<button id="billFilterBtn-today" onclick="openBillsForFilter('today')" style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#1e293b; color:#fff;"><span data-json-text="pos_text_00236"></span></button>
+<button id="billFilterBtn-yesterday" onclick="openBillsForFilter('yesterday')" style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#f1f5f9; color:#475569;"><span data-json-text="pos_text_00237"></span></button>
+<button id="billFilterBtn-manual" onclick="toggleManualDatePicker()" style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#f1f5f9; color:#475569;"><span data-json-text="pos_text_00238"></span></button>
+</div>
+<div id="manualDatePickerWrap" style="display:none; margin-top:10px; gap:8px; align-items:center;">
+<input id="manualBillDateInput" style="flex:1; padding:9px 8px; border-radius:10px; border:1px solid #e2e8f0; font-size:12px; font-weight:600; color:#1e293b; outline:none;" type="date"/>
+<button onclick="applyManualBillsDate()" style="padding:9px 16px; border-radius:10px; border:none; background:#0f766e; color:#fff; font-size:12px; font-weight:800; cursor:pointer;"><span data-json-text="pos_text_00239"></span></button>
+</div>
+</div>
+<div id="billListContent" style="flex: 1; overflow-y: auto; padding: 10px 15px 40px 15px; -webkit-overflow-scrolling: touch; background: #fff;">
+</div>
+</div>
 <div id="delOv" onclick="closeDelModal()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:99998;backdrop-filter:blur(4px);"></div>
 <div id="delBox" style="display:none;position:fixed;z-index:99999;top:50%;left:50%;transform:translate(-50%,-50%);width:50%;max-width:320px;max-height:90vh;overflow-y:auto;background:#fff;border-radius:20px;padding:16px;box-shadow:0 8px 40px rgba(0,0,0,0.25);">
-  
-  <div style="text-align:center;font-size:40px;margin-bottom:10px;">🗑️</div>
-  <h3 id="delTitle" style="text-align:center;margin:0 0 6px;font-size:20px;color:#1e293b;font-weight:800;">Bill Delete?</h3>
-  <p style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 28px;line-height:1.5;"><br>Bill permanently remove</p>
-  <button id="delOkBtn" style="width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:17px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;box-shadow:0 8px 24px rgba(29,68,68,0.35);">🗑️ Delete</button>
-  <button onclick="closeDelModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:15px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">↩️ CANCEL</button>
+<div style="text-align:center;font-size:40px;margin-bottom:10px;"><span data-json-text="pos_text_00240"></span></div>
+<h3 id="delTitle" style="text-align:center;margin:0 0 6px;font-size:20px;color:#1e293b;font-weight:800;"><span data-json-text="pos_text_00241"></span></h3>
+<p style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 28px;line-height:1.5;"><br/><span data-json-text="pos_text_00242"></span></p>
+<button id="delOkBtn" style="width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:17px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;box-shadow:0 8px 24px rgba(29,68,68,0.35);"><span data-json-text="pos_text_00243"></span></button>
+<button onclick="closeDelModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:15px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;"><span data-json-text="pos_text_00244"></span></button>
 </div>
-
 <div id="resetConfirmOv" onclick="closeResetConfirmModal()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:99998;backdrop-filter:blur(4px);"></div>
 <div id="resetConfirmBox" style="display:none;position:fixed;z-index:99999;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:320px;background:#fff;border-radius:20px;padding:22px;box-shadow:0 8px 40px rgba(0,0,0,0.25);">
-  <div style="text-align:center;font-size:40px;margin-bottom:10px;">⚠️</div>
-  <h3 style="text-align:center;margin:0 0 6px;font-size:19px;color:#1e293b;font-weight:800;">Reset All Sales Data?</h3>
-  <p style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 24px;line-height:1.5;">Yeh sabhi sales data permanently delete kar dega. Is action ko wapas nahi kiya ja sakta.</p>
-  <button onclick="proceedFullReset()" style="width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:16px;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">🗑️ Yes, Reset All Data</button>
-  <button onclick="closeResetConfirmModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:14px;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+<div style="text-align:center;font-size:40px;margin-bottom:10px;"><span data-json-text="pos_text_00245"></span></div>
+<h3 style="text-align:center;margin:0 0 6px;font-size:19px;color:#1e293b;font-weight:800;"><span data-json-text="pos_text_00246"></span></h3>
+<p style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 24px;line-height:1.5;"><span data-json-text="pos_text_00247"></span></p>
+<button onclick="proceedFullReset()" style="width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:16px;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;"><span data-json-text="pos_text_00248"></span></button>
+<button onclick="closeResetConfirmModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:14px;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;"><span data-json-text="pos_text_00249"></span></button>
 </div>
-
 <div id="pwOv" onclick="closePwPromptModal()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
 <div id="pwBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:50%;max-width:320px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 8px 40px rgba(0,0,0,0.25);">
-  <div style="text-align:center;font-size:36px;margin-bottom:8px;">🔒</div>
-  <h3 style="text-align:center;margin:0 0 6px;font-size:18px;color:#1e293b;font-weight:800;">Enter Security Password</h3>
-  <p style="text-align:center;color:#94a3b8;font-size:12px;margin:0 0 16px;line-height:1.5;">Bill delete karne ke liye password enter karein</p>
-  <input type="password" id="pwPromptInput" placeholder="Password" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;margin-bottom:12px;font-size:15px;box-sizing:border-box;" onkeydown="if(event.key==='Enter'){ submitDeletePassword(); }">
-  <button id="pwSubmitBtn" onclick="submitDeletePassword()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">✅ Confirm</button>
-  <button onclick="closePwPromptModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+<div style="text-align:center;font-size:36px;margin-bottom:8px;"><span data-json-text="pos_text_00250"></span></div>
+<h3 style="text-align:center;margin:0 0 6px;font-size:18px;color:#1e293b;font-weight:800;"><span data-json-text="pos_text_00251"></span></h3>
+<p style="text-align:center;color:#94a3b8;font-size:12px;margin:0 0 16px;line-height:1.5;"><span data-json-text="pos_text_00252"></span></p>
+<input data-json-placeholder="pos_attr_00277" id="pwPromptInput" onkeydown="if(event.key==='Enter'){ submitDeletePassword(); }" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;margin-bottom:12px;font-size:15px;box-sizing:border-box;" type="password"/>
+<button id="pwSubmitBtn" onclick="submitDeletePassword()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;"><span data-json-text="pos_text_00253"></span></button>
+<button onclick="closePwPromptModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;"><span data-json-text="pos_text_00254"></span></button>
 </div>
-
 <!-- Security Password Manager (Create / Change / Delete) — Full Screen Layout -->
 <div id="pwMgrOv" onclick="closePwManager()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;"></div>
 <div id="pwMgrBox" style="display:none;position:fixed;z-index:100001;inset:0;width:100%;height:100%;background:#fff;box-shadow:none;overflow-y:auto;padding:0;">
-  <div style="max-width:480px;margin:0 auto;padding:40px 24px 32px;min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;">
-    <div style="text-align:center;font-size:64px;margin-bottom:10px;">🔐</div>
-    <h3 style="text-align:center;margin:0 0 6px;font-size:28px;color:#0f172a;font-weight:800;">Security Password</h3>
-    <p id="pwMgrStatus" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 36px;">🔓 No password set</p>
-
-    <button id="pwMgrCreateBtn" style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:16px;" onclick="startCreatePassword()">➕ Create Password</button>
-
-    <button id="pwMgrChangeBtn" style="width:100%;text-align:left;background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:16px;display:none;" onclick="startChangePassword()">✏️ Change Password</button>
-
-    <button id="pwMgrDeleteBtn" style="width:100%;text-align:left;background:#fef2f2;border:2px solid #ef4444;color:#b91c1c;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:28px;display:none;" onclick="startDeletePassword()">🗑️ Delete Password</button>
-
-    <div style="flex:1;"></div>
-    <button onclick="closePwManager()" style="width:100%;background:#f8fafc;color:#64748b;border:2px solid #e2e8f0;padding:18px;border-radius:18px;font-size:16px;font-weight:700;cursor:pointer;">↩️ Close</button>
-  </div>
+<div style="max-width:480px;margin:0 auto;padding:40px 24px 32px;min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;">
+<div style="text-align:center;font-size:64px;margin-bottom:10px;"><span data-json-text="pos_text_00255"></span></div>
+<h3 style="text-align:center;margin:0 0 6px;font-size:28px;color:#0f172a;font-weight:800;"><span data-json-text="pos_text_00256"></span></h3>
+<p id="pwMgrStatus" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 36px;"><span data-json-text="pos_text_00257"></span></p>
+<button id="pwMgrCreateBtn" onclick="startCreatePassword()" style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:16px;"><span data-json-text="pos_text_00258"></span></button>
+<button id="pwMgrChangeBtn" onclick="startChangePassword()" style="width:100%;text-align:left;background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:16px;display:none;"><span data-json-text="pos_text_00259"></span></button>
+<button id="pwMgrDeleteBtn" onclick="startDeletePassword()" style="width:100%;text-align:left;background:#fef2f2;border:2px solid #ef4444;color:#b91c1c;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:28px;display:none;"><span data-json-text="pos_text_00260"></span></button>
+<div style="flex:1;"></div>
+<button onclick="closePwManager()" style="width:100%;background:#f8fafc;color:#64748b;border:2px solid #e2e8f0;padding:18px;border-radius:18px;font-size:16px;font-weight:700;cursor:pointer;"><span data-json-text="pos_text_00261"></span></button>
 </div>
-
+</div>
 <!-- Single-step password input (used for create / old-password / new-password / delete-confirm) -->
 <div id="pwStepOv" onclick="closePwStep()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:100002;backdrop-filter:blur(4px);"></div>
 <div id="pwStepBox" style="display:none;position:fixed;z-index:100003;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:340px;background:#fff;border-radius:24px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
-  <div id="pwStepIcon" style="text-align:center;font-size:42px;margin-bottom:8px;">🔑</div>
-  <h3 id="pwStepTitle" style="text-align:center;margin:0 0 6px;font-size:20px;color:#0f172a;font-weight:800;">Enter Password</h3>
-  <p id="pwStepSub" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 20px;line-height:1.5;"></p>
-  <input type="password" id="pwStepInput" placeholder="Password" style="width:100%;padding:15px;border-radius:14px;border:1.5px solid #e2e8f0;margin-bottom:16px;font-size:16px;box-sizing:border-box;" onkeydown="if(event.key==='Enter'){ submitPwStep(); }">
-  <button id="pwStepBtn" onclick="submitPwStep()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:16px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;">✅ Continue</button>
-  <button onclick="closePwStep()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:14px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+<div id="pwStepIcon" style="text-align:center;font-size:42px;margin-bottom:8px;"><span data-json-text="pos_text_00262"></span></div>
+<h3 id="pwStepTitle" style="text-align:center;margin:0 0 6px;font-size:20px;color:#0f172a;font-weight:800;"><span data-json-text="pos_text_00263"></span></h3>
+<p id="pwStepSub" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 20px;line-height:1.5;"></p>
+<input data-json-placeholder="pos_attr_00278" id="pwStepInput" onkeydown="if(event.key==='Enter'){ submitPwStep(); }" style="width:100%;padding:15px;border-radius:14px;border:1.5px solid #e2e8f0;margin-bottom:16px;font-size:16px;box-sizing:border-box;" type="password"/>
+<button id="pwStepBtn" onclick="submitPwStep()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:16px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;"><span data-json-text="pos_text_00264"></span></button>
+<button onclick="closePwStep()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:14px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;"><span data-json-text="pos_text_00265"></span></button>
 </div>
-
 <style>
 /* ===== Premium polish overrides (non-destructive, purely cosmetic) ===== */
 button, .btn, .pos-btn { border-radius: 14px !important; }
@@ -4282,7 +4083,6 @@ input[type="checkbox"] { accent-color: #0d9488; }
   
 }
 </style>
-
 <script>
 /* ===== POS <-> Inventory stock sync (runs only when opened inside index.html) ===== */
 (function(){
@@ -4504,6 +4304,32 @@ input[type="checkbox"] { accent-color: #0d9488; }
         }
     });
     window.parent.postMessage({ type: 'POS_READY' }, '*');
+})();
+</script>
+
+<script>
+(async function() {
+  try {
+    const response = await fetch('/mnt/data/pos_system.json');
+    if (!response.ok) throw new Error('Unable to load /mnt/data/pos_system.json');
+    const data = await response.json();
+    const strings = data.strings || {};
+    document.querySelectorAll('[data-json-text]').forEach(function(el) {
+      const key = el.getAttribute('data-json-text');
+      if (Object.prototype.hasOwnProperty.call(strings, key)) el.textContent = strings[key];
+    });
+    ['placeholder','title','alt','aria-label'].forEach(function(attr) {
+      document.querySelectorAll('[data-json-' + attr + ']').forEach(function(el) {
+        const key = el.getAttribute('data-json-' + attr);
+        if (Object.prototype.hasOwnProperty.call(strings, key)) el.setAttribute(attr, strings[key]);
+      });
+    });
+    const titleEl = document.querySelector('head title');
+    if (titleEl) {
+      const titleSpan = titleEl.querySelector('[data-json-text]');
+      if (titleSpan) titleEl.textContent = strings[titleSpan.getAttribute('data-json-text')] || '';
+    }
+  } catch (error) { console.error(error); }
 })();
 </script>
 </body>
