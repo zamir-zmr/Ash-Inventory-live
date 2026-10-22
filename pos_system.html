@@ -63,7 +63,7 @@
         }
         .logo-circle img { width: 100%; height: 100%; object-fit: cover; }
         .logo-circle b { font-size: 15px; font-weight: 900; color: #fff; line-height: 1; letter-spacing: .3px; }
-        .logo-circle span { font-size: 6px; font-weight: 700; color: rgba(255,255,255,.85); letter-spacing: 1.5px; text-transform: uppercase; }
+        .logo-circle span { font-size: 6px; font-weight: 700; color: rgba(255,255,255,.85); letter-spacing: .4px; text-transform: uppercase; }
 
         /* ===== Header ===== */
         .h {
@@ -774,7 +774,7 @@ function exportMenuJSON() {
     let blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     let link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `ASH_BAKES_MENU_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `KP_HARDWARE_MENU_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
 }
 
@@ -1403,9 +1403,9 @@ body { font-family: Helvetica, Arial, sans-serif; color:#000; display:flex; just
 <body>
 <div class="receipt">
 ${logoHtml}
-<div class="shopname">KP</div>
-<div class="addr">HARDWARE</div>
-<div class="phone">+96879100688</div>
+<div class="shopname">KP HARDWARE</div>
+<div class="addr">Sultanate of oman</div>
+<div class="phone">79100688</div>
 <div class="hall">Take Away Hall</div>
 <div class="billrow">${billLine}</div>
 <div class="row"><span>Date : ${dateStr}</span><span>Time : ${timeStr}</span></div>
@@ -1623,7 +1623,7 @@ function downloadReceiptPDF() {
 
         const dateStr = (window.currentReceiptDateStr || new Date().toLocaleDateString('en-GB')).replace(/\//g, '-');
         const billNo = window.currentReceiptBillNo || '';
-        const fileName = `${dateStr} Kp Hardware Bill no. ${billNo}.pdf`;
+        const fileName = `${dateStr} KP HARDWARE Bill no. ${billNo}.pdf`;
         pdf.save(fileName);
     }).catch(e => {
         console.error('PDF generation failed:', e);
@@ -3282,7 +3282,7 @@ function exportToExcel() {
 
     // ---- Real .xlsx workbook (SheetJS) ----
     let rows = [];
-    rows.push(["KP HARDWARE- EXECUTIVE FINANCIAL STATEMENT"]);
+    rows.push(["KP HARDWARE - EXECUTIVE FINANCIAL STATEMENT"]);
     rows.push([]);
     rows.push(["REPORT SUMMARY", "", "", "Store: KP HARDWARE"]);
     rows.push([`Total Revenue: ${totalRev} OMR`, "", "", "Status: Verified"]);
@@ -3304,7 +3304,7 @@ function exportToExcel() {
     ws['!cols'] = [{wch:10}, {wch:10}, {wch:12}, {wch:12}, {wch:12}, {wch:14}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Report");
-    XLSX.writeFile(wb, `ASH_BAKES_REPORT_${start}.xlsx`);
+    XLSX.writeFile(wb, `KP_HARDWARE_REPORT_${start}.xlsx`);
 }
 // Inventory helper: sign = -1 reduces stock (on sale), +1 restores stock (on delete/edit rollback)
 function adjustStockForItems(items, sign) {
@@ -3373,7 +3373,7 @@ function exportFullBackup() {
     const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `ASH_BAKES_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `KP_HARDWARE_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
 }
 
