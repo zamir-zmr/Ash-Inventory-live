@@ -2021,6 +2021,7 @@ function updateCartUI(rebuildList = true) {
         let qty = parseFloat(document.getElementById('invAddQty-' + id).value) || 0;
         if (qty <= 0) return;
         let cur = (i.stock === null || i.stock === undefined) ? 0 : i.stock;
+        window._invReason = 'add';
         i.stock = cur + qty;
         saveAll();
         let log = JSON.parse(localStorage.getItem('asb_stock_add_log')) || [];
@@ -2063,6 +2064,7 @@ function updateCartUI(rebuildList = true) {
         let qty = parseFloat(document.getElementById('invWasteQty-' + id).value) || 0;
         if (qty <= 0) return;
         let cur = (i.stock === null || i.stock === undefined) ? 0 : i.stock;
+        window._invReason = 'waste';
         i.stock = Math.max(0, cur - qty);
         saveAll();
         let log = JSON.parse(localStorage.getItem('asb_waste_log')) || [];
@@ -2191,6 +2193,7 @@ function updateCartUI(rebuildList = true) {
         if (!entry) return;
         let i = menu.find(x => x.name.toLowerCase() === entry.itemName.toLowerCase());
         if (i && i.stock !== null && i.stock !== undefined) {
+            window._invReason = (tab === 'add') ? 'add' : 'waste';
             i.stock = Math.max(0, i.stock + (tab === 'add' ? -entry.qty : entry.qty));
         }
         log = log.filter(x => x.id !== logId);
@@ -2219,7 +2222,7 @@ function updateCartUI(rebuildList = true) {
         let removed = sales[idx].items.splice(itemIndex, 1)[0];
         if (removed) {
             let i = menu.find(x => x.name.toLowerCase() === removed.name.toLowerCase());
-            if (i && i.stock !== null && i.stock !== undefined) i.stock = i.stock + (parseFloat(removed.qty) || 0);
+            if (i && i.stock !== null && i.stock !== undefined) { window._invReason = 'sale'; i.stock = i.stock + (parseFloat(removed.qty) || 0); }
         }
         localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
         saveAll();
@@ -2257,6 +2260,7 @@ function updateCartUI(rebuildList = true) {
                 let delta = newQty - entry.qty;
                 let i = menu.find(x => x.name.toLowerCase() === entry.itemName.toLowerCase());
                 if (i && i.stock !== null && i.stock !== undefined) {
+                    window._invReason = (tab === 'add') ? 'add' : 'waste';
                     i.stock = Math.max(0, i.stock + (tab === 'add' ? delta : -delta));
                     entry.newStock = i.stock;
                 }
@@ -2276,7 +2280,7 @@ function updateCartUI(rebuildList = true) {
                 if (item) {
                     let delta = newQty - (parseFloat(item.qty) || 0);
                     let i = menu.find(x => x.name.toLowerCase() === item.name.toLowerCase());
-                    if (i && i.stock !== null && i.stock !== undefined) i.stock = Math.max(0, i.stock - delta);
+                    if (i && i.stock !== null && i.stock !== undefined) { window._invReason = 'sale'; i.stock = Math.max(0, i.stock - delta); }
                     item.qty = newQty;
                     localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
                     saveAll();
@@ -2309,6 +2313,7 @@ function updateCartUI(rebuildList = true) {
         let i = menu.find(x => x.id === _editQtyItemId);
         if (!i) return;
         let v = parseFloat(document.getElementById('editQtyInput').value);
+        window._invReason = 'manual';
         i.stock = isNaN(v) ? 0 : v;
         saveAll();
         closeEditQtyModal();
@@ -3370,6 +3375,8 @@ function adjustStockForItems(items, sign) {
         let m = menu.find(x => x.name.toLowerCase() === String(it.name).toLowerCase());
         if (m && m.stock !== null && m.stock !== undefined) {
             let q = parseFloat(it.qty) || 0;
+            window._invReason = 'sale';
+            if (m.invId != null) { window._invHist = window._invHist || {}; window._invHist[m.invId] = (window._invHist[m.invId] || 0) + (sign * q); }
             m.stock = Math.max(0, m.stock + (sign * q));
             changed = true;
         }
@@ -4290,13 +4297,19 @@ input[type="checkbox"] { accent-color: #0d9488; }
         }
     }
     window._invBridgeOut = function(){
-        var deltas = [];
+        var deltas = [], reason = window._invReason || 'manual', hist = window._invHist || {};
         menu.forEach(function(m){
             if (m.invId == null || m.stock === null || m.stock === undefined) return;
             var cur = Number(m.stock), prev = last[m.invId];
-            if (prev !== undefined && cur !== prev) deltas.push({ id: m.invId, delta: cur - prev });
+            var hd = hist[m.invId];
+            if (prev !== undefined && (cur !== prev || (hd !== undefined && hd !== 0))) {
+                var o = { id: m.invId, delta: cur - prev, reason: reason };
+                if (hd !== undefined) o.histDelta = hd;
+                deltas.push(o);
+            }
             last[m.invId] = cur;
         });
+        window._invReason = null; window._invHist = null;
         if (deltas.length) window.parent.postMessage({ type: 'POS_STOCK_DELTA', deltas: deltas }, '*');
     };
     function applySync(d){
