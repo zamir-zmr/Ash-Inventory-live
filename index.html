@@ -7094,10 +7094,10 @@ async function runSalesExport() {
 <script>
 (async function() {
   try {
-    const response = await fetch('index.json');
+    const response = await fetch('/mnt/data/index.json');
     if (!response.ok) throw new Error('Unable to load /mnt/data/index.json');
     const data = await response.json();
-    const strings = data.strings || {}; window.POS_STRINGS = strings;
+    const strings = data.strings || {};
     document.querySelectorAll('[data-json-text]').forEach(function(el) {
       const key = el.getAttribute('data-json-text');
       if (Object.prototype.hasOwnProperty.call(strings, key)) el.textContent = strings[key];
