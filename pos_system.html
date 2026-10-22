@@ -1334,6 +1334,7 @@ function processPastedJson() {
         if (previewImg && previewImg.src) {
             try { localStorage.setItem('savedPhotoUrl', previewImg.src); } catch(e) {}
             displayLogo(previewImg.src);
+            try { window.parent.postMessage({ type: 'POS_LOGO', logo: previewImg.src }, '*'); } catch(e) {}
             closeM();
         } else alert("Choose photo!");
     }
@@ -1404,8 +1405,8 @@ body { font-family: Helvetica, Arial, sans-serif; color:#000; display:flex; just
 <div class="receipt">
 ${logoHtml}
 <div class="shopname">KP HARDWARE</div>
-<div class="addr">Sultanate of oman</div>
-<div class="phone">79100688</div>
+<div class="addr">Africa</div>
+<div class="phone">123456789</div>
 <div class="hall">Take Away Hall</div>
 <div class="billrow">${billLine}</div>
 <div class="row"><span>Date : ${dateStr}</span><span>Time : ${timeStr}</span></div>
@@ -1696,6 +1697,7 @@ function saveCat() {
     }
 
     if (editCatName) {
+        if (window._invCatRename) window._invCatRename(editCatName, v);
         cats = cats.map(c => c.n === editCatName ? { n: v, i: selectedIcon, photo: catPhoto } : c);
         menu.forEach(i => { if (i.cat === editCatName) i.cat = v; });
     } else {
@@ -2289,7 +2291,7 @@ function updateCartUI(rebuildList = true) {
     function exitMulti() { isMulti = false; isCatMulti = false; selSet.clear(); document.getElementById('eb').style.display = 'none'; render(); }
     
     
-    function saveAll() { localStorage.setItem('asb_m', JSON.stringify(menu)); localStorage.setItem('asb_c', JSON.stringify(cats)); render(); if (window._invBridgeOut) window._invBridgeOut(); }
+    function saveAll() { localStorage.setItem('asb_m', JSON.stringify(menu)); localStorage.setItem('asb_c', JSON.stringify(cats)); render(); if (window._invBridgeOut) window._invBridgeOut(); if (window._invStructOut) window._invStructOut(); }
     function showCatM() { 
         editCatName = null; 
         document.getElementById('catPhotoImg').style.display = 'none';
@@ -4205,12 +4207,20 @@ input[type="checkbox"] { accent-color: #0d9488; }
     function applySync(d){
         var stocks = d.stocks || {}, icats = d.categories || {}, n = 0;
         var seen = {};
+        var icatNames = {};
+        Object.keys(icats).forEach(function(k){
+            var nm = icats[k] && icats[k].name ? String(icats[k].name) : null; if (!nm) return;
+            icatNames[nm.toLowerCase()] = 1;
+            var ex = cats.find(function(c){ return c.n.toLowerCase() === nm.toLowerCase(); });
+            if (ex) ex.inv = true; else cats.push({ n: nm, i: '', inv: true });
+        });
+        cats = cats.filter(function(c){ return !c.inv || icatNames[c.n.toLowerCase()]; });
         Object.keys(stocks).forEach(function(id){
             var s = stocks[id]; if (!s || !s.name) return;
             seen[id] = 1;
             var qty = parseFloat(s.qty); if (isNaN(qty)) qty = 0;
             var cname = (icats[s.catId] && icats[s.catId].name) ? String(icats[s.catId].name) : 'Inventory';
-            if (!cats.some(function(c){ return c.n === cname; })) cats.push({ n: cname, i: '' });
+            if (!cats.some(function(c){ return c.n === cname; })) cats.push({ n: cname, i: '', inv: true });
             var m = menu.find(function(x){ return x.invId === id; });
             if (!m) m = menu.find(function(x){ return x.invId == null && String(x.name).toLowerCase() === String(s.name).toLowerCase(); });
             if (!m) {
@@ -4227,12 +4237,69 @@ input[type="checkbox"] { accent-color: #0d9488; }
         });
         menu = menu.filter(function(m){ return m.invId == null || seen[m.invId]; });
         persist();
+        snap();
         if (typeof render === 'function') render();
+    }
+
+    /* ---- POS -> Inventory structural sync (items & categories) ---- */
+    var snapItems = {}, snapCats = {}, sentNew = {};
+    function snap(){
+        snapItems = {}; snapCats = {};
+        menu.forEach(function(m){ if (m.invId != null) snapItems[m.invId] = { name: m.name, price: m.price, cat: m.cat }; });
+        cats.forEach(function(c){ if (c.inv) snapCats[c.n] = 1; });
+    }
+    function post(o){ try { window.parent.postMessage(o, '*'); } catch(e){} }
+    window._invCatRename = function(from, to){
+        if (!from || from === to) return;
+        var c = cats.find(function(x){ return x.n === from; });
+        if (c && c.inv) { post({ type: 'POS_RENAME_CAT', from: from, to: to }); delete snapCats[from]; snapCats[to] = 1; }
+    };
+    window._invStructOut = function(){
+        var present = {}, presentCats = {};
+        menu.forEach(function(m){
+            if (m.invId == null) {
+                if (sentNew[m.id]) return;
+                sentNew[m.id] = 1;
+                post({ type: 'POS_ADD_ITEM', localId: m.id, name: m.name, price: m.price, cat: m.cat, photo: m.photo || '' });
+                return;
+            }
+            present[m.invId] = 1;
+            var o = snapItems[m.invId];
+            if (o && (o.name !== m.name || Number(o.price) !== Number(m.price) || o.cat !== m.cat)) {
+                post({ type: 'POS_UPDATE_ITEM', invId: m.invId, name: m.name, price: m.price, cat: m.cat, photo: m.photo || '' });
+            }
+        });
+        Object.keys(snapItems).forEach(function(id){ if (!present[id]) post({ type: 'POS_DELETE_ITEM', invId: id }); });
+        cats.forEach(function(c){
+            presentCats[c.n] = 1;
+            if (!c.inv && !c._sent) { c._sent = true; post({ type: 'POS_ADD_CAT', name: c.n }); }
+        });
+        Object.keys(snapCats).forEach(function(n){ if (!presentCats[n]) post({ type: 'POS_DELETE_CAT', name: n }); });
+        snap();
+    };
+    function applyLogo(logo){
+        try {
+            if (logo) {
+                try { localStorage.setItem('savedPhotoUrl', logo); localStorage.setItem('logoFromFb', '1'); } catch(e){}
+                if (typeof displayLogo === 'function') displayLogo(logo);
+            } else if (localStorage.getItem('logoFromFb') === '1') {
+                localStorage.removeItem('savedPhotoUrl'); localStorage.removeItem('logoFromFb');
+                var el = document.getElementById('main-logo-container');
+                if (el) el.innerHTML = '<b>KP</b><span>HARDWARE</span>';
+                var pv = document.getElementById('logo-preview-box'); if (pv) pv.innerHTML = 'Box';
+            }
+        } catch(e){}
     }
     window.addEventListener('message', function(e){
         if (e.source !== window.parent) return;
         var d = e.data;
-        if (d && d.type === 'INV_SYNC') applySync(d);
+        if (!d) return;
+        if (d.type === 'INV_SYNC') applySync(d);
+        if (d.type === 'LOGO_SYNC') applyLogo(d.logo || null);
+        if (d.type === 'POS_LINK') {
+            var m = menu.find(function(x){ return x.id === d.localId; });
+            if (m) { m.invId = d.invId; persist(); snap(); }
+        }
     });
     window.parent.postMessage({ type: 'POS_READY' }, '*');
 })();
