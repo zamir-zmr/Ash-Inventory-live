@@ -1315,9 +1315,8 @@ body { font-family: Helvetica, Arial, sans-serif; color:#000; display:flex; just
 <div class="receipt">
 ${logoHtml}
 <div class="shopname">KP HARDWARE</div>
-<div class="addr">Africa
-Tanzania-Mwanza</div>
-<div class="phone">255764490152</div>
+<div class="addr">Africa</div>
+<div class="phone">123456789</div>
 <div class="hall">Take Away Hall</div>
 <div class="billrow">${billLine}</div>
 <div class="row"><span>Date : ${dateStr}</span><span>Time : ${timeStr}</span></div>
@@ -4311,7 +4310,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
 <script>
 (async function() {
   try {
-    const response = await fetch('/mnt/data/pos_system.json');
+    const response = await fetch(new URL('pos_system.json', document.currentScript ? document.currentScript.src : window.location.href));
     if (!response.ok) throw new Error('Unable to load /mnt/data/pos_system.json');
     const data = await response.json();
     const strings = data.strings || {};
