@@ -710,8 +710,8 @@ width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
 // Complete Save Function (LocalStorage & Refresh)
 function saveAll() {
     try {
-        localStorage.setItem('ASH_BAKES_CATS', JSON.stringify(cats));
-        localStorage.setItem('ASH_BAKES_MENU', JSON.stringify(menu));
+        localStorage.setItem('KP_HARDWARE_CATS', JSON.stringify(cats));
+        localStorage.setItem('KP_HARDWARE_MENU', JSON.stringify(menu));
         
         // Agar aap Firebase use kar rahe hain, toh uski save logic bhi chalegi
         if (typeof saveToFirebase === 'function') {
@@ -729,8 +729,8 @@ function saveAll() {
 // App launch par Lifetime Saved Data Load karega
 window.addEventListener('DOMContentLoaded', () => {
     try {
-        let savedCats = localStorage.getItem('ASH_BAKES_CATS');
-        let savedMenu = localStorage.getItem('ASH_BAKES_MENU');
+        let savedCats = localStorage.getItem('KP_HARDWARE_CATS');
+        let savedMenu = localStorage.getItem('KP_HARDWARE_MENU');
 
         if (savedCats) {
             try { cats = JSON.parse(savedCats); } catch(e){}
