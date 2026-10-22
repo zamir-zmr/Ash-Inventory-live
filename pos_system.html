@@ -1440,6 +1440,7 @@ ${dlvHtml}
 
    
   async function executePrint() {
+    for (const _ci of cart) { if (!stockAllows(_ci, parseFloat(_ci.qty) || 0)) return; }
     const now = new Date(); 
     const dateStr = now.toLocaleDateString('en-GB'); 
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); 
@@ -1761,9 +1762,51 @@ function closeError() {
 
 
     
+
+// ===== Zero Stock Billing control =====
+function isZeroStockBlocked(){ try { return localStorage.getItem('asb_zero_stock_block') === '1'; } catch(e){ return false; } }
+function syncZeroStockToggleUI(){
+    const on = isZeroStockBlocked();
+    const cb = document.getElementById('zeroStockToggle'); if (cb) cb.checked = on;
+    const tr = document.getElementById('zeroStockTrack'); if (tr) tr.style.background = on ? '#dc2626' : '#cbd5e1';
+    const kn = document.getElementById('zeroStockKnob'); if (kn) kn.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
+    const h = document.getElementById('zeroStockHint'); if (h) h.innerText = on ? 'ON: billing blocked when stock is zero' : 'OFF: billing allowed at zero stock';
+}
+function toggleZeroStockBlock(cb){
+    try { localStorage.setItem('asb_zero_stock_block', cb.checked ? '1' : '0'); } catch(e){}
+    syncZeroStockToggleUI();
+}
+function pendingQtyFor(itemId){
+    // stock already deducted for a pending (unprinted) bill of the current ticket
+    try {
+        const pb = (typeof getPendingBillForTicket === 'function') ? getPendingBillForTicket(currentTicket) : null;
+        if (!pb) return 0;
+        return (pb.items || []).filter(i => i.id === itemId).reduce((a, b) => a + (parseFloat(b.qty) || 0), 0);
+    } catch(e){ return 0; }
+}
+function availableStockFor(item){
+    const m = (menu || []).find(x => x.id === item.id) || item;
+    if (m.stock === undefined || m.stock === null || m.stock === '') return Infinity;
+    return (parseFloat(m.stock) || 0) + pendingQtyFor(item.id);
+}
+function zeroStockAlert(item, avail){
+    const name = item && item.name ? item.name : 'This item';
+    const msg = avail <= 0
+        ? `"${name}" is out of stock (0 available).\n\nBilling is not allowed at zero stock. Please add stock from Inventory, or switch off "Zero Stock Billing" in Manage Items.`
+        : `Only ${avail} of "${name}" available in stock.\n\nThe requested quantity exceeds the available stock. Please reduce the quantity or add stock from Inventory.`;
+    if (typeof showAppAlert === 'function') showAppAlert('⛔ Insufficient Stock', msg); else alert(msg);
+}
+function stockAllows(item, wantedQty){
+    if (!isZeroStockBlocked()) return true;
+    const avail = availableStockFor(item);
+    if (wantedQty > avail) { zeroStockAlert(item, Math.max(0, avail)); return false; }
+    return true;
+}
+
 // 1. Add to Cart Function (Decimal Support ke liye)
 function addToCart(item) {
     let ex = cart.find(x => x.id === item.id);
+    if (!stockAllows(item, (ex ? parseFloat(ex.qty) : 0) + 1)) return;
     if(ex) {
         ex.qty = parseFloat(ex.qty) + 1; // Ensure numeric addition
     } else {
@@ -1776,6 +1819,11 @@ function addToCart(item) {
 function manualQty(idx, val) {
     let newQty = parseFloat(val);
     if (!isNaN(newQty) && newQty >= 0) {
+        if (!stockAllows(cart[idx], newQty)) {
+            const av = Math.max(0, availableStockFor(cart[idx]));
+            if (av <= 0) cart.splice(idx, 1); else cart[idx].qty = av;
+            updateCartUI(true); return;
+        }
         cart[idx].qty = newQty; // Manual value set karein (e.g. 1.5)
         updateCartUI(false); // UI update karein par list ko rebuild na karein (focus bachane ke liye)
     }
@@ -1837,7 +1885,7 @@ function updateCartUI(rebuildList = true) {
     persistTicketCart();
 }
 
-    function changeQty(i, d) { cart[i].qty += d; if (cart[i].qty < 1) cart.splice(i, 1); updateCartUI(); }
+    function changeQty(i, d) { if (d > 0 && !stockAllows(cart[i], parseFloat(cart[i].qty) + d)) return; cart[i].qty += d; if (cart[i].qty < 1) cart.splice(i, 1); updateCartUI(); }
     let cartPanelOpen = false;
     function toggleCart(open) { cartPanelOpen = !!open; const cp = document.getElementById('cart-panel'); if(open) cp.classList.add('open'); else cp.classList.remove('open'); }
     function closeDup() { document.getElementById('dupM').style.display = 'none'; }
@@ -1892,6 +1940,7 @@ function updateCartUI(rebuildList = true) {
     function showItemManage() {
         document.getElementById('itemManagePage').style.display = 'flex';
         document.getElementById('homeQtyToggle').checked = localStorage.getItem('asb_show_home_qty') === '1';
+        syncZeroStockToggleUI();
         document.getElementById('itemManageSearch').value = '';
         renderItemManageList();
         pushSubPageState('itemManage');
@@ -3711,6 +3760,17 @@ function deleteBill(billNo, dateKey, displayLabel){
                 <span style="position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
             </label>
         </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:10px;">
+            <div style="min-width:0;">
+                <div style="font-weight:700; font-size:13px; color:#1e293b;">⛔ Zero Stock Billing</div>
+                <div id="zeroStockHint" style="font-size:11px; color:#64748b; margin-top:2px;">OFF: billing allowed at zero stock</div>
+            </div>
+            <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
+                <input type="checkbox" id="zeroStockToggle" onchange="toggleZeroStockBlock(this)" style="opacity:0; width:0; height:0;">
+                <span id="zeroStockTrack" style="position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:24px; transition:0.2s;"></span>
+                <span id="zeroStockKnob" style="position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
+            </label>
+        </div>
         <div style="position:relative; margin-bottom:10px;">
             <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
             <input type="text" id="itemManageSearch" placeholder="Search item to manage quantity..." oninput="renderItemManageList()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
@@ -4315,7 +4375,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password'];
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false;
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -4345,6 +4405,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 var tp = document.getElementById('ticketPage');
                 if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
             }
+            if (changed.indexOf('asb_zero_stock_block') !== -1 && typeof syncZeroStockToggleUI === 'function') syncZeroStockToggleUI();
             if (changed.indexOf('asb_sales_logs') !== -1 && typeof refreshReports === 'function') refreshReports(true);
             if (changed.some(function(k){ return /stock_add_log|waste_log/.test(k); }) && typeof renderInvHistory === 'function') {
                 var ih = document.getElementById('invHistoryList');
