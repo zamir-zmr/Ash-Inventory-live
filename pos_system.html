@@ -347,15 +347,19 @@
                 <span id="sub-total-disp" style="color: #1e293b; font-weight: 600;">0.000</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
-                <span>Discount (%)</span>
-                <input type="number" id="disc-val" oninput="updateCartUI()" value="0" style="width: 50px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;">
+                <span>Discount (OMR)</span>
+                <input type="number" id="disc-val" oninput="updateCartUI()" value="0" min="0" step="0.001" style="width: 80px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;">
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
                 <span>Delivery (OMR)</span>
                 <input type="number" id="deliv-val" oninput="updateCartUI()" step="0.1" value="0" style="width: 60px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;">
             </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
+                <span>VAT (%)</span>
+                <input type="number" id="vat-perc" oninput="updateCartUI()" value="0" min="0" step="0.1" style="width: 80px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;">
+            </div>
             <div style="display: flex; justify-content: space-between; font-size: 14px; color: #64748b;">
-                <span>VAT (5%)</span>
+                <span>VAT Amount</span>
                 <span id="vat-total" style="color: #1e293b; font-weight: 600;">0.000</span>
             </div>
         </div>
@@ -1192,6 +1196,7 @@ function processPastedJson() {
             items: JSON.parse(JSON.stringify(cart)),
             phone: (document.getElementById('cust-phone') && document.getElementById('cust-phone').value) || '',
             disc: parseFloat(document.getElementById('disc-val').value) || 0,
+            vat: parseFloat(document.getElementById('vat-perc').value) || 0,
             deliv: parseFloat(document.getElementById('deliv-val').value) || 0
         };
         localStorage.setItem('asb_ticket_carts', JSON.stringify(all));
@@ -1248,12 +1253,15 @@ function processPastedJson() {
         if (pendingBill) {
             cart = JSON.parse(JSON.stringify(pendingBill.items || []));
             if (phoneEl) phoneEl.value = pendingBill.customerPhone || '';
-            if (document.getElementById('disc-val')) document.getElementById('disc-val').value = parseFloat(pendingBill.discountPerc) || 0;
+            (function(){ const pp = billPartsFromRecord(pendingBill);
+                if (document.getElementById('disc-val')) document.getElementById('disc-val').value = pp.disc || 0;
+                if (document.getElementById('vat-perc')) document.getElementById('vat-perc').value = pp.vatPerc || 0; })();
             if (document.getElementById('deliv-val')) document.getElementById('deliv-val').value = parseFloat(pendingBill.deliveryCharges) || 0;
         } else {
             cart = saved ? JSON.parse(JSON.stringify(saved.items || [])) : [];
             if (phoneEl) phoneEl.value = saved ? (saved.phone || '') : '';
             if (document.getElementById('disc-val')) document.getElementById('disc-val').value = saved ? (saved.disc || 0) : 0;
+            if (document.getElementById('vat-perc')) document.getElementById('vat-perc').value = saved ? (saved.vat || 0) : 0;
             if (document.getElementById('deliv-val')) document.getElementById('deliv-val').value = saved ? (saved.deliv || 0) : 0;
         }
         document.getElementById('ticketBadge').innerText = '🎫 #' + num;
@@ -1348,17 +1356,17 @@ function processPastedJson() {
     function escReceiptHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     function buildReceiptHTML(data) {
-        const { logo, billLine, dateStr, timeStr, shiftText, custPhone, items, discPerc, discAmt, vat, delivery, grand, itemsCount, totalQty } = data;
+        const { logo, billLine, dateStr, timeStr, shiftText, custPhone, items, discAmt, vatPerc, vat, delivery, grand, itemsCount, totalQty } = data;
 
         let itemsHtml = items.map(it => `
             <div class="item-row">
                 <div class="col-item">${escReceiptHtml(it.name)}</div>
-                <div class="col-qty">${it.qty}</div>
+                <div class="col-qty">${it.qty}${it.unit ? ' ' + escReceiptHtml(it.unit) : ''}</div>
                 <div class="col-price">${Number(it.price).toFixed(3)}</div>
                 <div class="col-amount">${(Number(it.price) * Number(it.qty)).toFixed(3)}</div>
             </div>`).join('');
 
-        let discHtml = discAmt > 0 ? `<div class="discount-row"><span>Discount (${discPerc}%)</span><span>-${discAmt.toFixed(3)}</span></div>` : '';
+        let discHtml = discAmt > 0 ? `<div class="discount-row"><span>Discount</span><span>-${discAmt.toFixed(3)}</span></div>` : '';
         let dlvHtml = delivery > 0 ? `<div class="delivery-row"><span>Delivery Charges</span><span>${delivery.toFixed(3)}</span></div>` : '';
 
       let custHtml = custPhone ? `<div class="row"><span style="font-size: 15px;">📞 ${escReceiptHtml(custPhone)}</span></div>` : '';
@@ -1385,7 +1393,7 @@ body { font-family: Helvetica, Arial, sans-serif; color:#000; display:flex; just
 .tblhead { display:flex; font-weight:700; font-size:8pt; }
 .item-row { display:flex; font-size:8pt; margin:1mm 0; align-items:flex-start; }
 .col-item { flex:1 1 auto; padding-right:1mm; word-wrap:break-word; }
-.col-qty { width:9mm; text-align:right; }
+.col-qty { width:17mm; text-align:right; }
 .col-price { width:14mm; text-align:right; }
 .col-amount { width:16mm; text-align:right; }
 .discount-row, .delivery-row { display:flex; justify-content:space-between; font-size:9pt; margin:1mm 0; }
@@ -1418,7 +1426,7 @@ ${custHtml}
 ${itemsHtml}
 <div class="dashed"></div>
 ${discHtml}
-<div class="vat-row"><span>VAT Amt (5%)</span><span>${vat.toFixed(3)}</span></div>
+${vat > 0 ? `<div class="vat-row"><span>VAT Amt (${Number(vatPerc)}%)</span><span>${vat.toFixed(3)}</span></div>` : ''}
 ${dlvHtml}
 <div class="solid"></div>
 <div class="gtotal"><span class="label">GTotal</span><span>${grand.toFixed(3)}</span></div>
@@ -1462,10 +1470,8 @@ ${dlvHtml}
     let sub = 0; let totalQty = 0;
     cart.forEach(item => { sub += item.price * item.qty; totalQty += item.qty; });
 
-    let dp = parseFloat(document.getElementById('disc-val').value) || 0, 
-        dlv = parseFloat(document.getElementById('deliv-val').value) || 0; 
-    let discAmt = sub * (dp / 100);
-    let ad = sub - discAmt, vt = sub * 0.05, g = ad + vt + dlv;
+    const _bt = calcBillTotals(sub, document.getElementById('disc-val').value, document.getElementById('vat-perc').value, document.getElementById('deliv-val').value);
+    let dlv = _bt.dlv, discAmt = _bt.disc, vt = _bt.vat, g = _bt.grand, vatPercVal = _bt.vatPerc;
 
     const billLine = "Bill no: " + billCount + (currentTicket ? "   Ticket no: " + currentTicket : "");
 
@@ -1476,9 +1482,9 @@ ${dlvHtml}
         timeStr: timeStr,
         shiftText: shift,
         custPhone: custPhoneVal,
-        items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
-        discPerc: dp,
+        items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price, unit: unitForItem(i) })),
         discAmt: discAmt,
+        vatPerc: vatPercVal,
         vat: vt,
         delivery: dlv,
         grand: g,
@@ -1818,12 +1824,9 @@ function updateCartUI(rebuildList = true) {
     });
 
     // Totals Calculation (Same as your logic)
-    let dp = parseFloat(document.getElementById('disc-val').value) || 0;
-    let dlv = parseFloat(document.getElementById('deliv-val').value) || 0;
-    
-    let ad = sub - (sub * (dp / 100));
-    let vt = sub * 0.05;
-    let g = ad + vt + dlv;
+    const _t = calcBillTotals(sub, document.getElementById('disc-val').value, document.getElementById('vat-perc').value, document.getElementById('deliv-val').value);
+    let vt = _t.vat;
+    let g = _t.grand;
 
     // UI Updates
     document.getElementById('sub-total-disp').innerText = sub.toFixed(3);
@@ -2366,39 +2369,45 @@ function updateCartUI(rebuildList = true) {
 function showReports() {
     document.getElementById('reportsPage').style.display = 'flex';
     pushSubPageState('reports');
-    
-    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    const curMonth = now.getMonth();
-    const curYear = now.getFullYear();
-
-    let dayTotal = 0, monthTotal = 0, yearTotal = 0;
-
-    sales.forEach(s => {
-        let sDate = new Date(s.date);
-        if (s.date === todayStr) dayTotal += s.amount;
-        if (sDate.getMonth() === curMonth && sDate.getFullYear() === curYear) monthTotal += s.amount;
-        if (sDate.getFullYear() === curYear) yearTotal += s.amount;
-    });
-
-    // UI में मुख्य सेल्स दिखाना
-    document.getElementById('daySale').innerText = "OMR " + dayTotal.toFixed(3);
-    document.getElementById('monthSale').innerText = "OMR " + monthTotal.toFixed(3);
-    document.getElementById('yearSale').innerText = "OMR " + yearTotal.toFixed(3);
-
-    // --- NEW: Stats Cards Logic (Professional Look) ---
-    let totalBills = sales.length;
-    let avgOrder = totalBills > 0 ? (yearTotal / totalBills) : 0;
-    
-    // इन IDs को HTML में डालना जरूरी है (जो मैंने पिछले मैसेज में दिया था)
-    if(document.getElementById('totalBillsCount')) 
-        document.getElementById('totalBillsCount').innerText = totalBills;
-    if(document.getElementById('avgOrderVal')) 
-        document.getElementById('avgOrderVal').innerText = avgOrder.toFixed(3);
-
-    renderSalesDashboard(_repCurrentFilter || 'today');
+    refreshReports(true);
 }
+
+var _repLastSig = '';
+function refreshReports(force) {
+    const rp = document.getElementById('reportsPage');
+    if (!rp || rp.style.display === 'none') return;
+    let raw = '';
+    try { raw = localStorage.getItem('asb_sales_logs') || ''; } catch(e) {}
+    const now = new Date();
+    const sig = raw.length + ':' + raw.slice(-60) + '|' + repFmtKey(now) + '|' + _repCurrentFilter;
+    if (!force && sig === _repLastSig) return;
+    _repLastSig = sig;
+
+    let sales = []; try { sales = JSON.parse(raw) || []; } catch(e) {}
+    const todayStr = repFmtKey(now);
+    const monthPrefix = todayStr.slice(0, 7), yearPrefix = todayStr.slice(0, 4);
+    let dayTotal = 0, monthTotal = 0, yearTotal = 0;
+    sales.forEach(s => {
+        const a = parseFloat(s.amount) || 0, d = String(s.date || '');
+        if (d === todayStr) dayTotal += a;
+        if (d.slice(0, 7) === monthPrefix) monthTotal += a;
+        if (d.slice(0, 4) === yearPrefix) yearTotal += a;
+    });
+    const setT = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+    setT('daySale', 'OMR ' + dayTotal.toFixed(3));
+    setT('monthSale', 'OMR ' + monthTotal.toFixed(3));
+    setT('yearSale', 'OMR ' + yearTotal.toFixed(3));
+    setT('totalBillsCount', sales.length);
+    setT('avgOrderVal', (sales.length ? yearTotal / sales.length : 0).toFixed(3));
+
+    if (_repCurrentFilter === 'manual') {
+        const s = document.getElementById('repManualStart').value, e = document.getElementById('repManualEnd').value;
+        if (s && e) renderSalesDashboardRange(new Date(s + 'T00:00:00'), new Date(e + 'T00:00:00'), 'MANUAL');
+    } else {
+        renderSalesDashboard(_repCurrentFilter || 'today');
+    }
+}
+setInterval(function(){ try { refreshReports(false); } catch(e) {} }, 1500);
 
 // ============ NEW: LIVE SALES DASHBOARD (filters + summary cards + Chart.js) ============
 let _repCurrentFilter = 'today';
@@ -2448,7 +2457,7 @@ function applyRepManualFilter(){
 }
 
 function renderSalesDashboard(filter){
-    _repCurrentFilter = filter;
+    _repCurrentFilter = filter; _repLastSig = '';
     document.querySelectorAll('.rep-filter-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector('.rep-filter-btn[data-f="' + filter + '"]');
     if (activeBtn) activeBtn.classList.add('active');
@@ -2973,7 +2982,7 @@ function openEditBillModal(billNo, dateKey, displayLabel) {
     editCartItems = JSON.parse(JSON.stringify(bill.items || []));
 
     // Discount & Delivery
-    document.getElementById('editDiscount').value = parseFloat(bill.discountPerc) || 0;
+    (function(){ const bp = billPartsFromRecord(bill); document.getElementById('editDiscount').value = bp.disc || 0; document.getElementById('editVatPerc').value = bp.vatPerc || 0; })();
     document.getElementById('editDelivery').value = parseFloat(bill.deliveryCharges) || 0;
 
     // Payment method
@@ -3052,11 +3061,8 @@ function editQtyManual(idx, val) {
 // ===== RECALCULATE TOTALS =====
 function recalcEditTotals() {
     let sub = editCartItems.reduce((a, b) => a + parseFloat(b.price) * parseFloat(b.qty), 0);
-    let dp = parseFloat(document.getElementById('editDiscount').value) || 0;
-    let dlv = parseFloat(document.getElementById('editDelivery').value) || 0;
-    let afterDisc = sub - (sub * dp / 100);
-    let vat = sub * 0.05;
-    let grand = afterDisc + vat + dlv;
+    const _et = calcBillTotals(sub, document.getElementById('editDiscount').value, document.getElementById('editVatPerc').value, document.getElementById('editDelivery').value);
+    let vat = _et.vat, grand = _et.grand;
 
     document.getElementById('editSubTotal').innerText = sub.toFixed(3);
     document.getElementById('editVat').innerText = vat.toFixed(3);
@@ -3097,9 +3103,9 @@ function saveEditedBill() {
 
     // Grand total recalculate
     let sub = editCartItems.reduce((a, b) => a + parseFloat(b.price) * parseFloat(b.qty), 0);
-    let afterDisc = sub - (sub * discount / 100);
-    let vat = sub * 0.05;
-    let grand = afterDisc + vat + delivery;
+    const _st = calcBillTotals(sub, discount, document.getElementById('editVatPerc').value, delivery);
+    discount = _st.disc;
+    let vat = _st.vat, grand = _st.grand;
 
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
@@ -3107,7 +3113,9 @@ function saveEditedBill() {
         adjustStockForItems(sales[idx].items, +1); // purani items ka stock wapas
         sales[idx].items = JSON.parse(JSON.stringify(editCartItems));
         sales[idx].amount = parseFloat(grand.toFixed(3));
-        sales[idx].discountPerc = discount;
+        sales[idx].discountAmt = discount;
+        sales[idx].vatPerc = _st.vatPerc;
+        delete sales[idx].discountPerc;
         sales[idx].deliveryCharges = delivery;
         sales[idx].method = method;
         sales[idx].customerPhone = custPhone;
@@ -3161,11 +3169,8 @@ function reprintBill(billNo, dateKey) {
     });
 
     // CALCULATIONS (DESIGN MATCH)
-    let dP = parseFloat(b.discountPerc) || 0;
-    let dAmt = subTotal * (dP / 100);
-    let afterDisc = subTotal - dAmt;
-    let vAmt = afterDisc * 0.05; 
-    let dlv = parseFloat(b.deliveryCharges) || 0;
+    const _rp = billPartsFromRecord(b);
+    let dAmt = _rp.disc, vAmt = _rp.vat, dlv = _rp.dlv;
 
     const billLine = "Bill no: " + b.billNo + (b.ticketNo ? "   Ticket no: " + b.ticketNo : "");
 
@@ -3176,9 +3181,9 @@ function reprintBill(billNo, dateKey) {
         timeStr: b.time,
         shiftText: currentShift,
         custPhone: custPhoneVal,
-        items: b.items.map(i => ({ name: i.name, qty: parseFloat(i.qty) || 0, price: parseFloat(i.price) || 0 })),
-        discPerc: dP,
+        items: b.items.map(i => ({ name: i.name, qty: parseFloat(i.qty) || 0, price: parseFloat(i.price) || 0, unit: unitForItem(i) })),
         discAmt: dAmt,
+        vatPerc: _rp.vatPerc,
         vat: vAmt,
         delivery: dlv,
         grand: parseFloat(b.amount),
@@ -3323,12 +3328,36 @@ function adjustStockForItems(items, sign) {
     if (changed) saveAll();
 }
 
+
+// ===== Bill math helpers (discount in amount, VAT % input) =====
+function calcBillTotals(sub, disc, vatPerc, dlv){
+    sub = parseFloat(sub) || 0; disc = parseFloat(disc) || 0; vatPerc = parseFloat(vatPerc) || 0; dlv = parseFloat(dlv) || 0;
+    if (disc < 0) disc = 0; if (disc > sub) disc = sub;
+    const afterDisc = sub - disc;
+    const vat = afterDisc * (vatPerc / 100);
+    return { sub: sub, disc: disc, vatPerc: vatPerc, vat: vat, dlv: dlv, afterDisc: afterDisc, grand: afterDisc + vat + dlv };
+}
+function billPartsFromRecord(b){
+    let sub = 0;
+    (b.items || []).forEach(i => { sub += (parseFloat(i.qty) || 0) * (parseFloat(i.price) || 0); });
+    let disc, vp;
+    if (b.discountAmt !== undefined) { disc = parseFloat(b.discountAmt) || 0; vp = parseFloat(b.vatPerc) || 0; }
+    else { disc = sub * ((parseFloat(b.discountPerc) || 0) / 100); vp = 5; }   // older bills: % discount, 5% VAT
+    return calcBillTotals(sub, disc, vp, b.deliveryCharges);
+}
+function unitForItem(it){
+    if (it && it.unit) return it.unit;
+    try { const m = (menu || []).find(x => x.name === it.name); if (m && m.unit) return m.unit; } catch(e){}
+    return '';
+}
+
 function logSale(total, bNo) {
     let sales = _ls('asb_sales_logs', []);
     const now = new Date();
 
     // Input boxes se discount aur delivery ki value uthayein
     let currentDiscount = parseFloat(document.getElementById('disc-val').value) || 0;
+    let currentVatPerc = parseFloat(document.getElementById('vat-perc').value) || 0;
     let currentDelivery = parseFloat(document.getElementById('deliv-val').value) || 0;
 
     const custPhoneForLog = (document.getElementById('cust-phone') && document.getElementById('cust-phone').value.trim()) || '';
@@ -3341,7 +3370,8 @@ function logSale(total, bNo) {
         method: '', // payment method ab Bill Details se assign hoga
         items: JSON.parse(JSON.stringify(cart)),
         // YEH DO LINES ADD KI HAIN DATA SAVE KARNE KE LIYE
-        discountPerc: currentDiscount,
+        discountAmt: currentDiscount,
+        vatPerc: currentVatPerc,
         deliveryCharges: currentDelivery,
         ticketNo: currentTicket || '',
         customerPhone: custPhoneForLog
@@ -3920,8 +3950,8 @@ function deleteBill(billNo, dateKey, displayLabel){
 
         <!-- Discount -->
         <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
-            <span>Discount (%)</span>
-            <input type="number" id="editDiscount" value="0" min="0" max="100"
+            <span>Discount (OMR)</span>
+            <input type="number" id="editDiscount" value="0" min="0" step="0.001"
                    oninput="recalcEditTotals()"
                    style="width:60px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;">
         </div>
@@ -3935,8 +3965,13 @@ function deleteBill(billNo, dateKey, displayLabel){
         </div>
 
         <!-- VAT -->
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
+            <span>VAT (%)</span>
+            <input type="number" id="editVatPerc" value="0" min="0" step="0.1" oninput="recalcEditTotals()"
+                   style="width:70px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;">
+        </div>
         <div style="display:flex; justify-content:space-between; font-size:14px; color:#64748b; margin-bottom:12px;">
-            <span>VAT (5%)</span>
+            <span>VAT Amount</span>
             <span id="editVat" style="color:#1e293b; font-weight:600;">0.000</span>
         </div>
 
@@ -4224,13 +4259,14 @@ input[type="checkbox"] { accent-color: #0d9488; }
             var m = menu.find(function(x){ return x.invId === id; });
             if (!m) m = menu.find(function(x){ return x.invId == null && String(x.name).toLowerCase() === String(s.name).toLowerCase(); });
             if (!m) {
-                m = { id: Date.now() + (n++), name: String(s.name), price: parseFloat(s.price) || 0, cat: cname, photo: s.img || null, stock: qty };
+                m = { id: Date.now() + (n++), name: String(s.name), price: parseFloat(s.price) || 0, cat: cname, photo: s.img || null, stock: qty, unit: s.unit || '' };
                 menu.push(m);
             }
             m.invId = id;
             m.name = String(s.name);
             m.price = parseFloat(s.price) || 0;
             m.cat = cname;
+            m.unit = s.unit || m.unit || '';
             m.stock = qty;
             if (!m.photo && s.img) m.photo = s.img;
             last[id] = qty;
@@ -4309,10 +4345,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 var tp = document.getElementById('ticketPage');
                 if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
             }
-            if (changed.indexOf('asb_sales_logs') !== -1) {
-                var dp = document.getElementById('dashPage');
-                if (dp && dp.offsetParent !== null && typeof renderSalesDashboard === 'function') renderSalesDashboard(typeof _repCurrentFilter !== 'undefined' ? _repCurrentFilter : 'today');
-            }
+            if (changed.indexOf('asb_sales_logs') !== -1 && typeof refreshReports === 'function') refreshReports(true);
             if (changed.some(function(k){ return /stock_add_log|waste_log/.test(k); }) && typeof renderInvHistory === 'function') {
                 var ih = document.getElementById('invHistoryList');
                 if (ih && ih.offsetParent !== null && window._invTab) renderInvHistory(window._invTab);
