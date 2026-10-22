@@ -4287,7 +4287,8 @@ input[type="checkbox"] { accent-color: #0d9488; }
 /* ===== POS <-> Inventory stock sync (runs only when opened inside index.html) ===== */
 (function(){
     if (window.parent === window) return;
-    var last = {};
+    var last = {}, lastLocal = {}, pend = {};
+    try { menu.forEach(function(m){ if (m.invId != null && m.stock !== null && m.stock !== undefined) last[m.invId] = Number(m.stock); }); } catch(e){}
     function persist(){
         try { localStorage.setItem('asb_m', JSON.stringify(menu)); localStorage.setItem('asb_c', JSON.stringify(cats)); return true; }
         catch(e){
@@ -4299,7 +4300,15 @@ input[type="checkbox"] { accent-color: #0d9488; }
     window._invBridgeOut = function(){
         var deltas = [], reason = window._invReason || 'manual', hist = window._invHist || {};
         menu.forEach(function(m){
-            if (m.invId == null || m.stock === null || m.stock === undefined) return;
+            if (m.invId == null) {
+                if (m.stock === null || m.stock === undefined) { delete lastLocal[m.id]; return; }
+                var c0 = Number(m.stock), p0 = lastLocal[m.id];
+                if (p0 === undefined) p0 = 0;
+                if (c0 !== p0) { (pend[m.id] = pend[m.id] || []).push({ delta: c0 - p0, reason: reason }); }
+                lastLocal[m.id] = c0;
+                return;
+            }
+            if (m.stock === null || m.stock === undefined) return;
             var cur = Number(m.stock), prev = last[m.invId];
             var hd = hist[m.invId];
             if (prev !== undefined && (cur !== prev || (hd !== undefined && hd !== 0))) {
@@ -4477,7 +4486,21 @@ input[type="checkbox"] { accent-color: #0d9488; }
         if (d.type === 'POS_SYNC_ALL') applyRemoteAll(d.data);
         if (d.type === 'POS_LINK') {
             var m = menu.find(function(x){ return x.id === d.localId; });
-            if (m) { m.invId = d.invId; persist(); snap(); }
+            if (m) {
+                m.invId = d.invId;
+                var q = pend[m.id]; delete pend[m.id]; delete lastLocal[m.id];
+                if (q && q.length) {
+                    var tot = 0;
+                    var ds = q.map(function(x){ tot += x.delta; return { id: d.invId, delta: x.delta, reason: x.reason }; });
+                    last[d.invId] = (last[d.invId] !== undefined ? last[d.invId] : 0);
+                    window.parent.postMessage({ type: 'POS_STOCK_DELTA', deltas: ds }, '*');
+                    last[d.invId] = last[d.invId] + tot;
+                } else if (m.stock !== null && m.stock !== undefined && last[d.invId] === undefined) {
+                    last[d.invId] = 0;
+                    if (Number(m.stock) !== 0) { window.parent.postMessage({ type: 'POS_STOCK_DELTA', deltas: [{ id: d.invId, delta: Number(m.stock), reason: 'add' }] }, '*'); last[d.invId] = Number(m.stock); }
+                }
+                persist(); snap();
+            }
         }
     });
     window.parent.postMessage({ type: 'POS_READY' }, '*');
