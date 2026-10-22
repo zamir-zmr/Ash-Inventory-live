@@ -3529,6 +3529,53 @@ function showPurchaseOptions(pId) {
 // implementation further down — which also fixes stock, inventory_history,
 // and cascades opening balances — is kept as the single source of truth.)
 
+// Purchase delete => us item ke us din ke IN / OUT / WASTE teeno reset, stock re-balance,
+// related logs (purchases/transfers/wastes, same item + same day) hata do, phir opening cascade.
+async function purgeItemDayLedger(itemId, timeStr, purchaseId) {
+    if (!itemId || !timeStr) {
+        if (purchaseId) await db.ref(`purchases/${purchaseId}`).remove();
+        return;
+    }
+    const dp = timeStr.split(' ')[0].split('/');
+    const day = parseInt(dp[0]);
+    const monthKey = `${dp[2]}-${String(dp[1]).padStart(2, '0')}`;
+    const sameDay = (t) => {
+        if (!t) return false;
+        const p = String(t).split(' ')[0].split('/');
+        return parseInt(p[0]) === day && `${p[2]}-${String(p[1]).padStart(2, '0')}` === monthKey;
+    };
+
+    // 1. Ledger row: in/out/waste -> 0 (opening/manualQty untouched)
+    const hRef = db.ref(`inventory_history/${itemId}/${monthKey}/${day}`);
+    const hSnap = await hRef.once("value");
+    let delta = 0;
+    if (hSnap.exists()) {
+        const h = hSnap.val();
+        const i = parseFloat(h.inward) || 0, o = parseFloat(h.outward) || 0, w = parseFloat(h.waste) || 0;
+        delta = o + w - i; // stock change needed to match zeroed ledger
+        await hRef.update({ inward: 0, outward: 0, waste: 0 });
+    }
+
+    // 2. Stock re-balance
+    const sSnap = await db.ref(`stocks/${itemId}`).once("value");
+    if (sSnap.exists()) {
+        const cur = parseFloat(sSnap.val().qty) || 0;
+        await db.ref(`stocks/${itemId}`).update({ qty: Math.max(0, cur + delta).toFixed(2) });
+    }
+
+    // 3. Same item + same day logs remove (taaki baad me double adjust na ho)
+    for (const node of ['purchases', 'transfers', 'wastes']) {
+        const snap = await db.ref(node).orderByChild('itemId').equalTo(itemId).once("value");
+        const ups = {};
+        snap.forEach(c => { if (c.key === purchaseId || sameDay((c.val() || {}).time)) ups[c.key] = null; });
+        if (Object.keys(ups).length) await db.ref(node).update(ups);
+    }
+    if (purchaseId) await db.ref(`purchases/${purchaseId}`).remove();
+
+    // 4. Next days ka opening cascade
+    await syncDailyOpeningStock(itemId, monthKey, day);
+}
+
 // Delete purchase — IN column bhi update hoga — same as outward delete
 async function askDeletePurchase(pId, refPath) {
     if (refPath !== 'purchases') return;
@@ -3536,7 +3583,7 @@ async function askDeletePurchase(pId, refPath) {
     const panelTarget = document.getElementById('purchasedPanel');
     const result = await Swal.fire({
         title: 'Delete Purchase?',
-        text: "Stock minus hoga aur IN column zero hoga!",
+        text: "Us item ke us din ke IN / OUT / WASTE reset ho jayenge aur stock balance hoga!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#e11d48',
@@ -3546,45 +3593,14 @@ async function askDeletePurchase(pId, refPath) {
 
     if (result.isConfirmed) {
         try {
-            // STEP 1: Purchase record uthao
             const snap = await db.ref(`purchases/${pId}`).once("value");
             const pData = snap.val();
             if(!pData) return;
-
-            const qtyVal = parseFloat(pData.qty) || 0;
-            const itemId = pData.itemId;
-            const pTime = pData.time;
-
-            // STEP 2: inventory_history IN column update karo
-            if (pTime && itemId) {
-                const dateParts = pTime.split(' ')[0].split('/');
-                const day = parseInt(dateParts[0]);
-                const monthKey = `${dateParts[2]}-${dateParts[1]}`;
-
-                const historyRef = db.ref(`inventory_history/${itemId}/${monthKey}/${day}`);
-                await historyRef.transaction((currentData) => {
-                    if (currentData) {
-                        let oldIn = parseFloat(currentData.inward || 0);
-                        currentData.inward = Math.max(0, oldIn - qtyVal);
-                    }
-                    return currentData;
-                });
-            }
-
-            // STEP 3: Home page stock minus karo
-            const sSnap = await db.ref(`stocks/${itemId}`).once("value");
-            if (sSnap.exists()) {
-                const currentStock = parseFloat(sSnap.val().qty) || 0;
-                const finalStock = Math.max(0, currentStock - qtyVal).toFixed(2);
-                await db.ref(`stocks/${itemId}`).update({ qty: finalStock });
-            }
-
-            // STEP 4: Purchase record delete karo
-            await db.ref(`purchases/${pId}`).remove();
+            await purgeItemDayLedger(pData.itemId, pData.time, pId);
 
             Swal.fire({ 
                 title: "Deleted!", 
-                text: "Stock aur IN column dono update ho gaye! ✅", 
+                text: "Stock aur IN / OUT / WASTE sab sync ho gaye! ✅", 
                 icon: "success", 
                 target: panelTarget 
             });
@@ -5472,31 +5488,7 @@ async function deletePurchase(id) {
                     deleteMonth = `${year}-${monthStr}`;
                 }
 
-                // STEP 2: Reverse stock quantity
-                if (itemId) {
-                    const stockSnap = await db.ref(`stocks/${itemId}`).once("value");
-                    const stockQty = parseFloat((stockSnap.val() || {}).qty) || 0;
-                    const reversedQty = Math.max(0, stockQty - qty).toFixed(2);
-                    await db.ref(`stocks/${itemId}`).update({ qty: reversedQty });
-                    console.log(`Delete: ${itemId} qty ${stockQty} - ${qty} = ${reversedQty}`);
-                }
-
-                // STEP 3: Delete inventory_history inward entry and cascade
-                if (pTime && deleteDay && deleteMonth && itemId) {
-                    const historyRef = db.ref(`inventory_history/${itemId}/${deleteMonth}/${deleteDay}`);
-                    await historyRef.transaction((current) => {
-                        if (current) {
-                            current.inward = 0;
-                        }
-                        return current;
-                    });
-                    
-                    // CASCADE: Update all subsequent days
-                    await cascadeUpdateOpeningBalances(itemId, deleteDay, deleteMonth, -qty);
-                }
-
-                // STEP 4: Delete purchase record
-                await db.ref(`purchases/${id}`).remove();
+                await purgeItemDayLedger(itemId, pTime, id);
 
                 showToast("Deleted! ✓");
                 loadPurchaseHistory();
