@@ -271,6 +271,37 @@
             .ticket-grid { grid-template-columns: repeat(8, 1fr); }
         }
     </style>
+
+<style id="desktop-fullwidth-fix">
+/* === Desktop / PWA full-width fix (mobile view unchanged) === */
+html { width: 100%; }
+body { width: 100%; }
+@media (min-width: 900px) {
+  .mw { max-width: none; }
+  .ticket-grid-wrap { max-width: none; padding: 24px 32px; }
+  .ticket-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 14px; }
+  .ticket-header { padding: 16px 32px; }
+  .dash-container { max-width: none; }
+  .report-content { max-width: none; padding: 22px 32px; }
+  .cart-bar { left: 0; right: 0; width: 100%; max-width: none; }
+}
+@media (min-width: 1500px) {
+  .pg { grid-template-columns: repeat(6, 1fr); }
+}
+</style>
+
+<script>
+/* Desktop PWA: window ko poori screen par fit karo (sirf installed app window me) */
+(function(){
+  try {
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: window-controls-overlay)').matches || window.navigator.standalone;
+    if (standalone && window === window.top && screen.availWidth >= 900 && (window.outerWidth < screen.availWidth - 40 || window.outerHeight < screen.availHeight - 40)) {
+      window.moveTo(0, 0);
+      window.resizeTo(screen.availWidth, screen.availHeight);
+    }
+  } catch (e) {}
+})();
+</script>
 </head>
 <body onload="initApp()">
 
