@@ -323,7 +323,8 @@ body { width: 100%; }
             <div class="logo-box">
                 <button id="hb" onclick="history.back()" style="background:#f1f5f9; border:none; padding:8px; border-radius:10px; display:none">🏠</button>
                 <div class="logo-circle" id="main-logo-container"><b>KP</b><span>HARDWARE</span></div>
-                <b id="shopNameHdr" style="font-size:20px; color:var(--primary)">KP HARDWARE</b>
+                <b id="shopNameHdr" style="color:var(--primary)">KP HARDWARE</b>
+
             </div>
             <div style="display:flex;gap:8px; align-items:center">
                 <div class="ticket-badge" id="ticketBadge" onclick="showTicketPage()">🎫 --</div>
@@ -4532,6 +4533,19 @@ input[type="checkbox"] { accent-color: #0d9488; }
 
   
 }
+
+#shopNameHdr { 
+  font-size: 16px; 
+  white-space: nowrap; 
+}
+
+@media (min-width: 900px) { 
+  #shopNameHdr { 
+    font-size: 20px; 
+  } 
+    }
+    
+    
 </style>
 
 <script>
