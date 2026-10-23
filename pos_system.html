@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -4722,6 +4723,53 @@ input[type="checkbox"] { accent-color: #0d9488; }
         }
     });
     window.parent.postMessage({ type: 'POS_READY' }, '*');
+})();
+</script>
+<script>
+/* Emoji -> Font Awesome icons (same library as Inventory: FA 6.0.0) */
+(function () {
+    var MAP = {"🗑": "trash-alt", "✅": "check-circle", "⚠": "exclamation-triangle", "↩": "undo", "➕": "plus", "📅": "calendar-alt", "✏": "pen", "⏳": "hourglass-half", "✕": "times", "🏦": "university", "💳": "credit-card", "💵": "money-bill-wave", "❌": "times-circle", "🎫": "ticket-alt", "📦": "box", "🔑": "key", "🔍": "search", "📊": "chart-bar", "📞": "phone", "📥": "file-import", "📤": "file-export", "🔒": "lock", "📜": "scroll", "🧾": "receipt", "🖼": "image", "📋": "clipboard-list", "⛔": "ban", "🔓": "unlock", "🏠": "home", "⚙": "cog", "📁": "folder-open", "📷": "camera", "🏪": "store", "🛠": "tools", "⬇": "download", "🖨": "print", "🏆": "trophy", "🖥": "desktop", "📈": "chart-line", "🔄": "sync-alt", "🕒": "clock", "➡": "arrow-right", "👁": "eye", "🛒": "shopping-cart", "🔐": "lock", "ℹ": "info-circle"};
+    var keys = Object.keys(MAP).sort(function (a, b) { return b.length - a.length; });
+    var RE = new RegExp('(' + keys.join('|') + ')\\uFE0F?', 'g');
+    var SKIP = {SCRIPT:1, STYLE:1, TEXTAREA:1, OPTION:1, TITLE:1, INPUT:1, SELECT:1, NOSCRIPT:1};
+    function skip(n) {
+        var p = n.parentNode;
+        if (!p || SKIP[p.nodeName]) return true;
+        return !!(p.closest && p.closest('.pc, .icon-opt, [data-keep-emoji]'));
+    }
+    function conv(n) {
+        var t = n.nodeValue;
+        if (!t || t.search(RE) < 0 || skip(n)) return;
+        RE.lastIndex = 0;
+        var frag = document.createDocumentFragment(), last = 0, m;
+        while ((m = RE.exec(t)) !== null) {
+            if (m.index > last) frag.appendChild(document.createTextNode(t.slice(last, m.index)));
+            var i = document.createElement('i');
+            i.className = 'fas fa-' + MAP[m[1]];
+            i.setAttribute('aria-hidden', 'true');
+            frag.appendChild(i);
+            last = m.index + m[0].length;
+        }
+        if (last < t.length) frag.appendChild(document.createTextNode(t.slice(last)));
+        n.parentNode.replaceChild(frag, n);
+    }
+    function walk(root) {
+        if (root.nodeType === 3) { conv(root); return; }
+        if (root.nodeType !== 1 || SKIP[root.nodeName]) return;
+        var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), list = [], x;
+        while ((x = w.nextNode())) list.push(x);
+        list.forEach(conv);
+    }
+    function start() {
+        walk(document.body);
+        new MutationObserver(function (muts) {
+            muts.forEach(function (m) {
+                if (m.type === 'characterData') conv(m.target);
+                else m.addedNodes.forEach(walk);
+            });
+        }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
 </script>
 </body>
