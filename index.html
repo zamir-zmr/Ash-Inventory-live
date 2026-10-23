@@ -7381,5 +7381,102 @@ async function runSalesExport() {
     });
 })();
 </script>
+<!-- COLORFUL-ICONS:START -->
+<style>
+i.ic-on{color:var(--ic)!important}
+i.ic-on.fa-spin{color:var(--ic)!important}
+</style>
+<script>
+/* Colorful icons: har Font Awesome icon ko apna rang (white-on-colored-button icons safe rehte hain) */
+(function () {
+  var P = {
+    'trash':'#ef4444','trash-alt':'#ef4444','trash-can':'#ef4444','times-circle':'#ef4444','ban':'#ef4444','times':'#f43f5e','location-dot':'#ef4444','sign-out-alt':'#ef4444','folder-minus':'#ef4444',
+    'edit':'#3b82f6','pen':'#3b82f6','list':'#3b82f6','th-large':'#8b5cf6','car':'#3b82f6','share-alt':'#3b82f6','home':'#3b82f6','desktop':'#3b82f6','arrow-right':'#3b82f6','credit-card':'#3b82f6','file-export':'#6366f1',
+    'check':'#22c55e','check-circle':'#22c55e','plus':'#22c55e','phone':'#22c55e','sign-in-alt':'#22c55e','unlock':'#22c55e','money-bill-wave':'#22c55e','file-excel':'#16a34a','cash-register':'#10b981','cart-plus':'#10b981','shopping-cart':'#f97316','download':'#10b981','chart-line':'#10b981',
+    'exclamation-triangle':'#f59e0b','hourglass-half':'#f59e0b','undo':'#f59e0b','boxes':'#f59e0b','boxes-stacked':'#f59e0b','box':'#d97706','folder-open':'#f59e0b','folder':'#f59e0b','sun':'#f59e0b','lock':'#f59e0b','scroll':'#d97706','key':'#eab308','trophy':'#eab308',
+    'gas-pump':'#f97316','tools':'#f97316','spinner':'#0ea5e9','upload':'#0ea5e9','cloud-upload-alt':'#0ea5e9','save':'#0ea5e9','book':'#0ea5e9','bars':'#0ea5e9','search':'#0ea5e9','sync-alt':'#0ea5e9','info-circle':'#0ea5e9','cog':'#0ea5e9',
+    'user':'#6366f1','user-circle':'#6366f1','user-shield':'#06b6d4','user-tag':'#14b8a6','moon':'#6366f1','chart-bar':'#6366f1','university':'#6366f1','print':'#6366f1','clipboard-list':'#6366f1',
+    'comment-dots':'#8b5cf6','database':'#8b5cf6','eye':'#8b5cf6','image':'#a855f7','camera':'#ec4899','ticket-alt':'#ec4899','store':'#ec4899','tags':'#d946ef',
+    'ruler':'#14b8a6','file-import':'#14b8a6','receipt':'#14b8a6','balance-scale':'#06b6d4','calendar-alt':'#06b6d4','clock':'#06b6d4','minus':'#64748b'
+  };
+  var FB = ['#3b82f6','#10b981','#f59e0b','#ec4899','#8b5cf6','#06b6d4','#f97316','#6366f1'];
+  var IGN = {'fa-spin':1,'fa-pulse':1,'fa-fw':1,'fa-lg':1,'fa-xs':1,'fa-sm':1,'fa-2x':1,'fa-3x':1,'fa-4x':1,'fa-5x':1,'fa-solid':1,'fa-regular':1,'fa-brands':1,'fa-rotate-90':1,'fa-flip-horizontal':1};
+  function nameOf(el) {
+    var cl = el.classList;
+    for (var i = 0; i < cl.length; i++) { var c = cl[i]; if (c.indexOf('fa-') === 0 && !IGN[c]) return c.slice(3); }
+    return null;
+  }
+  function colorOf(n) {
+    if (P[n]) return P[n];
+    var h = 0; for (var i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+    return FB[h % FB.length];
+  }
+  function rgb(s) {
+    var m = s && s.match(/rgba?\(([^)]+)\)/); if (!m) return null;
+    var p = m[1].split(/[ ,\/]+/).map(parseFloat);
+    return { r: p[0], g: p[1], b: p[2], a: p.length > 3 && !isNaN(p[3]) ? p[3] : 1 };
+  }
+  function saturatedMid(c) {
+    var mx = Math.max(c.r, c.g, c.b), mn = Math.min(c.r, c.g, c.b), l = (mx + mn) / 510;
+    if (mx === mn) return false;
+    var s = (mx - mn) / (255 * (1 - Math.abs(2 * l - 1)));
+    return s > 0.35 && l > 0.12 && l < 0.85;
+  }
+  function bgOf(el) {
+    var n = el.parentElement;
+    while (n && n.nodeType === 1) {
+      var cs = getComputedStyle(n), bi = cs.backgroundImage;
+      if (bi && bi.indexOf('gradient') > -1) return 'grad';
+      var c = rgb(cs.backgroundColor);
+      if (c && c.a > 0.25) return c;
+      n = n.parentElement;
+    }
+    return null;
+  }
+  function proc(el) {
+    var k = nameOf(el);
+    if (!k) return;
+    if (el.closest && el.closest('[data-keep-color]')) { el.classList.remove('ic-on'); return; }
+    el.classList.remove('ic-on');
+    var own = rgb(getComputedStyle(el).color);
+    var white = own && own.r > 225 && own.g > 225 && own.b > 225;
+    var bg = bgOf(el), on = true;
+    if (bg === 'grad') on = !white;
+    else if (bg && saturatedMid(bg)) on = false;
+    if (on) { el.style.setProperty('--ic', colorOf(k)); el.classList.add('ic-on'); }
+  }
+  function isFA(el) { return el.nodeName === 'I' && /(^|\s)fa[srb]?(\s|$)|fa-(solid|regular|brands)/.test(el.className || ''); }
+  var q = new Set(), raf = 0;
+  function sched(root) {
+    q.add(root);
+    if (!raf) raf = requestAnimationFrame(function () {
+      raf = 0; var roots = Array.from(q); q.clear();
+      var seen = new Set();
+      roots.forEach(function (r) {
+        if (!r.isConnected) return;
+        if (r.nodeType === 1 && isFA(r)) seen.add(r);
+        if (r.querySelectorAll) r.querySelectorAll('i').forEach(function (e) { if (isFA(e)) seen.add(e); });
+      });
+      seen.forEach(proc);
+    });
+  }
+  function strip(s) { return (s || '').replace(/\bic-on\b/g, '').replace(/\s+/g, ' ').trim(); }
+  function start() {
+    sched(document.body);
+    new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        if (m.type === 'childList') { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) sched(n); }); }
+        else if (m.type === 'attributes') {
+          if (m.attributeName === 'class' && strip(m.oldValue) === strip(m.target.getAttribute('class'))) return;
+          sched(m.target);
+        }
+      });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-theme'], attributeOldValue: true });
+    new MutationObserver(function () { sched(document.body); }).observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+  }
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();
+</script>
+<!-- COLORFUL-ICONS:END -->
 </body>
 </html>
