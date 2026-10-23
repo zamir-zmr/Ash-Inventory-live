@@ -431,9 +431,9 @@ body { width: 100%; }
 
 
     <div class="ov" id="ov" onclick="closeM()"></div>
-    <div class="modal" id="logoM">
-        <h3>Update Logo</h3>
-        <div id="logo-preview-box">Box</div>
+    <div class="modal" id="logoM" style="text-align: center;">
+    <h3 style="text-align: center;">Update Logo</h3>
+    <div id="logo-preview-box" style="margin: 0 auto;">Box</div>
         <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="previewFile()">
         <button class="btn" style="background:var(--secondary); width:100%; margin:10px 0" onclick="document.getElementById('fileInput').click()">📁 CHOOSE FROM GALLERY</button>
         <div class="flex-btn"><button class="btn" style="background:var(--a)" onclick="saveLogo()">SAVE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div>
