@@ -1217,33 +1217,38 @@ function processPastedJson() {
     }
 
     function switchTicketTab(tab) {
-        activeTicketTab = tab;
-        document.getElementById('tTab1').classList.toggle('active', tab === 1);
-        document.getElementById('tTab2').classList.toggle('active', tab === 2);
-        renderTicketGrid();
-    }
+    activeTicketTab = tab;
+    document.getElementById('tTab1').classList.toggle('active', tab === 1);
+    document.getElementById('tTab2').classList.toggle('active', tab === 2);
+    document.getElementById('tTab3').classList.toggle('active', tab === 3);
+    renderTicketGrid();
+}
+
 
     function renderTicketGrid() {
-        loadTicketState();
-        const grid = document.getElementById('ticketGrid');
-        grid.innerHTML = '';
-        const start = activeTicketTab === 1 ? 1 : 51;
-        const end = activeTicketTab === 1 ? 50 : 100;
-        for (let i = start; i <= end; i++) {
-            const cell = document.createElement('div');
-            const isSettled = ticketsSettled.includes(i);
-            cell.className = 'ticket-cell' + (ticketsUsed.includes(i) ? ' used' : (ticketsPending.includes(i) ? ' pending' : (isSettled ? ' settled' : '')));
-            cell.innerText = i;
-            if (isSettled) {
-                // Settled (Black) ticket - bill fully settled, dobara select/click nahi hone dena
-                cell.setAttribute('aria-disabled', 'true');
-                cell.title = 'Ticket #' + i + ' already settled';
-            } else {
-                cell.onclick = () => selectTicket(i);
-            }
-            grid.appendChild(cell);
+    loadTicketState();
+    const grid = document.getElementById('ticketGrid');
+    grid.innerHTML = '';
+    
+    // Tab ke hisaab se range set karna
+    const start = activeTicketTab === 1 ? 1 : (activeTicketTab === 2 ? 51 : 101);
+    const end = activeTicketTab === 1 ? 50 : (activeTicketTab === 2 ? 100 : 150);
+
+    for (let i = start; i <= end; i++) {
+        const cell = document.createElement('div');
+        const isSettled = ticketsSettled.includes(i);
+        cell.className = 'ticket-cell' + (ticketsUsed.includes(i) ? ' used' : (ticketsPending.includes(i) ? ' pending' : (isSettled ? ' settled' : '')));
+        cell.innerText = i;
+        if (isSettled) {
+            cell.setAttribute('aria-disabled', 'true');
+            cell.title = 'Ticket #' + i + ' already settled';
+        } else {
+            cell.onclick = () => selectTicket(i);
         }
+        grid.appendChild(cell);
     }
+}
+
 
     function showTicketPage() {
         renderTicketGrid();
