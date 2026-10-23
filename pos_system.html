@@ -333,8 +333,13 @@
         <button onclick="toggleCart(false)" style="border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 12px; font-size: 20px; color: #64748b; cursor: pointer;">×</button>
     </div>
 
-    <div style="padding: 0 20px 12px;">
-        <input type="tel" id="cust-phone" placeholder="📞 Customer Phone Number" style="width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; font-weight:600; outline:none;">
+    <div style="padding: 0 20px 12px; display:flex; gap:8px; align-items:stretch;">
+        <input type="tel" id="cust-phone" placeholder="📞 Customer Phone Number" style="flex:1; min-width:0; box-sizing:border-box; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; font-weight:600; outline:none;">
+    
+        <select id="bill-format" onchange="setBillFormat(this.value)" style="width:132px; flex-shrink:0; box-sizing:border-box; padding:10px 6px; border-radius:12px; border:1.5px solid #e2e8f0; background:#fff; font-weight:700; font-size:12px; color:#1e293b; outline:none;">
+            <option value="thermal">80mm Thermal</option>
+            <option value="a4">A4 Tax Invoice</option>
+        </select>
     </div>
 
     <div id="cart-list" style="flex: 1; overflow-y: auto; padding: 15px;">
@@ -1083,7 +1088,7 @@ function processPastedJson() {
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
     let currentTicket = null, ticketsUsed = [], ticketsPending = [], ticketsSettled = [], activeTicketTab = 1;
     
-    function initApp() { loadSavedLogo(); applyShopInfoUI(); 
+    function initApp() { loadSavedLogo(); applyShopInfoUI(); initBillFormat(); 
     location.hash = 'home'; render(); loadTicketState(); showTicketPage(); }
 
     function todayLocalStr() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
@@ -1400,7 +1405,166 @@ function processPastedJson() {
 
     function escReceiptHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+    /* ===== Bill format (80mm Thermal / A4 Tax Invoice) ===== */
+    function getBillFormat() {
+        const sel = document.getElementById('bill-format');
+        let v = sel ? sel.value : null;
+        if (!v) { try { v = localStorage.getItem('asb_bill_format'); } catch (e) {} }
+        return v === 'a4' ? 'a4' : 'thermal';
+    }
+    function setBillFormat(v) {
+        v = (v === 'a4') ? 'a4' : 'thermal';
+        try { localStorage.setItem('asb_bill_format', v); } catch (e) {}
+        const sel = document.getElementById('bill-format'); if (sel && sel.value !== v) sel.value = v;
+    }
+    function initBillFormat() {
+        let v = 'thermal';
+        try { v = localStorage.getItem('asb_bill_format') || 'thermal'; } catch (e) {}
+        const sel = document.getElementById('bill-format'); if (sel) sel.value = (v === 'a4') ? 'a4' : 'thermal';
+    }
+    function amountInWordsOMR(amount) {
+        const ones = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN','ELEVEN','TWELVE','THIRTEEN','FOURTEEN','FIFTEEN','SIXTEEN','SEVENTEEN','EIGHTEEN','NINETEEN'];
+        const tens = ['','','TWENTY','THIRTY','FORTY','FIFTY','SIXTY','SEVENTY','EIGHTY','NINETY'];
+        function below1000(n) {
+            let s = '';
+            if (n >= 100) { s += ones[Math.floor(n / 100)] + ' HUNDRED'; n %= 100; if (n) s += ' '; }
+            if (n >= 20) { s += tens[Math.floor(n / 10)]; if (n % 10) s += ' ' + ones[n % 10]; }
+            else if (n > 0 || s === '') { if (n > 0 || s === '') s += (n === 0 && s !== '') ? '' : ones[n]; }
+            return s;
+        }
+        function words(n) {
+            if (n === 0) return 'ZERO';
+            const units = [[1000000000, 'BILLION'], [1000000, 'MILLION'], [1000, 'THOUSAND']];
+            let s = '';
+            units.forEach(u => { if (n >= u[0]) { s += (s ? ' ' : '') + below1000(Math.floor(n / u[0])) + ' ' + u[1]; n %= u[0]; } });
+            if (n > 0) s += (s ? ' ' : '') + below1000(n);
+            return s;
+        }
+        let total = Math.round((parseFloat(amount) || 0) * 1000);
+        const rial = Math.floor(total / 1000), baisa = total % 1000;
+        return 'ONLY ' + words(rial) + (baisa ? ' & ' + String(baisa).padStart(3, '0') + '/1000' : '') + ' OMANI RIAL.';
+    }
+    function buildA4InvoiceHTML(data) {
+        const { logo, dateStr, timeStr, custPhone, items, discAmt, vatPerc, vat, delivery, grand, billNo } = data;
+        const shop = getShopInfo();
+        const e = escReceiptHtml;
+        const yr = String(dateStr || '').split('/')[2] || new Date().getFullYear();
+        const invNo = 'INV' + yr + String(billNo || 0).padStart(6, '0');
+        let sub = 0;
+        items.forEach(it => { sub += Number(it.price) * Number(it.qty); });
+        const afterDisc = sub - (discAmt || 0);
+        const ratio = sub > 0 ? afterDisc / sub : 1;
+        const vp = Number(vatPerc) || 0;
+        const rows = items.map((it, i) => {
+            const net = Number(it.price) * Number(it.qty);
+            const lineVat = net * ratio * vp / 100;
+            return `<tr>
+<td>${e(it.code || String(i + 1).padStart(3, '0'))}</td>
+<td>${e(it.name)}</td>
+<td>${e(it.unit || 'Pcs')}</td>
+<td class="n">${Number(it.qty)}</td>
+<td class="n">${Number(it.price).toFixed(3)}</td>
+<td class="n">${net.toFixed(3)}</td>
+<td class="n"><b>${vp}%</b></td>
+<td class="n"><b>${lineVat.toFixed(3)}</b></td>
+</tr>`;
+        }).join('');
+        const logoHtml = logo ? `<img class="logo" src="${logo}" onerror="this.style.display='none'">` : '';
+        const terms = shop.footer || ('The customer acknowledges that ' + shop.name + ' will not exchange or return any goods that were accepted and received in good condition, and/or goods reaching near-expiry or expired after delivery.');
+        return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+html, body { background:#fff; }
+body { font-family: Helvetica, Arial, sans-serif; color:#000; font-size:9pt; }
+.a4page { width:210mm; min-height:297mm; padding:12mm 12mm 10mm; display:flex; flex-direction:column; margin:0 auto; background:#fff; }
+.top { display:flex; justify-content:space-between; align-items:flex-start; gap:6mm; }
+.top .l { width:32%; font-size:9pt; line-height:1.45; }
+.top .l .cn { font-size:11pt; font-weight:700; margin-bottom:1mm; }
+.top .c { width:36%; text-align:center; }
+.top .r { width:32%; }
+.logo { display:block; width:28mm; height:28mm; object-fit:contain; margin:0 auto 2mm; }
+.title { font-size:14pt; font-weight:700; letter-spacing:0.3pt; }
+.meta { width:100%; border-collapse:collapse; font-size:8.5pt; }
+.meta td { padding:0.8mm 0; vertical-align:top; }
+.meta td:first-child { font-weight:700; width:34%; }
+.cust { margin-top:8mm; font-size:9pt; line-height:1.6; }
+.cust b { display:inline-block; min-width:24mm; }
+table.items { width:100%; border-collapse:collapse; margin-top:8mm; font-size:8.5pt; }
+table.items th { text-align:left; font-weight:700; border-bottom:0.4mm solid #000; padding:1.2mm 1mm; }
+table.items td { padding:1.4mm 1mm; vertical-align:top; }
+table.items .n, table.items th.n { text-align:right; }
+.grow { flex:1; }
+.bottom { display:flex; justify-content:space-between; gap:8mm; margin-top:8mm; align-items:flex-start; }
+.bottom .left { width:50%; font-size:8.5pt; line-height:1.4; }
+.bottom .left .words { margin:4mm 0 8mm; font-size:8.5pt; }
+.bottom .right { width:50%; }
+.sum { width:100%; border-collapse:collapse; font-size:8.5pt; border-top:0.3mm solid #000; }
+.sum td { padding:1mm 0; }
+.sum td:last-child { text-align:right; }
+.sum tr.tot td { border-top:0.9mm solid #000; font-weight:700; padding-top:1.6mm; font-size:10pt; }
+.due { margin-top:6mm; font-size:8.5pt; font-style:italic; display:flex; justify-content:space-between; }
+.sign { display:flex; justify-content:space-between; gap:4mm; margin-top:14mm; font-weight:700; font-size:8.5pt; text-decoration:underline; }
+.foot { margin-top:8mm; font-size:7pt; font-weight:700; line-height:1.4; }
+@media print {
+  @page { size:A4; margin:0; }
+  html, body { width:210mm; }
+  .a4page { margin:0; width:210mm; min-height:297mm; }
+}
+</style></head>
+<body>
+<div class="a4page">
+<div class="top">
+  <div class="l"><div class="cn">${e(shop.name)}</div>${shop.addr ? `<div>${e(shop.addr)}</div>` : ''}${shop.phone ? `<div>Tel: ${e(shop.phone)}</div>` : ''}${shop.hall ? `<div>${e(shop.hall)}</div>` : ''}</div>
+  <div class="c">${logoHtml}<div class="title">TAX INVOICE</div></div>
+  <div class="r"><table class="meta">
+    <tr><td>V.A.T reg</td><td>${e(shop.vat || '-')}</td></tr>
+    <tr><td>Invoice No.</td><td>${e(invNo)}</td></tr>
+    <tr><td>Date</td><td>${e(dateStr)} ${e(timeStr || '')}</td></tr>
+    <tr><td>Currency</td><td>OMR</td></tr>
+  </table></div>
+</div>
+<div class="cust">
+  <div><b>Customer:</b> Walk-in Customer</div>
+  <div><b>Phone:</b> ${e(custPhone || '-')}</div>
+  <div><b>Details:</b> ${e(data.billLine || '')}</div>
+</div>
+<table class="items">
+<thead><tr><th>Item Code</th><th>Description</th><th>Unit</th><th class="n">Qty</th><th class="n">Unit Price</th><th class="n">Net Price</th><th class="n">VAT %</th><th class="n">VAT Amount</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+<div class="grow"></div>
+<div class="bottom">
+  <div class="left">
+    <div class="words"><b>${e(amountInWordsOMR(grand))}</b></div>
+    <div>${e(terms)}</div>
+  </div>
+  <div class="right">
+    <table class="sum">
+      <tr><td><b>Sub Total</b></td><td>${sub.toFixed(3)}</td></tr>
+      ${discAmt > 0 ? `<tr><td><b>Discount</b></td><td>-${discAmt.toFixed(3)}</td></tr>` : ''}
+      <tr><td><b>Non Tax Amount</b></td><td>${(delivery || 0).toFixed(3)}</td></tr>
+      <tr><td><b>Taxable Amount</b></td><td>${afterDisc.toFixed(3)}</td></tr>
+      <tr><td><b>VAT (${vp}%)</b></td><td>${vat.toFixed(3)}</td></tr>
+      <tr class="tot"><td>Grand Total (OMR)</td><td>${grand.toFixed(3)}</td></tr>
+    </table>
+    <div class="due"><span>Due On</span><span>${e(dateStr)}</span></div>
+    <div class="sign"><span>Receiver's Full Name</span><span>Receiver Stamp &amp; Signature</span></div>
+  </div>
+</div>
+<div class="foot">${e(shop.name)}${shop.addr ? ' - ' + e(shop.addr) : ''}${shop.phone ? ' - Tel: ' + e(shop.phone) : ''}${shop.vat ? ' - VAT: ' + e(shop.vat) : ''}</div>
+</div>
+<script>
+(function(){
+  function fit(){ var w=document.documentElement.clientWidth; var z=Math.min(1,w/794); document.body.style.zoom=z; }
+  window.addEventListener('resize',fit); window.addEventListener('beforeprint',function(){document.body.style.zoom=1;}); window.addEventListener('afterprint',fit); fit();
+})();
+<\/script>
+</body></html>`;
+    }
+
     function buildReceiptHTML(data) {
+        if ((data.format || getBillFormat()) === 'a4') return buildA4InvoiceHTML(data);
         const { logo, billLine, dateStr, timeStr, shiftText, custPhone, items, discAmt, vatPerc, vat, delivery, grand, itemsCount, totalQty } = data;
 
         const shop = getShopInfo();
@@ -1526,6 +1690,7 @@ ${dlvHtml}
     const html = buildReceiptHTML({
         logo: savedPhoto,
         billLine: billLine,
+        billNo: billCount,
         dateStr: dateStr,
         timeStr: timeStr,
         shiftText: shift,
@@ -1566,6 +1731,7 @@ function printThermal(html, billNo, dateStr) {
     window.currentReceiptBillNo = billNo || '';
     window.currentReceiptDateStr = dateStr || new Date().toLocaleDateString('en-GB');
     window.currentReceiptHTML = html;
+    window.currentReceiptFormat = (html.indexOf('class="a4page"') !== -1) ? 'a4' : 'thermal';
 }
 
 function browserPrintReceipt() {
@@ -1626,7 +1792,7 @@ async function smartPrint() {
     btn.innerHTML = '⏳ Printing...';
     try {
         const printerName = localStorage.getItem('asb_qz_printer');
-        if (printerName) {
+        if (printerName && window.currentReceiptFormat !== 'a4') {
             const available = await isQZAvailable(2000);
             if (available) {
                 try {
@@ -1666,19 +1832,22 @@ function confirmReceiptPrint() {
 function downloadReceiptPDF() {
     const frame = document.getElementById('receiptFrame');
     const doc = frame.contentDocument || frame.contentWindow.document;
-    const receiptEl = doc.querySelector('.receipt') || doc.body;
+    const isA4 = !!doc.querySelector('.a4page');
+    if (isA4) { try { doc.body.style.zoom = 1; } catch (e) {} }
+    const receiptEl = doc.querySelector('.a4page') || doc.querySelector('.receipt') || doc.body;
 
     html2canvas(receiptEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
         const imgData = canvas.toDataURL('image/jpeg', 0.6);
-        const widthMm = 80;
+        const widthMm = isA4 ? 210 : 80;
         const heightMm = (canvas.height * widthMm) / canvas.width;
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ unit: 'mm', format: [widthMm, heightMm], compress: true });
-        pdf.addImage(imgData, 'JPEG', 0, 0, widthMm, heightMm, undefined, 'FAST');
+        const pdf = isA4 ? new jsPDF({ unit: 'mm', format: 'a4', compress: true }) : new jsPDF({ unit: 'mm', format: [widthMm, heightMm], compress: true });
+        pdf.addImage(imgData, 'JPEG', 0, 0, widthMm, isA4 ? Math.min(heightMm, 297) : heightMm, undefined, 'FAST');
 
         const dateStr = (window.currentReceiptDateStr || new Date().toLocaleDateString('en-GB')).replace(/\//g, '-');
         const billNo = window.currentReceiptBillNo || '';
-        const fileName = `${dateStr} ${getShopInfo().name} Bill no. ${billNo}.pdf`;
+        const fileName = `${dateStr} ${getShopInfo().name} ${isA4 ? 'Tax Invoice' : 'Bill no.'} ${billNo}.pdf`;
+        if (isA4) { try { doc.defaultView.dispatchEvent(new Event('resize')); } catch (e) {} }
         pdf.save(fileName);
     }).catch(e => {
         console.error('PDF generation failed:', e);
@@ -3278,6 +3447,7 @@ function reprintBill(billNo, dateKey) {
     const html = buildReceiptHTML({
         logo: savedPhoto,
         billLine: billLine,
+        billNo: b.billNo,
         dateStr: b.date,
         timeStr: b.time,
         shiftText: currentShift,
