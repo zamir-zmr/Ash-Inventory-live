@@ -2,6 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+<meta name="color-scheme" content="light dark">
+<style id="no-flash-critical">html,body{background:#0E1116}body{margin:0}</style>
+<script>
+/* Desktop PWA: window ek hi baar screen par fit karo (baar-baar resize se blink hota hai) */
+(function(){
+  try {
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: window-controls-overlay)').matches;
+    if (standalone && window === window.top && screen.availWidth >= 900 && !localStorage.getItem('kp_win_fit')) {
+      localStorage.setItem('kp_win_fit', '1');
+      window.moveTo(0, 0);
+      window.resizeTo(screen.availWidth, screen.availHeight);
+    }
+  } catch (e) {}
+})();
+</script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KP HARDWARE</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -540,18 +556,12 @@ html, body { width: 100%; }
 }
 </style>
 
-<script>
-/* Desktop PWA: window ko poori screen par fit karo (sirf installed app window me) */
-(function(){
-  try {
-    var standalone = window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: window-controls-overlay)').matches || window.navigator.standalone;
-    if (standalone && window === window.top && screen.availWidth >= 900 && (window.outerWidth < screen.availWidth - 40 || window.outerHeight < screen.availHeight - 40)) {
-      window.moveTo(0, 0);
-      window.resizeTo(screen.availWidth, screen.availHeight);
-    }
-  } catch (e) {}
-})();
-</script>
+
+<style id="smooth-load-fix">
+#posFrame { background: #f4f6fb; opacity: 0; transition: opacity .35s ease; }
+#posFrame.ready { opacity: 1; }
+body { background: var(--bg); }
+</style>
 </head>
 <body>
 <div id="splash"><div class="splash-stage"><i class="splash-ring"></i><i class="splash-ring r2"></i><img class="splash-logo" src="icon-192.png" alt="KP Hardware" width="110" height="110"></div><div class="splash-name">KP HARDWARE</div><div class="splash-bar"><i></i></div></div>
@@ -609,7 +619,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:' && location.pr
     <div id="headerSpacer"></div>
 <iframe id="posFrame" title="POS System" allow="clipboard-write; camera; fullscreen"></iframe>
 <script>
-(function(){ var f=document.getElementById('posFrame'); if(f) f.src='pos_system.html?v='+Date.now(); })();
+(function(){ var f=document.getElementById('posFrame'); if(!f) return; var show=function(){ f.classList.add('ready'); }; f.addEventListener('load', show); setTimeout(show, 4000); f.src='pos_system.html?v='+Date.now(); })();
 </script>
 <script>
 function positionPosFrame(){

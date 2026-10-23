@@ -1,5 +1,7 @@
-Changes (only additive, mobile unchanged):
-- index.html: <style id="desktop-fullwidth-fix"> + resize script before </head>
-- pos_system.html: same fix block before </head>
-Note: PWA ka purana chhota window size Chrome yaad rakhta hai. Naya code window ko auto-maximize karega;
-agar phir bhi chhota khule to app ko ek baar uninstall -> reinstall kar lein aur manifest.json me "display": "standalone" rakhein.
+FIX 1 (pos_system.html): desktop par cart bar ("X ITEMS") ab left me rehta hai aur Order Bill panel ke neeche nahi jata.
+FIX 2 (index.html): startup blink/flash fix - dark pehla paint, POS iframe fade-in, window resize sirf ek baar.
+
+IMPORTANT - manifest.json me ye do values rakhein (PWA window ka pehla black/white flash isi se control hota hai):
+  "background_color": "#0E1116",
+  "theme_color": "#0E1116"
+Phir app uninstall -> reinstall karein (Chrome manifest purana cache rakhta hai).

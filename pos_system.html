@@ -273,6 +273,7 @@
     </style>
 
 <style id="desktop-fullwidth-fix">
+html { background: #f4f6fb; }
 /* === Desktop / PWA full-width fix (mobile view unchanged) === */
 html { width: 100%; }
 body { width: 100%; }
@@ -283,7 +284,8 @@ body { width: 100%; }
   .ticket-header { padding: 16px 32px; }
   .dash-container { max-width: none; }
   .report-content { max-width: none; padding: 22px 32px; }
-  .cart-bar { left: 0; right: 0; width: 100%; max-width: none; }
+  /* Cart bar: left side me rahe, 460px ke Order Bill panel ko kabhi na dhake */
+  .cart-bar { left: 20px; right: auto; bottom: 16px; width: calc(100% - 460px - 40px); max-width: none; border-radius: 20px; padding: 16px 28px; }
 }
 @media (min-width: 1500px) {
   .pg { grid-template-columns: repeat(6, 1fr); }
