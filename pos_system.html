@@ -196,7 +196,7 @@
         /* ===== Dashboard Styling ===== */
         .full-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--s); z-index: 2000; display: none; flex-direction: column; animation: slideUp 0.28s cubic-bezier(.2,.8,.3,1); }
         @keyframes slideUp { from { transform: translateY(3%); opacity:.4; } to { transform: translateY(0); opacity:1; } }
-        .dash-container { display: flex; gap: 16px; padding: 22px; justify-content: center; flex-wrap: wrap; max-width: 900px; margin: 0 auto; width: 100%; }
+        .dash-container { display: flex; gap: 16px; padding: 22px; justify-content: center; align-content: flex-start; flex-wrap: wrap; max-width: 900px; margin: 0 auto; width: 100%; }
         .dash-tile {
             width: 100px; height: 106px; border-radius: var(--radius-lg); display: flex; flex-direction: column;
             align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; cursor: pointer;
@@ -615,12 +615,12 @@ width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
 
 
         
-        <div class="dash-tile bg-reports" onclick="showInventoryDash()"><span>📦</span>Inventory</div>
+        <div id="dashTileInventory" class="dash-tile bg-reports" onclick="showInventoryDash()"><span>📦</span>Inventory</div>
         <div class="dash-tile bg-pos" onclick="closeDash()"><span>🖥️</span>POS</div>
         <div class="dash-tile bg-logout" onclick="location.reload()"><span>⬅️</span>Logout</div>
         
         
-        <div style="background: #fff; padding: 15px; border-radius: 15px; margin: 10px 20px 80px 20px; border: 1px solid #fecaca; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);">
+        <div id="dashDangerZone" style="background: #fff; padding: 15px; border-radius: 15px; margin: 10px 20px 80px 20px; border: 1px solid #fecaca; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);">
     <b style="display:block; margin-bottom:10px; color: #dc2626">⚠️ DANGER ZONE (RESET):</b>
     
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -1139,7 +1139,7 @@ function processPastedJson() {
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
     let currentTicket = null, ticketsUsed = [], ticketsPending = [], ticketsSettled = [], activeTicketTab = 1;
     
-    function initApp() { loadSavedLogo(); applyShopInfoUI(); initBillFormat(); 
+    function initApp() { loadSavedLogo(); applyDashVisibility(); applyShopInfoUI(); initBillFormat(); 
     location.hash = 'home'; render(); loadTicketState(); showTicketPage(); }
 
     function todayLocalStr() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
@@ -2036,6 +2036,20 @@ function closeError() {
     
 
 // ===== Zero Stock Billing control =====
+// ===== Dashboard visibility (Inventory tile / Danger Zone) - synced via Firebase =====
+function isDashShown(key){ try { return localStorage.getItem(key) !== '0'; } catch(e){ return true; } }
+function applyDashVisibility(){
+    const inv = document.getElementById('dashTileInventory');
+    const dz = document.getElementById('dashDangerZone');
+    if (inv) inv.style.display = isDashShown('asb_show_dash_inventory') ? '' : 'none';
+    if (dz) dz.style.display = isDashShown('asb_show_dash_danger') ? '' : 'none';
+    const a = document.getElementById('dashInvToggle'); if (a) a.checked = isDashShown('asb_show_dash_inventory');
+    const b = document.getElementById('dashDangerToggle'); if (b) b.checked = isDashShown('asb_show_dash_danger');
+}
+function toggleDashItem(key, cb){
+    try { localStorage.setItem(key, cb.checked ? '1' : '0'); } catch(e){}
+    applyDashVisibility();
+}
 function isZeroStockBlocked(){ try { return localStorage.getItem('asb_zero_stock_block') === '1'; } catch(e){ return false; } }
 function syncZeroStockToggleUI(){
     const on = isZeroStockBlocked();
@@ -2213,6 +2227,7 @@ function updateCartUI(rebuildList = true) {
         document.getElementById('itemManagePage').style.display = 'flex';
         document.getElementById('homeQtyToggle').checked = localStorage.getItem('asb_show_home_qty') === '1';
         syncZeroStockToggleUI();
+        applyDashVisibility();
         
         renderItemManageList();
         pushSubPageState('itemManage');
@@ -4051,12 +4066,28 @@ function deleteBill(billNo, dateKey, displayLabel){
                 <span id="zeroStockKnob" style="position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
             </label>
         </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:10px;">
+            <span style="font-weight:700; font-size:13px; color:#1e293b;">📦 Show Inventory on Dashboard</span>
+            <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
+                <input type="checkbox" id="dashInvToggle" onchange="toggleDashItem('asb_show_dash_inventory', this)" style="opacity:0; width:0; height:0;">
+                <span style="position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:24px; transition:0.2s;"></span>
+                <span style="position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
+            </label>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:10px;">
+            <span style="font-weight:700; font-size:13px; color:#1e293b;">⚠️ Show Danger Zone (Reset) on Dashboard</span>
+            <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
+                <input type="checkbox" id="dashDangerToggle" onchange="toggleDashItem('asb_show_dash_danger', this)" style="opacity:0; width:0; height:0;">
+                <span style="position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:24px; transition:0.2s;"></span>
+                <span style="position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
+            </label>
+        </div>
     </div>
 
 
     <style>
-        #homeQtyToggle:checked + span { background:#10b981; }
-        #homeQtyToggle:checked + span + span { transform:translateX(20px); }
+        #homeQtyToggle:checked + span, #dashInvToggle:checked + span, #dashDangerToggle:checked + span { background:#10b981; }
+        #homeQtyToggle:checked + span + span, #dashInvToggle:checked + span + span, #dashDangerToggle:checked + span + span { transform:translateX(20px); }
     </style>
 </div>
 
@@ -4660,7 +4691,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block','asb_shop_info'];
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_shop_info'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false;
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -4691,6 +4722,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
             }
             if (changed.indexOf('asb_zero_stock_block') !== -1 && typeof syncZeroStockToggleUI === 'function') syncZeroStockToggleUI();
+            if (changed.some(function(k){ return /asb_show_dash_/.test(k); }) && typeof applyDashVisibility === 'function') applyDashVisibility();
             if (changed.indexOf('asb_shop_info') !== -1 && typeof applyShopInfoUI === 'function') applyShopInfoUI();
             if (changed.indexOf('asb_sales_logs') !== -1 && typeof refreshReports === 'function') refreshReports(true);
             if (changed.some(function(k){ return /stock_add_log|waste_log/.test(k); }) && typeof renderInvHistory === 'function') {
