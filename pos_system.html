@@ -289,7 +289,7 @@
             <div class="logo-box">
                 <button id="hb" onclick="history.back()" style="background:#f1f5f9; border:none; padding:8px; border-radius:10px; display:none">🏠</button>
                 <div class="logo-circle" id="main-logo-container"><b>KP</b><span>HARDWARE</span></div>
-                <b style="font-size:20px; color:var(--primary)">KP HARDWARE</b>
+                <b id="shopNameHdr" style="font-size:20px; color:var(--primary)">KP HARDWARE</b>
             </div>
             <div style="display:flex;gap:8px; align-items:center">
                 <div class="ticket-badge" id="ticketBadge" onclick="showTicketPage()">🎫 --</div>
@@ -442,6 +442,7 @@
 <div class="modal" id="settingsM">
     <h3>Settings</h3>
     <button class="btn" style="background:var(--primary); width:100%; margin-bottom:10px" onclick="closeM(); show('logoM')">🖼️ UPDATE LOGO</button>
+    <button class="btn" style="background:#0ea5e9; width:100%; margin-bottom:10px" onclick="openShopInfoModal()">🏪 SHOP / RECEIPT INFO</button>
     <button class="btn" style="background:var(--a); width:100%; margin-bottom:10px" onclick="closeM(); showCatM()">➕ ADD CATEGORY</button>
     <button class="btn" style="background:var(--w); width:100%; margin-bottom:10px" onclick="enableCatMulti()">🗑️ DELETE CATEGORIES</button>
     <button class="btn" style="background:var(--secondary); width:100%; margin-bottom:10px" onclick="toggleMulti()">🛠️ MULTI-SELECT ITEMS</button>
@@ -457,6 +458,18 @@
     <button class="btn" style="background:#0f172a; width:100%; margin-bottom:10px" onclick="openPwManageModal()">🔒 SECURITY PASSWORD</button>
 
     <button class="btn" style="width:100%; background:var(--slate)" onclick="closeM()">CLOSE</button>
+</div>
+
+<!-- Shop / Receipt Info (Firebase synced via parent bridge) -->
+<div class="modal" id="shopInfoM" style="max-height:90vh; overflow-y:auto;">
+    <h3>Shop / Receipt Info</h3>
+    <input type="text" id="shopName" placeholder="Store Name" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box; margin-bottom:10px;">
+    <input type="text" id="shopAddr" placeholder="Location / Address" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box; margin-bottom:10px;">
+    <input type="text" id="shopPhone" placeholder="Mobile Number" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box; margin-bottom:10px;">
+    <input type="text" id="shopVat" placeholder="VAT / Tax Number (optional)" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box; margin-bottom:10px;">
+    <input type="text" id="shopHall" placeholder="Hall / Counter Name" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box; margin-bottom:10px;">
+    <input type="text" id="shopFooter" placeholder="Receipt Footer Text" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box; margin-bottom:12px;">
+    <div class="flex-btn"><button class="btn" style="background:var(--a)" onclick="saveShopInfo()">SAVE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div>
 </div>
 
 <!-- Naya Modal Text Paste Karne Ke Liye -->
@@ -1070,7 +1083,7 @@ function processPastedJson() {
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
     let currentTicket = null, ticketsUsed = [], ticketsPending = [], ticketsSettled = [], activeTicketTab = 1;
     
-    function initApp() { loadSavedLogo(); 
+    function initApp() { loadSavedLogo(); applyShopInfoUI(); 
     location.hash = 'home'; render(); loadTicketState(); showTicketPage(); }
 
     function todayLocalStr() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
@@ -1353,11 +1366,44 @@ function processPastedJson() {
     }
     function loadSavedLogo() { try { let savedPhoto = localStorage.getItem('savedPhotoUrl'); if (savedPhoto) displayLogo(savedPhoto); } catch(e) {} }
 
+    /* ===== Shop / Receipt info: localStorage cache + Firebase sync (asb_shop_info) ===== */
+    const SHOP_DEFAULTS = { name: 'KP HARDWARE', addr: 'Africa', phone: '123456789', vat: '', hall: 'Take Away Hall', footer: '' };
+    function getShopInfo() {
+        let o = {};
+        try { o = JSON.parse(localStorage.getItem('asb_shop_info')) || {}; } catch (e) { o = {}; }
+        const s = {};
+        Object.keys(SHOP_DEFAULTS).forEach(k => { s[k] = (o[k] !== undefined && o[k] !== null) ? String(o[k]) : SHOP_DEFAULTS[k]; });
+        return s;
+    }
+    function applyShopInfoUI() {
+        const s = getShopInfo();
+        const h = document.getElementById('shopNameHdr'); if (h) h.innerText = s.name;
+        try { document.title = s.name + ' POS'; } catch (e) {}
+    }
+    function openShopInfoModal() {
+        const s = getShopInfo();
+        document.getElementById('shopName').value = s.name;
+        document.getElementById('shopAddr').value = s.addr;
+        document.getElementById('shopPhone').value = s.phone;
+        document.getElementById('shopVat').value = s.vat;
+        document.getElementById('shopHall').value = s.hall;
+        document.getElementById('shopFooter').value = s.footer;
+        closeM(); show('shopInfoM');
+    }
+    function saveShopInfo() {
+        const v = id => document.getElementById(id).value.trim();
+        const o = { name: v('shopName'), addr: v('shopAddr'), phone: v('shopPhone'), vat: v('shopVat'), hall: v('shopHall'), footer: v('shopFooter'), t: Date.now() };
+        try { localStorage.setItem('asb_shop_info', JSON.stringify(o)); } catch (e) {}
+        applyShopInfoUI();
+        closeM();
+    }
+
     function escReceiptHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     function buildReceiptHTML(data) {
         const { logo, billLine, dateStr, timeStr, shiftText, custPhone, items, discAmt, vatPerc, vat, delivery, grand, itemsCount, totalQty } = data;
 
+        const shop = getShopInfo();
         let itemsHtml = items.map(it => `
             <div class="item-row">
                 <div class="col-item">${escReceiptHtml(it.name)}</div>
@@ -1412,10 +1458,11 @@ body { font-family: Helvetica, Arial, sans-serif; color:#000; display:flex; just
 <body>
 <div class="receipt">
 ${logoHtml}
-<div class="shopname">KP HARDWARE</div>
-<div class="addr">Africa\nTanzania-Mwanza</div>
-<div class="phone">255764490152</div>
-<div class="hall">Take Away Hall</div>
+<div class="shopname">${escReceiptHtml(shop.name)}</div>
+${shop.addr ? `<div class="addr">${escReceiptHtml(shop.addr)}</div>` : ''}
+${shop.phone ? `<div class="phone">${escReceiptHtml(shop.phone)}</div>` : ''}
+${shop.vat ? `<div class="addr">VAT No: ${escReceiptHtml(shop.vat)}</div>` : ''}
+${shop.hall ? `<div class="hall">${escReceiptHtml(shop.hall)}</div>` : ''}
 <div class="billrow">${billLine}</div>
 <div class="row"><span>Date : ${dateStr}</span><span>Time : ${timeStr}</span></div>
 <div class="row"><span>${shiftText}</span><span>Admin</span></div>
@@ -1433,7 +1480,7 @@ ${dlvHtml}
 <div class="dashed"></div>
 <div class="itemsqty">Items / Qty :    ${itemsCount} / ${totalQty}</div>
 <div class="dashed"></div>
-<div class="footer">Generated by KP HARDWARE POS System</div>
+<div class="footer">${escReceiptHtml(shop.footer || ("Generated by " + shop.name + " POS System"))}</div>
 </div>
 </body></html>`;
     }
@@ -1631,7 +1678,7 @@ function downloadReceiptPDF() {
 
         const dateStr = (window.currentReceiptDateStr || new Date().toLocaleDateString('en-GB')).replace(/\//g, '-');
         const billNo = window.currentReceiptBillNo || '';
-        const fileName = `${dateStr} KP HARDWARE Bill no. ${billNo}.pdf`;
+        const fileName = `${dateStr} ${getShopInfo().name} Bill no. ${billNo}.pdf`;
         pdf.save(fileName);
     }).catch(e => {
         console.error('PDF generation failed:', e);
@@ -3343,9 +3390,9 @@ function exportToExcel() {
 
     // ---- Real .xlsx workbook (SheetJS) ----
     let rows = [];
-    rows.push(["KP HARDWARE - EXECUTIVE FINANCIAL STATEMENT"]);
+    rows.push([getShopInfo().name + " - EXECUTIVE FINANCIAL STATEMENT"]);
     rows.push([]);
-    rows.push(["REPORT SUMMARY", "", "", "Store: KP HARDWARE"]);
+    rows.push(["REPORT SUMMARY", "", "", "Store: " + getShopInfo().name]);
     rows.push([`Total Revenue: ${totalRev} OMR`, "", "", "Status: Verified"]);
     rows.push([`Date Range: ${start} to ${end}`]);
     rows.push([]);
@@ -4397,7 +4444,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block'];
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block','asb_shop_info'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false;
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -4428,6 +4475,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
             }
             if (changed.indexOf('asb_zero_stock_block') !== -1 && typeof syncZeroStockToggleUI === 'function') syncZeroStockToggleUI();
+            if (changed.indexOf('asb_shop_info') !== -1 && typeof applyShopInfoUI === 'function') applyShopInfoUI();
             if (changed.indexOf('asb_sales_logs') !== -1 && typeof refreshReports === 'function') refreshReports(true);
             if (changed.some(function(k){ return /stock_add_log|waste_log/.test(k); }) && typeof renderInvHistory === 'function') {
                 var ih = document.getElementById('invHistoryList');
