@@ -4728,7 +4728,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
 <script>
 /* Emoji -> Font Awesome icons (same library as Inventory: FA 6.0.0) */
 (function () {
-    var MAP = {"🗑": "trash-alt", "✅": "check-circle", "⚠": "exclamation-triangle", "↩": "undo", "➕": "plus", "📅": "calendar-alt", "✏": "pen", "⏳": "hourglass-half", "✕": "times", "🏦": "university", "💳": "credit-card", "💵": "money-bill-wave", "❌": "times-circle", "🎫": "ticket-alt", "📦": "box", "🔑": "key", "🔍": "search", "📊": "chart-bar", "📞": "phone", "📥": "file-import", "📤": "file-export", "🔒": "lock", "📜": "scroll", "🧾": "receipt", "🖼": "image", "📋": "clipboard-list", "⛔": "ban", "🔓": "unlock", "🏠": "home", "⚙": "cog", "📁": "folder-open", "📷": "camera", "🏪": "store", "🛠": "tools", "⬇": "download", "🖨": "print", "🏆": "trophy", "🖥": "desktop", "📈": "chart-line", "🔄": "sync-alt", "🕒": "clock", "➡": "arrow-right", "👁": "eye", "🛒": "shopping-cart", "🔐": "lock", "ℹ": "info-circle"};
+    var MAP = {"🗑": "trash-alt", "✅": "check-circle", "⚠": "exclamation-triangle", "↩": "undo", "➕": "plus", "📅": "calendar-alt", "✏": "pen", "⏳": "hourglass-half", "✕": "times", "🏦": "university", "💳": "credit-card", "💵": "money-bill-wave", "❌": "times-circle", "🎫": "ticket-alt", "📦": "box", "🔑": "key", "🔍": "search", "📊": "chart-bar", "📞": "phone", "📥": "file-import", "📤": "file-export", "🔒": "lock", "📜": "scroll", "🧾": "receipt", "🖼": "image", "📋": "clipboard-list", "⛔": "ban", "🔓": "unlock", "🏠": "home", "⚙": "cog", "📁": "folder-open", "📷": "camera", "🏪": "store", "🛠": "tools", "⬇": "download", "🖨": "print", "🏆": "trophy", "🖥": "desktop", "📈": "chart-line", "🔄": "sync-alt", "🕒": "clock", "➡": "arrow-right", "⬅": "arrow-left", "👁": "eye", "🛒": "shopping-cart", "🔐": "lock", "ℹ": "info-circle"};
     var keys = Object.keys(MAP).sort(function (a, b) { return b.length - a.length; });
     var RE = new RegExp('(' + keys.join('|') + ')\\uFE0F?', 'g');
     var SKIP = {SCRIPT:1, STYLE:1, TEXTAREA:1, OPTION:1, TITLE:1, INPUT:1, SELECT:1, NOSCRIPT:1};
@@ -4782,7 +4782,7 @@ i.ic-on.fa-spin{color:var(--ic)!important}
 (function () {
   var P = {
     'trash':'#ef4444','trash-alt':'#ef4444','trash-can':'#ef4444','times-circle':'#ef4444','ban':'#ef4444','times':'#f43f5e','location-dot':'#ef4444','sign-out-alt':'#ef4444','folder-minus':'#ef4444',
-    'edit':'#3b82f6','pen':'#3b82f6','list':'#3b82f6','th-large':'#8b5cf6','car':'#3b82f6','share-alt':'#3b82f6','home':'#3b82f6','desktop':'#3b82f6','arrow-right':'#3b82f6','credit-card':'#3b82f6','file-export':'#6366f1',
+    'edit':'#3b82f6','pen':'#3b82f6','list':'#3b82f6','th-large':'#8b5cf6','car':'#3b82f6','share-alt':'#3b82f6','home':'#3b82f6','desktop':'#3b82f6','arrow-right':'#3b82f6','arrow-left':'#f43f5e','credit-card':'#3b82f6','file-export':'#6366f1',
     'check':'#22c55e','check-circle':'#22c55e','plus':'#22c55e','phone':'#22c55e','sign-in-alt':'#22c55e','unlock':'#22c55e','money-bill-wave':'#22c55e','file-excel':'#16a34a','cash-register':'#10b981','cart-plus':'#10b981','shopping-cart':'#f97316','download':'#10b981','chart-line':'#10b981',
     'exclamation-triangle':'#f59e0b','hourglass-half':'#f59e0b','undo':'#f59e0b','boxes':'#f59e0b','boxes-stacked':'#f59e0b','box':'#d97706','folder-open':'#f59e0b','folder':'#f59e0b','sun':'#f59e0b','lock':'#f59e0b','scroll':'#d97706','key':'#eab308','trophy':'#eab308',
     'gas-pump':'#f97316','tools':'#f97316','spinner':'#0ea5e9','upload':'#0ea5e9','cloud-upload-alt':'#0ea5e9','save':'#0ea5e9','book':'#0ea5e9','bars':'#0ea5e9','search':'#0ea5e9','sync-alt':'#0ea5e9','info-circle':'#0ea5e9','cog':'#0ea5e9',
@@ -4813,11 +4813,20 @@ i.ic-on.fa-spin{color:var(--ic)!important}
     var s = (mx - mn) / (255 * (1 - Math.abs(2 * l - 1)));
     return s > 0.35 && l > 0.12 && l < 0.85;
   }
+  function pastel(h) {
+    var n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    function m(x) { return Math.round(x + (255 - x) * 0.72); }
+    return 'rgb(' + m(r) + ',' + m(g) + ',' + m(b) + ')';
+  }
   function bgOf(el) {
     var n = el.parentElement;
     while (n && n.nodeType === 1) {
       var cs = getComputedStyle(n), bi = cs.backgroundImage;
-      if (bi && bi.indexOf('gradient') > -1) return 'grad';
+      if (bi && bi.indexOf('gradient') > -1) {
+        var gm = bi.match(/rgba?\([^)]+\)/g) || [], gc = null;
+        for (var j = 0; j < gm.length; j++) { var t = rgb(gm[j]); if (t && t.a > 0.25) { if (!gc) gc = t; if (saturatedMid(t)) { gc = t; break; } } }
+        if (gc) return gc;
+      }
       var c = rgb(cs.backgroundColor);
       if (c && c.a > 0.25) return c;
       n = n.parentElement;
@@ -4833,8 +4842,12 @@ i.ic-on.fa-spin{color:var(--ic)!important}
     var white = own && own.r > 225 && own.g > 225 && own.b > 225;
     var bg = bgOf(el), on = true;
     if (bg === 'grad') on = !white;
-    else if (bg && saturatedMid(bg)) on = false;
-    if (on) { el.style.setProperty('--ic', colorOf(k)); el.classList.add('ic-on'); }
+    var col = colorOf(k);
+    if (bg && bg !== 'grad' && saturatedMid(bg)) {
+      /* solid colored tile/button: big icons ko halka (pastel) rang, chhote white hi rahe */
+      if (white && parseFloat(getComputedStyle(el).fontSize) >= 20) col = pastel(col); else on = false;
+    }
+    if (on) { el.style.setProperty('--ic', col); el.classList.add('ic-on'); }
   }
   function isFA(el) { return el.nodeName === 'I' && /(^|\s)fa[srb]?(\s|$)|fa-(solid|regular|brands)/.test(el.className || ''); }
   var q = new Set(), raf = 0;
