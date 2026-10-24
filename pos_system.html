@@ -1665,7 +1665,7 @@ function processPastedJson() {
         let head = cols.map(c => `<th${c[2] ? ' class="n"' : ''}>${e(T[c[1]])}</th>`).join('');
         const rows = items.map((it, i) => '<tr>' + cols.map(c => `<td${c[2] ? ' class="n"' : ''}>${c[3](it, i)}</td>`).join('') + '</tr>').join('');
         let logoHtml = (D.logo.show && logo) ? `<img class="logo" ${bdAtLogo(D.logo, 'logo')} src="${logo}" onerror="this.style.display='none'">` : '';
-        const terms = D.terms.text || shop.footer || ('The customer acknowledges that ' + shop.name + ' will not exchange or return any goods that were accepted and received in good condition, and/or goods reaching near-expiry or expired after delivery.');
+        const terms = D.terms.text || shop.footer || ('All hardware items, tools, and building materials purchased from ' + shop.name + ' are sold in good working condition. Goods checked and delivered are non-refundable and non-exchangeable unless covered by a manufacturer warranty.');
         const S = D.summary;
         const footLine = D.footer.text || (e(shop.name) + (shop.addr ? ' - ' + e(shop.addr) : '') + (shop.phone ? ' - Tel: ' + e(shop.phone) : '') + (shop.vat ? ' - VAT: ' + e(shop.vat) : ''));
         const footHtml = D.footer.text ? e(D.footer.text) : footLine;
