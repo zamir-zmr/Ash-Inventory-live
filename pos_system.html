@@ -2220,7 +2220,12 @@ ${bdEditScript()}
 
 function printThermal(html, billNo, dateStr) {
     const frame = document.getElementById('receiptFrame');
-    frame.srcdoc = html;
+    // Preview me long-press par "search / translate" panel na aaye (print/PDF ka original html alag rehta hai)
+    const _noSel = '<meta name="google" content="notranslate"><style>html,body,*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent}</style>';
+    frame.onload = function () {
+        try { ['contextmenu', 'selectstart', 'dragstart'].forEach(ev => frame.contentDocument.addEventListener(ev, e => e.preventDefault())); } catch (e) {}
+    };
+    frame.srcdoc = String(html).replace('</head>', _noSel + '</head>').replace('<html', '<html translate="no"');
     document.getElementById('receiptOv').style.display = 'block';
     document.getElementById('receiptPrintM').style.display = 'flex';
     window.currentReceiptBillNo = billNo || '';
@@ -4516,6 +4521,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 .bd-tabs { display:flex; gap:8px; padding:8px 12px; background:#fff; flex-shrink:0; }
 .bd-tab { flex:1; padding:10px; border-radius:10px; border:1.5px solid #e2e8f0; background:#f8fafc; font-weight:800; font-size:13px; color:#475569; }
 .bd-tab.on { background:linear-gradient(135deg,#8b5cf6,#6366f1); color:#fff; border-color:transparent; }
+#receiptPrintM, #receiptPrintM * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 #billDesignerPage, #billDesignerPage * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 #billDesignerPage input, #billDesignerPage textarea, #billDesignerPage select { -webkit-user-select:text; user-select:text; }
 #bdPreview { width:100%; flex:1; min-height:0; border:none; background:#e2e8f0; border-bottom:1px solid #cbd5e1; }
