@@ -1561,8 +1561,39 @@ function processPastedJson() {
         return bdMerge(BD_DEFAULTS, o);
     }
     const bdEditing = () => !!window.__bdEdit;
-    const bdPen = sec => bdEditing() ? `<span class="bd-pen" onclick="window.parent.bdOpenSheet('${sec}')">&#9998;</span>` : '';
-    const BD_PEN_CSS = '.bd-pen{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:22px;height:22px;line-height:22px;text-align:center;background:#8b5cf6;color:#fff;border-radius:50%;font-size:13px;font-style:normal;font-weight:400;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.35);z-index:5;text-decoration:none;display:inline-block}\n*:has(> .bd-pen){position:relative}\n';
+    const bdPen = () => '';
+    const BD_EDIT_CSS = '[data-bd]{cursor:pointer}\n[data-bd]:hover{outline:1px dashed #8b5cf6}\n.bd-sel{outline:2px solid #8b5cf6 !important;background:rgba(139,92,246,0.10) !important}\n';
+    function bdStyle(o) {
+        if (!o) return '';
+        let s = '';
+        if (o.align) s += 'text-align:' + o.align + ';justify-content:' + (o.align === 'left' ? 'flex-start' : o.align === 'right' ? 'flex-end' : 'center') + ';';
+        if (typeof o.bold === 'boolean') s += 'font-weight:' + (o.bold ? 700 : 400) + ';';
+        if (o.italic) s += 'font-style:italic;';
+        if (typeof o.fs === 'number' && o.fs > 0) s += 'font-size:' + o.fs + 'pt;';
+        [['mt', 'margin-top'], ['mb', 'margin-bottom'], ['ml', 'margin-left'], ['mr', 'margin-right']].forEach(m => { if (typeof o[m[0]] === 'number') s += m[1] + ':' + o[m[0]] + 'mm;'; });
+        return s;
+    }
+    function bdAt(o, sec) {
+        const s = bdStyle(o);
+        return (s ? 'style="' + s + '"' : '') + (bdEditing() ? ' data-bd="' + sec + '"' : '');
+    }
+    function bdAtLogo(o, sec) {
+        let s = '';
+        if (o) {
+            if (o.align === 'left') s += 'margin-left:0;margin-right:auto;';
+            else if (o.align === 'right') s += 'margin-left:auto;margin-right:0;';
+            if (typeof o.mt === 'number') s += 'margin-top:' + o.mt + 'mm;';
+            if (typeof o.mb === 'number') s += 'margin-bottom:' + o.mb + 'mm;';
+            if (typeof o.ml === 'number') s += 'margin-left:' + o.ml + 'mm;';
+            if (typeof o.mr === 'number') s += 'margin-right:' + o.mr + 'mm;';
+        }
+        return (s ? 'style="' + s + '"' : '') + (bdEditing() ? ' data-bd="' + sec + '"' : '');
+    }
+    function bdEditScript() {
+        if (!bdEditing()) return '';
+        const sel = JSON.stringify(window.__bdSel || '');
+        return "<script>(function(){var sel=" + sel + ";function mark(){var a=document.querySelectorAll('.bd-sel');for(var i=0;i<a.length;i++)a[i].classList.remove('bd-sel');if(sel){var b=document.querySelectorAll('[data-bd=\"'+sel+'\"]');for(i=0;i<b.length;i++)b[i].classList.add('bd-sel');}}mark();document.addEventListener('click',function(ev){var t=ev.target.closest?ev.target.closest('[data-bd]'):null;if(!t)return;ev.preventDefault();ev.stopPropagation();sel=t.getAttribute('data-bd');mark();try{window.parent.bdOpenSheet(sel);}catch(e){}},true);})();<\/script>";
+    }
     const bdAl = a => (a === 'left' || a === 'right') ? a : 'center';
     const bdW = b => b ? 700 : 400;
 
@@ -1591,10 +1622,8 @@ function processPastedJson() {
             ['cVatA', 'lVatA', true, (it) => '<b>' + (Number(it.price) * Number(it.qty) * ratio * vp / 100).toFixed(3) + '</b>']
         ].filter(c => T[c[0]]);
         let head = cols.map(c => `<th${c[2] ? ' class="n"' : ''}>${e(T[c[1]])}</th>`).join('');
-        if (bdEditing()) head = head.replace(/<\/th>$/, pn('table') + '</th>');
         const rows = items.map((it, i) => '<tr>' + cols.map(c => `<td${c[2] ? ' class="n"' : ''}>${c[3](it, i)}</td>`).join('') + '</tr>').join('');
-        let logoHtml = (D.logo.show && logo) ? `<img class="logo" src="${logo}" onerror="this.style.display='none'">` : '';
-        if (bdEditing() && D.logo.show) logoHtml = '<div style="position:relative">' + logoHtml + pn('logo') + '</div>';
+        let logoHtml = (D.logo.show && logo) ? `<img class="logo" ${bdAtLogo(D.logo, 'logo')} src="${logo}" onerror="this.style.display='none'">` : '';
         const terms = D.terms.text || shop.footer || ('The customer acknowledges that ' + shop.name + ' will not exchange or return any goods that were accepted and received in good condition, and/or goods reaching near-expiry or expired after delivery.');
         const S = D.summary;
         const footLine = D.footer.text || (e(shop.name) + (shop.addr ? ' - ' + e(shop.addr) : '') + (shop.phone ? ' - Tel: ' + e(shop.phone) : '') + (shop.vat ? ' - VAT: ' + e(shop.vat) : ''));
@@ -1635,7 +1664,7 @@ table.items .n, table.items th.n { text-align:right; }
 .sign { display:flex; justify-content:space-between; gap:4mm; margin-top:14mm; font-weight:700; font-size:8.5pt; text-decoration:underline; }
 .foot { margin-top:8mm; font-size:${Number(D.footer.size)}pt; font-weight:700; line-height:1.4; }
 .note { margin-top:4mm; font-size:${Number(D.note.size)}pt; white-space:pre-wrap; }
-${bdEditing() ? BD_PEN_CSS : ''}
+${bdEditing() ? BD_EDIT_CSS : ''}
 @media print {
   @page { size:A4; margin:0; }
   html, body { width:210mm; }
@@ -1645,34 +1674,34 @@ ${bdEditing() ? BD_PEN_CSS : ''}
 <body>
 <div class="a4page">
 <div class="top">
-  <div class="l">${D.company.show ? `<div class="cn">${e(shop.name)}${pn('company')}</div>${(D.company.showAddr && shop.addr) ? `<div>${e(shop.addr)}</div>` : ''}${(D.company.showPhone && shop.phone) ? `<div>${e(D.company.telLabel)} ${e(shop.phone)}</div>` : ''}${(D.company.showHall && shop.hall) ? `<div>${e(shop.hall)}</div>` : ''}` : ''}</div>
-  <div class="c">${logoHtml}${D.title.show ? `<div class="title">${e(D.title.text)}${pn('title')}</div>` : ''}</div>
-  <div class="r">${D.meta.show ? `<table class="meta">
+  <div class="l" ${bdAt(D.company, 'company')}>${D.company.show ? `<div class="cn">${e(shop.name)}</div>${(D.company.showAddr && shop.addr) ? `<div>${e(shop.addr)}</div>` : ''}${(D.company.showPhone && shop.phone) ? `<div>${e(D.company.telLabel)} ${e(shop.phone)}</div>` : ''}${(D.company.showHall && shop.hall) ? `<div>${e(shop.hall)}</div>` : ''}` : ''}</div>
+  <div class="c">${logoHtml}${D.title.show ? `<div class="title" ${bdAt(D.title, 'title')}>${e(D.title.text)}</div>` : ''}</div>
+  <div class="r" ${bdAt(D.meta, 'meta')}>${D.meta.show ? `<table class="meta">
     <tr><td>${e(D.meta.vatLabel)}</td><td>${e(shop.vat || '-')}</td></tr>
     <tr><td>${e(D.meta.invLabel)}</td><td>${e(invNo)}</td></tr>
     <tr><td>${e(D.meta.dateLabel)}</td><td>${e(dateStr)}${D.meta.showTime ? ' ' + e(timeStr || '') : ''}</td></tr>
     <tr><td>${e(D.meta.curLabel)}</td><td>${e(D.meta.currency)}</td></tr>
-  </table>${pn('meta')}` : ''}</div>
+  </table>` : ''}</div>
 </div>
-${D.customer.show ? `<div class="cust">
+${D.customer.show ? `<div class="cust" ${bdAt(D.customer, 'customer')}>
   <div><b>${e(D.customer.custLabel)}</b> ${e(D.customer.defaultName)}</div>
   <div><b>${e(D.customer.phoneLabel)}</b> ${e(custPhone || '-')}</div>
   ${D.customer.showDetails ? `<div><b>${e(D.customer.detailsLabel)}</b> ${e(data.billLine || '')}</div>` : ''}
-  ${pn('customer')}
+  
 </div>` : ''}
-<table class="items">
+<table class="items" ${bdAt(D.table, 'table')}>
 <thead><tr>${head}</tr></thead>
 <tbody>${rows}</tbody>
 </table>
 <div class="grow"></div>
 <div class="bottom">
   <div class="left">
-    ${D.words.show ? `<div class="words"><b>${e(amountInWordsOMR(grand))}</b>${pn('words')}</div>` : ''}
-    ${D.terms.show ? `<div>${e(terms)}${pn('terms')}</div>` : ''}
+    ${D.words.show ? `<div class="words" ${bdAt(D.words, 'words')}><b>${e(amountInWordsOMR(grand))}</b></div>` : ''}
+    ${D.terms.show ? `<div ${bdAt(D.terms, 'terms')}>${e(terms)}</div>` : ''}
   </div>
   <div class="right">
-    ${pn('summary')}
-    <table class="sum">
+    
+    <table class="sum" ${bdAt(D.summary, 'summary')}>
       ${S.showSub ? `<tr><td><b>${e(S.lSub)}</b></td><td>${sub.toFixed(3)}</td></tr>` : ''}
       ${discAmt > 0 ? `<tr><td><b>${e(S.lDisc)}</b></td><td>-${discAmt.toFixed(3)}</td></tr>` : ''}
       ${S.showNonTax ? `<tr><td><b>${e(S.lNonTax)}</b></td><td>${(delivery || 0).toFixed(3)}</td></tr>` : ''}
@@ -1681,18 +1710,19 @@ ${D.customer.show ? `<div class="cust">
       <tr class="tot"><td>${e(S.lGrand)}</td><td>${grand.toFixed(3)}</td></tr>
     </table>
     ${S.showDue ? `<div class="due"><span>${e(S.lDue)}</span><span>${e(dateStr)}</span></div>` : ''}
-    ${D.receiver.show ? `<div class="sign"><span>${e(D.receiver.l1)}</span><span>${e(D.receiver.l2)}</span>${pn('receiver')}</div>` : ''}
+    ${D.receiver.show ? `<div class="sign" ${bdAt(D.receiver, 'receiver')}><span>${e(D.receiver.l1)}</span><span>${e(D.receiver.l2)}</span></div>` : ''}
   </div>
 </div>
-${(D.note.show && (D.note.text || bdEditing())) ? `<div class="note">${e(D.note.text || (bdEditing() ? '(extra note)' : ''))}${pn('note')}</div>` : ''}
-${D.footer.show ? `<div class="foot">${footHtml}${pn('footer')}</div>` : ''}
+${(D.note.show && (D.note.text || bdEditing())) ? `<div class="note" ${bdAt(D.note, 'note')}>${e(D.note.text || (bdEditing() ? '(extra note)' : ''))}</div>` : ''}
+${D.footer.show ? `<div class="foot" ${bdAt(D.footer, 'footer')}>${footHtml}</div>` : ''}
 </div>
 <script>
 (function(){
-  function fit(){ var w=document.documentElement.clientWidth; var z=Math.min(1,w/794); document.body.style.zoom=z; var ps=document.querySelectorAll('.bd-pen'); for(var i=0;i<ps.length;i++){ps[i].style.zoom=(1/z);} }
+  function fit(){ var w=document.documentElement.clientWidth; var z=Math.min(1,w/794); document.body.style.zoom=z; }
   window.addEventListener('resize',fit); window.addEventListener('beforeprint',function(){document.body.style.zoom=1;}); window.addEventListener('afterprint',fit); fit();
 })();
 <\/script>
+${bdEditScript()}
 </body></html>`;
     }
 
@@ -1705,20 +1735,19 @@ ${D.footer.show ? `<div class="foot">${footHtml}${pn('footer')}</div>` : ''}
         const e = escReceiptHtml;
         const pn = bdPen;
         let itemsHtml = items.map((it, ix) => `
-            <div class="item-row">
+            <div class="item-row" ${bdAt(D.items, 'items')}>
                 <div class="col-item">${e(it.name)}</div>
                 <div class="col-qty">${it.qty}${(D.items.showUnit && it.unit) ? ' ' + e(it.unit) : ''}</div>
                 <div class="col-price">${Number(it.price).toFixed(3)}</div>
-                <div class="col-amount">${(Number(it.price) * Number(it.qty)).toFixed(3)}</div>${ix === 0 ? pn('items') : ''}
+                <div class="col-amount">${(Number(it.price) * Number(it.qty)).toFixed(3)}</div>
             </div>`).join('');
 
-        let discHtml = (D.discount.show && discAmt > 0) ? `<div class="discount-row"><span>${e(D.discount.label)}</span><span>-${discAmt.toFixed(3)}</span>${pn('discount')}</div>` : '';
-        let dlvHtml = (D.delivery.show && delivery > 0) ? `<div class="delivery-row"><span>${e(D.delivery.label)}</span><span>${delivery.toFixed(3)}</span>${pn('delivery')}</div>` : '';
-        let custHtml = (D.custphone.show && custPhone) ? `<div class="row"><span style="font-size: ${Number(D.custphone.size)}px;">📞 ${e(custPhone)}</span>${pn('custphone')}</div>` : '';
-        let logoHtml = (D.logo.show && logo) ? `<img class="logo" src="${logo}" onerror="this.style.display='none'">` : '';
-        if (bdEditing() && D.logo.show) logoHtml = '<div style="position:relative">' + logoHtml + pn('logo') + '</div>';
+        let discHtml = (D.discount.show && discAmt > 0) ? `<div class="discount-row" ${bdAt(D.discount, 'discount')}><span>${e(D.discount.label)}</span><span>-${discAmt.toFixed(3)}</span></div>` : '';
+        let dlvHtml = (D.delivery.show && delivery > 0) ? `<div class="delivery-row" ${bdAt(D.delivery, 'delivery')}><span>${e(D.delivery.label)}</span><span>${delivery.toFixed(3)}</span></div>` : '';
+        let custHtml = (D.custphone.show && custPhone) ? `<div class="row" ${bdAt(D.custphone, 'custphone')}><span style="font-size: ${Number(D.custphone.size)}px;">📞 ${e(custPhone)}</span></div>` : '';
+        let logoHtml = (D.logo.show && logo) ? `<img class="logo" ${bdAtLogo(D.logo, 'logo')} src="${logo}" onerror="this.style.display='none'">` : '';
         const ln = (cls) => D.lines.show ? `<div class="${cls}"></div>` : '';
-        const note = (n, cls, sec) => (n.show && (n.text || bdEditing())) ? `<div class="${cls}">${e(n.text || (bdEditing() ? '(extra note)' : '')).replace(/\n/g, '<br>')}${pn(sec)}</div>` : '';
+        const note = (n, cls, sec) => (n.show && (n.text || bdEditing())) ? `<div class="${cls}" ${bdAt(n, sec)}>${e(n.text || (bdEditing() ? '(extra note)' : '')).replace(/\n/g, '<br>')}</div>` : '';
 
         return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
@@ -1753,7 +1782,7 @@ body { font-family: Helvetica, Arial, sans-serif; color:#000; display:flex; just
 .gtotal .label { margin-right:3mm; }
 .itemsqty { font-size:${Number(D.itemsqty.size)}pt; margin:1mm 0; }
 .footer { text-align:${bdAl(D.footer.align)}; font-size:${Number(D.footer.size)}pt; font-weight:${bdW(D.footer.bold)}; margin-top:2mm; }
-${bdEditing() ? BD_PEN_CSS : ''}
+${bdEditing() ? BD_EDIT_CSS : ''}
 @media print {
   @page { size:80mm auto; margin:0; }
   html, body { width:100%; height:100%; }
@@ -1765,31 +1794,32 @@ ${bdEditing() ? BD_PEN_CSS : ''}
 <div class="receipt">
 ${logoHtml}
 ${note(D.topNote, 'topnote', 'topNote')}
-${D.shopname.show ? `<div class="shopname">${e(shop.name)}${pn('shopname')}</div>` : ''}
-${(D.addr.show && shop.addr) ? `<div class="addr">${e(shop.addr)}${pn('addr')}</div>` : ''}
-${(D.phone.show && shop.phone) ? `<div class="phone">${e(shop.phone)}${pn('phone')}</div>` : ''}
-${(D.vat.show && shop.vat) ? `<div class="vatno">${e(D.vat.label)} ${e(shop.vat)}${pn('vat')}</div>` : ''}
-${(D.hall.show && shop.hall) ? `<div class="hall">${e(shop.hall)}${pn('hall')}</div>` : ''}
-${D.billrow.show ? `<div class="billrow">${billLine}${pn('billrow')}</div>` : ''}
-${D.datetime.show ? `<div class="row"><span>${e(D.datetime.dateLabel)} ${dateStr}</span><span>${e(D.datetime.timeLabel)} ${timeStr}</span>${pn('datetime')}</div>` : ''}
-${D.shiftrow.show ? `<div class="row shift"><span>${shiftText}</span><span>${e(D.shiftrow.adminText)}</span>${pn('shiftrow')}</div>` : ''}
+${D.shopname.show ? `<div class="shopname" ${bdAt(D.shopname, 'shopname')}>${e(shop.name)}</div>` : ''}
+${(D.addr.show && shop.addr) ? `<div class="addr" ${bdAt(D.addr, 'addr')}>${e(shop.addr)}</div>` : ''}
+${(D.phone.show && shop.phone) ? `<div class="phone" ${bdAt(D.phone, 'phone')}>${e(shop.phone)}</div>` : ''}
+${(D.vat.show && shop.vat) ? `<div class="vatno" ${bdAt(D.vat, 'vat')}>${e(D.vat.label)} ${e(shop.vat)}</div>` : ''}
+${(D.hall.show && shop.hall) ? `<div class="hall" ${bdAt(D.hall, 'hall')}>${e(shop.hall)}</div>` : ''}
+${D.billrow.show ? `<div class="billrow" ${bdAt(D.billrow, 'billrow')}>${billLine}</div>` : ''}
+${D.datetime.show ? `<div class="row" ${bdAt(D.datetime, 'datetime')}><span>${e(D.datetime.dateLabel)} ${dateStr}</span><span>${e(D.datetime.timeLabel)} ${timeStr}</span></div>` : ''}
+${D.shiftrow.show ? `<div class="row shift" ${bdAt(D.shiftrow, 'shiftrow')}><span>${shiftText}</span><span>${e(D.shiftrow.adminText)}</span></div>` : ''}
 ${custHtml}
 ${ln('dashed')}
-${D.thead.show ? `<div class="tblhead"><div class="col-item">${e(D.thead.item)}</div><div class="col-qty">${e(D.thead.qty)}</div><div class="col-price">${e(D.thead.price)}</div><div class="col-amount">${e(D.thead.amount)}</div>${pn('thead')}</div>` : ''}
+${D.thead.show ? `<div class="tblhead" ${bdAt(D.thead, 'thead')}><div class="col-item">${e(D.thead.item)}</div><div class="col-qty">${e(D.thead.qty)}</div><div class="col-price">${e(D.thead.price)}</div><div class="col-amount">${e(D.thead.amount)}</div></div>` : ''}
 ${ln('dashed')}
 ${itemsHtml}
 ${ln('dashed')}
 ${discHtml}
-${(D.vatrow.show && vat > 0) ? `<div class="vat-row"><span>${e(D.vatrow.label)} (${Number(vatPerc)}%)</span><span>${vat.toFixed(3)}</span>${pn('vatrow')}</div>` : ''}
+${(D.vatrow.show && vat > 0) ? `<div class="vat-row" ${bdAt(D.vatrow, 'vatrow')}><span>${e(D.vatrow.label)} (${Number(vatPerc)}%)</span><span>${vat.toFixed(3)}</span></div>` : ''}
 ${dlvHtml}
 ${ln('solid')}
-${D.gtotal.show ? `<div class="gtotal"><span class="label">${e(D.gtotal.label)}</span><span>${grand.toFixed(3)}</span>${pn('gtotal')}</div>` : ''}
+${D.gtotal.show ? `<div class="gtotal" ${bdAt(D.gtotal, 'gtotal')}><span class="label">${e(D.gtotal.label)}</span><span>${grand.toFixed(3)}</span></div>` : ''}
 ${ln('dashed')}
-${D.itemsqty.show ? `<div class="itemsqty">${e(D.itemsqty.label)} ${itemsCount} / ${totalQty}${pn('itemsqty')}</div>` : ''}
+${D.itemsqty.show ? `<div class="itemsqty" ${bdAt(D.itemsqty, 'itemsqty')}>${e(D.itemsqty.label)} ${itemsCount} / ${totalQty}</div>` : ''}
 ${ln('dashed')}
-${D.footer.show ? `<div class="footer">${e(D.footer.text || shop.footer || ("Generated by " + shop.name + " POS System"))}${pn('footer')}</div>` : ''}
+${D.footer.show ? `<div class="footer" ${bdAt(D.footer, 'footer')}>${e(D.footer.text || shop.footer || ("Generated by " + shop.name + " POS System"))}</div>` : ''}
 ${note(D.bottomNote, 'botnote', 'bottomNote')}
 </div>
+${bdEditScript()}
 </body></html>`;
     }
 
@@ -1841,7 +1871,8 @@ ${note(D.bottomNote, 'botnote', 'bottomNote')}
         closeM();
         try { bdWork = JSON.parse(localStorage.getItem('asb_bill_design')) || {}; } catch (e) { bdWork = {}; }
         bdFmt = (getBillFormat() === 'a4') ? 'a4' : 't80';
-        bdShop = getShopInfo(); bdShopDirty = false;
+        bdShop = getShopInfo(); bdShopDirty = false; bdEditMode = false; window.__bdSel = null;
+        document.getElementById('bdEditBtn').className = 'bd-tab'; document.getElementById('bdPreview').style.height = '36%';
         document.getElementById('bdSheet').style.display = 'none';
         document.getElementById('billDesignerPage').style.display = 'flex';
         bdRenderForm(); bdRenderPreview();
@@ -1850,7 +1881,7 @@ ${note(D.bottomNote, 'botnote', 'bottomNote')}
         window.__bdOverride = null; window.__bdShopOverride = null; window.__bdEdit = false;
         document.getElementById('billDesignerPage').style.display = 'none';
     }
-    function bdSwitch(f) { bdFmt = f; document.getElementById('bdSheet').style.display = 'none'; bdRenderForm(); bdRenderPreview(); }
+    function bdSwitch(f) { bdFmt = f; window.__bdSel = null; bdSheetSec = null; document.getElementById('bdSheet').style.display = 'none'; bdRenderForm(); bdRenderPreview(); }
     function bdGet(fmt, sec, key) {
         const cur = bdMerge(BD_DEFAULTS, bdWork || {});
         return cur[fmt][sec][key];
@@ -1888,7 +1919,7 @@ ${note(D.bottomNote, 'botnote', 'bottomNote')}
         document.getElementById('bdTabA4').className = 'bd-tab' + (bdFmt === 'a4' ? ' on' : '');
         let h = '';
         BD_SCHEMA[bdFmt].forEach(sec => {
-            h += `<details class="bd-card"><summary>${bdEsc(sec[1])} <button class="bd-edit" onclick="event.preventDefault(); event.stopPropagation(); bdOpenSheet('${sec[0]}')">&#9998;</button></summary><div class="bd-grid">${bdFieldsHTML(bdFmt, sec)}</div></details>`;
+            h += `<details class="bd-card"><summary>${bdEsc(sec[1])}</summary><div class="bd-grid">${bdFieldsHTML(bdFmt, sec)}</div></details>`;
         });
         document.getElementById('bdForm').innerHTML = h;
     }
@@ -1896,24 +1927,71 @@ ${note(D.bottomNote, 'botnote', 'bottomNote')}
         bdShop[k] = v; bdShopDirty = true;
         clearTimeout(bdTimer); bdTimer = setTimeout(bdRenderPreview, 250);
     }
+    let bdEditMode = false, bdSheetSec = null;
+    function bdToggleEdit() {
+        bdEditMode = !bdEditMode;
+        document.getElementById('bdEditBtn').className = 'bd-tab' + (bdEditMode ? ' on' : '');
+        document.getElementById('bdPreview').style.height = bdEditMode ? '42%' : '36%';
+        if (!bdEditMode) { window.__bdSel = null; document.getElementById('bdSheet').style.display = 'none'; bdSheetSec = null; bdRenderForm(); }
+        bdRenderPreview();
+    }
+    function bdSizeKey(sec) {
+        if (sec === 'company') return 'nameSize';
+        const d = BD_DEFAULTS[bdFmt][sec] || {};
+        return ('size' in d) ? 'size' : 'fs';
+    }
+    function bdCur(key) {
+        const v = bdGet(bdFmt, bdSheetSec, key);
+        return v;
+    }
+    function bdToolHTML() {
+        const sec = bdSheetSec, sk = bdSizeKey(sec);
+        const al = bdCur('align') || (BD_DEFAULTS[bdFmt][sec] && BD_DEFAULTS[bdFmt][sec].align) || '';
+        const bold = bdCur('bold') === true, ital = bdCur('italic') === true;
+        let sz = bdCur(sk);
+        if (sz === undefined || sz === 0) sz = (bdFmt === 'a4') ? bdGet('a4', 'page', 'font') : 8;
+        const stepper = (label, key, val, step) => `<div class="bd-st"><span>${label}</span><button onclick="bdStep('${key}',-${step})">&minus;</button><b>${val === undefined || val === '' ? '&ndash;' : (Math.round(val * 10) / 10)}</b><button onclick="bdStep('${key}',${step})">+</button></div>`;
+        const btn = (txt, on, js, style) => `<button class="bd-b${on ? ' on' : ''}" style="${style || ''}" onclick="${js}">${txt}</button>`;
+        return `<div class="bd-tb">
+            ${btn('&#8676;', al === 'left', "bdTool('align','left')")}${btn('&#8596;', al === 'center', "bdTool('align','center')")}${btn('&#8677;', al === 'right', "bdTool('align','right')")}
+            ${btn('B', bold, "bdTool('bold')", 'font-weight:900')}${btn('I', ital, "bdTool('italic')", 'font-style:italic;font-family:serif')}
+        </div>
+        <div class="bd-tb">${stepper('Size', sk, sz, sk === 'size' && sec === 'logo' ? 2 : 1)}</div>
+        <div class="bd-tb">${stepper('Margin Top', 'mt', bdCur('mt'), 1)}${stepper('Margin Bottom', 'mb', bdCur('mb'), 1)}</div>
+        <div class="bd-tb">${stepper('Margin Left', 'ml', bdCur('ml'), 1)}${stepper('Margin Right', 'mr', bdCur('mr'), 1)}</div>`;
+    }
+    function bdTool(k, v) {
+        if (k === 'bold' || k === 'italic') v = !(bdCur(k) === true);
+        bdSet(bdFmt, bdSheetSec, k, v);
+        document.getElementById('bdTool').innerHTML = bdToolHTML();
+    }
+    function bdStep(key, delta) {
+        let v = bdCur(key);
+        if (v === undefined || v === '') {
+            v = (key === 'size' || key === 'fs' || key === 'nameSize') ? ((bdFmt === 'a4') ? bdGet('a4', 'page', 'font') : 8) : 0;
+        }
+        v = Math.round((Number(v) + delta) * 10) / 10;
+        if (key === 'size' || key === 'fs' || key === 'nameSize') v = Math.max(1, v); else v = Math.max(-20, Math.min(60, v));
+        bdSet(bdFmt, bdSheetSec, key, v);
+        document.getElementById('bdTool').innerHTML = bdToolHTML();
+    }
     function bdOpenSheet(secKey) {
         const sec = BD_SCHEMA[bdFmt].find(s => s[0] === secKey);
         if (!sec) return;
-        let h = `<div class="bd-sh-head"><b>&#9998; ${bdEsc(sec[1])}</b><button onclick="bdCloseSheet()">DONE</button></div><div class="bd-grid">`;
+        bdSheetSec = secKey; window.__bdSel = secKey;
+        const skip = { align: 1, bold: 1, size: 1, nameSize: 1 };
+        let h = `<div class="bd-sh-head"><b>&#9998; ${bdEsc(sec[1])}</b><button onclick="bdCloseSheet()">DONE</button></div><div id="bdTool">${bdToolHTML()}</div><div class="bd-sh-sub">Text &amp; details</div><div class="bd-grid">`;
         ((BD_SHOPMAP[bdFmt] || {})[secKey] || []).forEach(m => {
             h += `<label class="bd-f wide"><span>${bdEsc(m[1])} (shown on bill)</span><input type="text" value="${bdEsc(bdShop[m[0]])}" oninput="bdSetShop('${m[0]}', this.value)"></label>`;
         });
-        h += bdFieldsHTML(bdFmt, sec) + '</div>';
+        h += bdFieldsHTML(bdFmt, [sec[0], sec[1], sec[2].filter(f => !skip[f[0]])]) + '</div>';
         const sh = document.getElementById('bdSheet');
         sh.innerHTML = h; sh.style.display = 'block';
     }
     function bdCloseSheet() {
         document.getElementById('bdSheet').style.display = 'none';
-        bdRenderForm();
-    }
-    function bdTogglePreview() {
-        const f = document.getElementById('bdPreview');
-        f.style.height = (f.style.height === '62%') ? '36%' : '62%';
+        bdSheetSec = null; window.__bdSel = null;
+        bdRenderForm(); bdRenderPreview();
     }
     function bdSampleData() {
         let logo = null; try { logo = localStorage.getItem('savedPhotoUrl') || null; } catch (e) {}
@@ -1930,12 +2008,14 @@ ${note(D.bottomNote, 'botnote', 'bottomNote')}
         return { logo, billLine: 'Bill no: 14 Ticket no: 13', billNo: 14, dateStr: dd, timeStr: d.toLocaleTimeString(), shiftText: 'Afternoon', custPhone: '91234567', items, discAmt, vatPerc, vat, delivery, grand: sub - discAmt + vat + delivery, itemsCount: items.length, totalQty: q };
     }
     function bdRenderPreview() {
-        window.__bdOverride = bdWork || {}; window.__bdEdit = true; window.__bdShopOverride = bdShop;
+        window.__bdOverride = bdWork || {}; window.__bdEdit = bdEditMode; window.__bdShopOverride = bdShop;
         const data = bdSampleData(); data.format = (bdFmt === 'a4') ? 'a4' : 'thermal';
         let html = '';
         try { html = buildReceiptHTML(data); } catch (e) { html = '<pre>' + e.message + '</pre>'; }
         window.__bdOverride = null; window.__bdEdit = false; window.__bdShopOverride = null;
         const fr = document.getElementById('bdPreview');
+        let sy = 0; try { sy = fr.contentWindow.scrollY || 0; } catch (e) {}
+        fr.onload = function () { try { fr.contentWindow.scrollTo(0, sy); } catch (e) {} };
         fr.srcdoc = html;
     }
     function saveBillDesign() {
@@ -4306,15 +4386,23 @@ function deleteBill(billNo, dateKey, displayLabel){
 .bd-f input[type=checkbox] { width:20px; height:20px; accent-color:#10b981; }
 .bd-edit { float:right; border:none; background:#8b5cf6; color:#fff; width:30px; height:30px; border-radius:50%; font-size:15px; line-height:30px; margin:-4px 0 0 8px; }
 #billDesignerPage { position:fixed; }
-#bdSheet { display:none; position:absolute; left:0; right:0; bottom:74px; max-height:52%; overflow-y:auto; background:#fff; border-radius:18px 18px 0 0; box-shadow:0 -6px 24px rgba(15,23,42,0.28); padding:12px 4px 10px; z-index:10; }
+#bdSheet { display:none; position:absolute; left:0; right:0; bottom:74px; max-height:50%; overflow-y:auto; background:#fff; border-radius:18px 18px 0 0; box-shadow:0 -6px 24px rgba(15,23,42,0.28); padding:12px 4px 10px; z-index:10; }
 .bd-sh-head { display:flex; align-items:center; justify-content:space-between; padding:2px 14px 8px; font-size:14px; color:#1e293b; }
+.bd-sh-sub { padding:6px 14px 2px; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px; }
+.bd-tb { display:flex; gap:8px; padding:4px 12px; flex-wrap:wrap; }
+.bd-b { min-width:46px; height:42px; border:1.5px solid #e2e8f0; background:#f8fafc; border-radius:11px; font-size:17px; color:#334155; }
+.bd-b.on { background:#8b5cf6; border-color:#8b5cf6; color:#fff; }
+.bd-st { display:flex; align-items:center; gap:6px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:11px; padding:3px 6px; flex:1; min-width:140px; }
+.bd-st span { font-size:11px; font-weight:700; color:#64748b; flex:1; }
+.bd-st button { width:34px; height:34px; border:none; border-radius:9px; background:#e2e8f0; font-size:18px; font-weight:800; color:#1e293b; }
+.bd-st b { min-width:34px; text-align:center; font-size:13px; color:#1e293b; }
 .bd-sh-head button { border:none; background:linear-gradient(135deg,#10b981,#059669); color:#fff; font-weight:800; padding:8px 18px; border-radius:10px; font-size:12px; }
 .bd-foot { display:flex; gap:10px; padding:10px 12px; background:#fff; border-top:1px solid #e2e8f0; flex-shrink:0; }
 .bd-foot button { flex:1; padding:14px; border:none; border-radius:12px; font-weight:800; font-size:14px; color:#fff; }
 </style>
 <div id="billDesignerPage" class="full-page" style="display:none; flex-direction:column;">
     <div class="bd-head"><b>🎨 Bill Designer</b><button onclick="closeBillDesigner()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button></div>
-    <div class="bd-tabs"><button id="bdTab80" class="bd-tab on" onclick="bdSwitch('t80')">80mm Thermal</button><button id="bdTabA4" class="bd-tab" onclick="bdSwitch('a4')">A4 Tax Invoice</button><button class="bd-tab" style="flex:0 0 46px;" onclick="bdTogglePreview()" title="Expand preview">&#10530;</button></div>
+    <div class="bd-tabs"><button id="bdTab80" class="bd-tab on" onclick="bdSwitch('t80')">80mm Thermal</button><button id="bdTabA4" class="bd-tab" onclick="bdSwitch('a4')">A4 Tax Invoice</button><button id="bdEditBtn" class="bd-tab" style="flex:0 0 52px;" onclick="bdToggleEdit()" title="Edit on bill">&#9998;</button></div>
     <iframe id="bdPreview" title="preview"></iframe>
     <div id="bdForm"></div>
     <div id="bdSheet"></div>
