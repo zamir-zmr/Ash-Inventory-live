@@ -368,7 +368,7 @@ body { width: 100%; }
 
   <div class="cart-bar" id="bottom-cart-bar" onclick="toggleCart(true)">
         <span id="cart-count">0 ITEMS</span>
-        <span id="cart-total">OMR 0.000</span>
+        <span id="cart-total"><span class="cur-code">OMR</span> 0.000</span>
     </div>
 
       
@@ -400,11 +400,11 @@ body { width: 100%; }
                 <span id="sub-total-disp" style="color: #1e293b; font-weight: 600;">0.000</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
-                <span>Discount (OMR)</span>
+                <span>Discount (<span class="cur-code">OMR</span>)</span>
                 <input type="number" id="disc-val" oninput="updateCartUI()" value="0" min="0" step="0.001" style="width: 80px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;">
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
-                <span>Delivery (OMR)</span>
+                <span>Delivery (<span class="cur-code">OMR</span>)</span>
                 <input type="number" id="deliv-val" oninput="updateCartUI()" step="0.1" value="0" style="width: 60px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 600;">
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #64748b;">
@@ -419,7 +419,7 @@ body { width: 100%; }
 
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 6px 10px;">
             <span style="font-weight: 800; color: #1e293b; font-size: 14px; flex-shrink:0;">GRAND TOTAL</span>
-            <span id="grand-total" style="font-size: 24px; font-weight: 900; color: #00C7C7; text-align:right; margin-left:auto; white-space:nowrap;">0.000 <small style="font-size: 12px;">OMR</small></span>
+            <span id="grand-total" style="font-size: 24px; font-weight: 900; color: #00C7C7; text-align:right; margin-left:auto; white-space:nowrap;">0.000 <small style="font-size: 12px;" class="cur-code">OMR</small></span>
         </div>
 
         <div style="display: flex; gap: 12px;">
@@ -496,6 +496,7 @@ body { width: 100%; }
     <h3>Settings</h3>
     <button class="btn" style="background:var(--primary); width:100%; margin-bottom:10px" onclick="closeM(); show('logoM')">🖼️ UPDATE LOGO</button>
     <button class="btn" style="background:#0ea5e9; width:100%; margin-bottom:10px" onclick="openShopInfoModal()">🏪 SHOP / RECEIPT INFO</button>
+    <div style="margin-bottom:10px;"><label style="font-size:11px; font-weight:800; color:#64748b; display:block; margin-bottom:4px;">💱 CURRENCY</label><select class="cur-select" onchange="setCurrency(this.value)" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; font-weight:700; background:#fff;"></select></div>
     <button class="btn" style="background:#8b5cf6; width:100%; margin-bottom:10px" onclick="openBillDesigner()">🎨 BILL DESIGNER (80mm / A4)</button>
     <button class="btn" style="background:var(--a); width:100%; margin-bottom:10px" onclick="closeM(); showCatM()">➕ ADD CATEGORY</button>
     <button class="btn" style="background:var(--w); width:100%; margin-bottom:10px" onclick="enableCatMulti()">🗑️ DELETE CATEGORIES</button>
@@ -671,7 +672,7 @@ width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
         <!-- Total Revenue Banner -->
         <div style="background:linear-gradient(135deg,#1e293b,#334155); color:#fff; padding:16px; border-radius:14px; text-align:center;">
             <small style="opacity:0.8; font-weight:bold; font-size:10px; letter-spacing:1px;" id="repPeriodLabel">TODAY</small>
-            <div style="font-size:24px; font-weight:900;" id="repTotalRevenue">0.000 <span style="font-size:12px; opacity:0.7;">OMR</span></div>
+            <div style="font-size:24px; font-weight:900;" id="repTotalRevenue">0.000 <span style="font-size:12px; opacity:0.7;" class="cur-code">OMR</span></div>
         </div>
 
         <!-- Orders & AOV Stats -->
@@ -687,7 +688,7 @@ width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
         </div>
 
         <!-- Payment Breakdown -->
-        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
+        <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:6px;">
             <div style="background:#f0fdf4; border:1px solid #dcfce7; padding:8px 4px; border-radius:10px; text-align:center;">
                 <small style="color:#166534; font-weight:800; font-size:8px;">🏦 TRANSFER</small>
                 <div style="font-size:12px; font-weight:700; color:#14532d;" id="repCashTransfer">0.000</div>
@@ -699,6 +700,10 @@ width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
             <div style="background:#fffbeb; border:1px solid #fef3c7; padding:8px 4px; border-radius:10px; text-align:center;">
                 <small style="color:#92400e; font-weight:800; font-size:8px;">💵 CASH</small>
                 <div style="font-size:12px; font-weight:700; color:#78350f;" id="repCashCash">0.000</div>
+            </div>
+            <div style="background:#ecfdf5; border:1px solid #d1fae5; padding:8px 4px; border-radius:10px; text-align:center;">
+                <small style="color:#047857; font-weight:800; font-size:8px;">📱 M-PESA</small>
+                <div style="font-size:12px; font-weight:700; color:#065f46;" id="repCashMpesa">0.000</div>
             </div>
             <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:8px 4px; border-radius:10px; text-align:center;">
                 <small style="color:#475569; font-weight:800; font-size:8px;">⏳ PENDING</small>
@@ -1140,7 +1145,7 @@ function processPastedJson() {
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
     let currentTicket = null, ticketsUsed = [], ticketsPending = [], ticketsSettled = [], activeTicketTab = 1;
     
-    function initApp() { loadSavedLogo(); applyDashVisibility(); applyShopInfoUI(); initBillFormat(); 
+    function initApp() { loadSavedLogo(); fillCurSelects(); applyDashVisibility(); applyShopInfoUI(); initBillFormat(); 
     location.hash = 'home'; render(); loadTicketState(); showTicketPage(); }
 
     function todayLocalStr() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
@@ -1480,6 +1485,41 @@ function processPastedJson() {
         try { v = localStorage.getItem('asb_bill_format') || 'thermal'; } catch (e) {}
         const sel = document.getElementById('bill-format'); if (sel) sel.value = (v === 'a4') ? 'a4' : 'thermal';
     }
+    /* ===== Currency (synced via asb_currency) ===== */
+    const CURRENCIES = {
+        OMR: { name: 'Omani Rial (OMR)', words: 'OMANI RIAL', sub: 1000, dec: 3 },
+        INR: { name: 'Indian Rupee (INR)', words: 'INDIAN RUPEES', sub: 100, dec: 2 },
+        USD: { name: 'US Dollar (USD)', words: 'US DOLLARS', sub: 100, dec: 2 },
+        TZS: { name: 'Tanzanian Shilling (TZS)', words: 'TANZANIAN SHILLINGS', sub: 1, dec: 0 }
+    };
+    function curCode() {
+        let c = 'OMR';
+        try { c = localStorage.getItem('asb_currency') || 'OMR'; } catch (e) {}
+        return CURRENCIES[c] ? c : 'OMR';
+    }
+    function curInfo() { return CURRENCIES[curCode()]; }
+    function cdec() { return curInfo().dec; }
+    function fillCurSelects() {
+        document.querySelectorAll('.cur-select').forEach(sel => {
+            if (!sel.options.length) sel.innerHTML = Object.keys(CURRENCIES).map(k => '<option value="' + k + '">' + CURRENCIES[k].name + '</option>').join('');
+        });
+        applyCurrencyUI();
+    }
+    function applyCurrencyUI() {
+        const c = curCode();
+        document.querySelectorAll('.cur-code').forEach(el => { el.textContent = c; });
+        document.querySelectorAll('.cur-select').forEach(sel => { sel.value = c; });
+        try { if (typeof updateCartUI === 'function') updateCartUI(); } catch (e) {}
+    }
+    function setCurrency(code) {
+        if (!CURRENCIES[code]) code = 'OMR';
+        try { localStorage.setItem('asb_currency', code); } catch (e) {}
+        applyCurrencyUI();
+        try { if (document.getElementById('billDesignerPage').style.display === 'flex') bdRenderPreview(); } catch (e) {}
+    }
+    function curSelectHTML(style) {
+        return '<select class="cur-select" onchange="setCurrency(this.value)" style="' + style + '">' + Object.keys(CURRENCIES).map(k => '<option value="' + k + '"' + (k === curCode() ? ' selected' : '') + '>' + CURRENCIES[k].name + '</option>').join('') + '</select>';
+    }
     function amountInWordsOMR(amount) {
         const ones = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN','ELEVEN','TWELVE','THIRTEEN','FOURTEEN','FIFTEEN','SIXTEEN','SEVENTEEN','EIGHTEEN','NINETEEN'];
         const tens = ['','','TWENTY','THIRTY','FORTY','FIFTY','SIXTY','SEVENTY','EIGHTY','NINETY'];
@@ -1498,9 +1538,10 @@ function processPastedJson() {
             if (n > 0) s += (s ? ' ' : '') + below1000(n);
             return s;
         }
-        let total = Math.round((parseFloat(amount) || 0) * 1000);
-        const rial = Math.floor(total / 1000), baisa = total % 1000;
-        return 'ONLY ' + words(rial) + (baisa ? ' & ' + String(baisa).padStart(3, '0') + '/1000' : '') + ' OMANI RIAL.';
+        const ci = curInfo();
+        let total = Math.round((parseFloat(amount) || 0) * ci.sub);
+        const major = Math.floor(total / ci.sub), minor = total % ci.sub;
+        return 'ONLY ' + words(major) + ((ci.sub > 1 && minor) ? ' & ' + String(minor).padStart(String(ci.sub).length - 1, '0') + '/' + ci.sub : '') + ' ' + ci.words + '.';
     }
     /* ===================== BILL DESIGN (80mm + A4) — editable, saved, synced ===================== */
     const BD_DEFAULTS = {
@@ -1533,7 +1574,7 @@ function processPastedJson() {
             logo:      { show: true, size: 28 },
             title:     { show: true, text: 'TAX INVOICE', size: 14 },
             company:   { show: true, nameSize: 11, showAddr: true, showPhone: true, showHall: true, telLabel: 'Tel:' },
-            meta:      { show: true, vatLabel: 'V.A.T reg', invLabel: 'Invoice No.', dateLabel: 'Date', curLabel: 'Currency', currency: 'OMR', invPrefix: 'INV', showTime: true },
+            meta:      { show: true, vatLabel: 'V.A.T reg', invLabel: 'Invoice No.', dateLabel: 'Date', curLabel: 'Currency', currency: '', invPrefix: 'INV', showTime: true },
             customer:  { show: true, custLabel: 'Customer:', phoneLabel: 'Phone:', detailsLabel: 'Details:', defaultName: 'Walk-in Customer', showDetails: true },
             table:     { size: 8.5, cCode: true, lCode: 'Item Code', cDesc: true, lDesc: 'Description', cUnit: true, lUnit: 'Unit', cQty: true, lQty: 'Qty', cUPrice: true, lUPrice: 'Unit Price', cNet: true, lNet: 'Net Price', cVatP: true, lVatP: 'VAT %', cVatA: true, lVatA: 'VAT Amount' },
             summary:   { size: 8.5, showSub: true, lSub: 'Sub Total', lDisc: 'Discount', lNonTax: 'Non Tax Amount', showNonTax: true, lTaxable: 'Taxable Amount', showTaxable: true, lVat: 'VAT', lGrand: 'Grand Total (OMR)', grandSize: 10, showDue: true, lDue: 'Due On' },
@@ -1616,10 +1657,10 @@ function processPastedJson() {
             ['cDesc', 'lDesc', false, (it) => e(it.name)],
             ['cUnit', 'lUnit', false, (it) => e(it.unit || 'Pcs')],
             ['cQty', 'lQty', true, (it) => String(Number(it.qty))],
-            ['cUPrice', 'lUPrice', true, (it) => Number(it.price).toFixed(3)],
-            ['cNet', 'lNet', true, (it) => (Number(it.price) * Number(it.qty)).toFixed(3)],
+            ['cUPrice', 'lUPrice', true, (it) => Number(it.price).toFixed(cdec())],
+            ['cNet', 'lNet', true, (it) => (Number(it.price) * Number(it.qty)).toFixed(cdec())],
             ['cVatP', 'lVatP', true, () => '<b>' + vp + '%</b>'],
-            ['cVatA', 'lVatA', true, (it) => '<b>' + (Number(it.price) * Number(it.qty) * ratio * vp / 100).toFixed(3) + '</b>']
+            ['cVatA', 'lVatA', true, (it) => '<b>' + (Number(it.price) * Number(it.qty) * ratio * vp / 100).toFixed(cdec()) + '</b>']
         ].filter(c => T[c[0]]);
         let head = cols.map(c => `<th${c[2] ? ' class="n"' : ''}>${e(T[c[1]])}</th>`).join('');
         const rows = items.map((it, i) => '<tr>' + cols.map(c => `<td${c[2] ? ' class="n"' : ''}>${c[3](it, i)}</td>`).join('') + '</tr>').join('');
@@ -1680,7 +1721,7 @@ ${bdEditing() ? BD_EDIT_CSS : ''}
     <tr><td>${e(D.meta.vatLabel)}</td><td>${e(shop.vat || '-')}</td></tr>
     <tr><td>${e(D.meta.invLabel)}</td><td>${e(invNo)}</td></tr>
     <tr><td>${e(D.meta.dateLabel)}</td><td>${e(dateStr)}${D.meta.showTime ? ' ' + e(timeStr || '') : ''}</td></tr>
-    <tr><td>${e(D.meta.curLabel)}</td><td>${e(D.meta.currency)}</td></tr>
+    <tr><td>${e(D.meta.curLabel)}</td><td>${e(D.meta.currency || curCode())}</td></tr>
   </table>` : ''}</div>
 </div>
 ${D.customer.show ? `<div class="cust" ${bdAt(D.customer, 'customer')}>
@@ -1702,12 +1743,12 @@ ${D.customer.show ? `<div class="cust" ${bdAt(D.customer, 'customer')}>
   <div class="right">
     
     <table class="sum" ${bdAt(D.summary, 'summary')}>
-      ${S.showSub ? `<tr><td><b>${e(S.lSub)}</b></td><td>${sub.toFixed(3)}</td></tr>` : ''}
-      ${discAmt > 0 ? `<tr><td><b>${e(S.lDisc)}</b></td><td>-${discAmt.toFixed(3)}</td></tr>` : ''}
-      ${S.showNonTax ? `<tr><td><b>${e(S.lNonTax)}</b></td><td>${(delivery || 0).toFixed(3)}</td></tr>` : ''}
-      ${S.showTaxable ? `<tr><td><b>${e(S.lTaxable)}</b></td><td>${afterDisc.toFixed(3)}</td></tr>` : ''}
-      <tr><td><b>${e(S.lVat)} (${vp}%)</b></td><td>${vat.toFixed(3)}</td></tr>
-      <tr class="tot"><td>${e(S.lGrand)}</td><td>${grand.toFixed(3)}</td></tr>
+      ${S.showSub ? `<tr><td><b>${e(S.lSub)}</b></td><td>${sub.toFixed(cdec())}</td></tr>` : ''}
+      ${discAmt > 0 ? `<tr><td><b>${e(S.lDisc)}</b></td><td>-${discAmt.toFixed(cdec())}</td></tr>` : ''}
+      ${S.showNonTax ? `<tr><td><b>${e(S.lNonTax)}</b></td><td>${(delivery || 0).toFixed(cdec())}</td></tr>` : ''}
+      ${S.showTaxable ? `<tr><td><b>${e(S.lTaxable)}</b></td><td>${afterDisc.toFixed(cdec())}</td></tr>` : ''}
+      <tr><td><b>${e(S.lVat)} (${vp}%)</b></td><td>${vat.toFixed(cdec())}</td></tr>
+      <tr class="tot"><td>${e(String(S.lGrand).replace(/\(OMR\)/g, '(' + curCode() + ')'))}</td><td>${grand.toFixed(cdec())}</td></tr>
     </table>
     ${S.showDue ? `<div class="due"><span>${e(S.lDue)}</span><span>${e(dateStr)}</span></div>` : ''}
     ${D.receiver.show ? `<div class="sign" ${bdAt(D.receiver, 'receiver')}><span>${e(D.receiver.l1)}</span><span>${e(D.receiver.l2)}</span></div>` : ''}
@@ -1738,12 +1779,12 @@ ${bdEditScript()}
             <div class="item-row" ${bdAt(D.items, 'items')}>
                 <div class="col-item">${e(it.name)}</div>
                 <div class="col-qty">${it.qty}${(D.items.showUnit && it.unit) ? ' ' + e(it.unit) : ''}</div>
-                <div class="col-price">${Number(it.price).toFixed(3)}</div>
-                <div class="col-amount">${(Number(it.price) * Number(it.qty)).toFixed(3)}</div>
+                <div class="col-price">${Number(it.price).toFixed(cdec())}</div>
+                <div class="col-amount">${(Number(it.price) * Number(it.qty)).toFixed(cdec())}</div>
             </div>`).join('');
 
-        let discHtml = (D.discount.show && discAmt > 0) ? `<div class="discount-row" ${bdAt(D.discount, 'discount')}><span>${e(D.discount.label)}</span><span>-${discAmt.toFixed(3)}</span></div>` : '';
-        let dlvHtml = (D.delivery.show && delivery > 0) ? `<div class="delivery-row" ${bdAt(D.delivery, 'delivery')}><span>${e(D.delivery.label)}</span><span>${delivery.toFixed(3)}</span></div>` : '';
+        let discHtml = (D.discount.show && discAmt > 0) ? `<div class="discount-row" ${bdAt(D.discount, 'discount')}><span>${e(D.discount.label)}</span><span>-${discAmt.toFixed(cdec())}</span></div>` : '';
+        let dlvHtml = (D.delivery.show && delivery > 0) ? `<div class="delivery-row" ${bdAt(D.delivery, 'delivery')}><span>${e(D.delivery.label)}</span><span>${delivery.toFixed(cdec())}</span></div>` : '';
         let custHtml = (D.custphone.show && custPhone) ? `<div class="row" ${bdAt(D.custphone, 'custphone')}><span style="font-size: ${Number(D.custphone.size)}px;">📞 ${e(custPhone)}</span></div>` : '';
         let logoHtml = (D.logo.show && logo) ? `<img class="logo" ${bdAtLogo(D.logo, 'logo')} src="${logo}" onerror="this.style.display='none'">` : '';
         const ln = (cls) => D.lines.show ? `<div class="${cls}"></div>` : '';
@@ -1809,10 +1850,10 @@ ${ln('dashed')}
 ${itemsHtml}
 ${ln('dashed')}
 ${discHtml}
-${(D.vatrow.show && vat > 0) ? `<div class="vat-row" ${bdAt(D.vatrow, 'vatrow')}><span>${e(D.vatrow.label)} (${Number(vatPerc)}%)</span><span>${vat.toFixed(3)}</span></div>` : ''}
+${(D.vatrow.show && vat > 0) ? `<div class="vat-row" ${bdAt(D.vatrow, 'vatrow')}><span>${e(D.vatrow.label)} (${Number(vatPerc)}%)</span><span>${vat.toFixed(cdec())}</span></div>` : ''}
 ${dlvHtml}
 ${ln('solid')}
-${D.gtotal.show ? `<div class="gtotal" ${bdAt(D.gtotal, 'gtotal')}><span class="label">${e(D.gtotal.label)}</span><span>${grand.toFixed(3)}</span></div>` : ''}
+${D.gtotal.show ? `<div class="gtotal" ${bdAt(D.gtotal, 'gtotal')}><span class="label">${e(D.gtotal.label)}</span><span>${grand.toFixed(cdec())}</span></div>` : ''}
 ${ln('dashed')}
 ${D.itemsqty.show ? `<div class="itemsqty" ${bdAt(D.itemsqty, 'itemsqty')}>${e(D.itemsqty.label)} ${itemsCount} / ${totalQty}</div>` : ''}
 ${ln('dashed')}
@@ -1854,7 +1895,7 @@ ${bdEditScript()}
             ['logo', 'Logo', [['show', 'chk', 'Show'], ['size', 'num', 'Size (mm)']]],
             ['title', 'Heading', [['show', 'chk', 'Show'], ['text', 'txt', 'Text'], ['size', 'num', 'Size (pt)']]],
             ['company', 'Company Block (top left)', [['show', 'chk', 'Show'], ['nameSize', 'num', 'Name size (pt)'], ['showAddr', 'chk', 'Address'], ['showPhone', 'chk', 'Phone'], ['telLabel', 'txt', 'Tel label'], ['showHall', 'chk', 'Hall name']]],
-            ['meta', 'Invoice Details (top right)', [['show', 'chk', 'Show'], ['vatLabel', 'txt', 'VAT label'], ['invLabel', 'txt', 'Invoice label'], ['dateLabel', 'txt', 'Date label'], ['curLabel', 'txt', 'Currency label'], ['currency', 'txt', 'Currency'], ['invPrefix', 'txt', 'Invoice prefix'], ['showTime', 'chk', 'Show time']]],
+            ['meta', 'Invoice Details (top right)', [['show', 'chk', 'Show'], ['vatLabel', 'txt', 'VAT label'], ['invLabel', 'txt', 'Invoice label'], ['dateLabel', 'txt', 'Date label'], ['curLabel', 'txt', 'Currency label'], ['currency', 'txt', 'Currency (empty = selected)'], ['invPrefix', 'txt', 'Invoice prefix'], ['showTime', 'chk', 'Show time']]],
             ['customer', 'Customer Section', [['show', 'chk', 'Show'], ['custLabel', 'txt', 'Customer label'], ['defaultName', 'txt', 'Default name'], ['phoneLabel', 'txt', 'Phone label'], ['showDetails', 'chk', 'Show details'], ['detailsLabel', 'txt', 'Details label']]],
             ['table', 'Item Table Columns', [['size', 'num', 'Size (pt)'], ['cCode', 'chk', 'Code'], ['lCode', 'txt', 'Code label'], ['cDesc', 'chk', 'Description'], ['lDesc', 'txt', 'Desc label'], ['cUnit', 'chk', 'Unit'], ['lUnit', 'txt', 'Unit label'], ['cQty', 'chk', 'Qty'], ['lQty', 'txt', 'Qty label'], ['cUPrice', 'chk', 'Unit price'], ['lUPrice', 'txt', 'Unit price label'], ['cNet', 'chk', 'Net price'], ['lNet', 'txt', 'Net label'], ['cVatP', 'chk', 'VAT %'], ['lVatP', 'txt', 'VAT % label'], ['cVatA', 'chk', 'VAT amount'], ['lVatA', 'txt', 'VAT amount label']]],
             ['summary', 'Summary Table (bottom right)', [['size', 'num', 'Size (pt)'], ['grandSize', 'num', 'Grand size (pt)'], ['showSub', 'chk', 'Sub total'], ['lSub', 'txt', 'Sub label'], ['lDisc', 'txt', 'Discount label'], ['showNonTax', 'chk', 'Non-tax'], ['lNonTax', 'txt', 'Non-tax label'], ['showTaxable', 'chk', 'Taxable'], ['lTaxable', 'txt', 'Taxable label'], ['lVat', 'txt', 'VAT label'], ['lGrand', 'txt', 'Grand label'], ['showDue', 'chk', 'Due date'], ['lDue', 'txt', 'Due label']]],
@@ -2289,7 +2330,7 @@ function closeReceiptModal() {
                 } else {
                     itemMedia = '';
                 }
-                d.innerHTML = `${itemMedia}<span class="cat-badge">${i.cat}</span><b>${i.name}</b><br><b style="color:var(--a)">${i.price.toFixed(3)}</b>${(localStorage.getItem('asb_show_home_qty') === '1' && i.stock !== null && i.stock !== undefined) ? `<br><small style="color:#bad500;font-weight:700;">Item Qty: ${i.stock}</small>` : ''}`; 
+                d.innerHTML = `${itemMedia}<span class="cat-badge">${i.cat}</span><b>${i.name}</b><br><b style="color:var(--a)">${i.price.toFixed(cdec())}</b>${(localStorage.getItem('asb_show_home_qty') === '1' && i.stock !== null && i.stock !== undefined) ? `<br><small style="color:#bad500;font-weight:700;">Item Qty: ${i.stock}</small>` : ''}`; 
                 d.onclick = () => { if(isMulti){ selSet.has(i.id) ? selSet.delete(i.id) : selSet.add(i.id); updateBar(); render(); } else addToCart(i); }; 
                 c.appendChild(d); 
             }); 
@@ -2472,7 +2513,7 @@ function updateCartUI(rebuildList = true) {
                         <b style="font-size:14px; color:#1e293b; word-break:break-word; overflow-wrap:break-word; flex:1; min-width:0;">${item.name}</b>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; gap:8px;">
-                        <small style="color:#64748b; flex-shrink:0;">${item.price.toFixed(3)}</small>
+                        <small style="color:#64748b; flex-shrink:0;">${item.price.toFixed(cdec())}</small>
                         <div class="qty-box" style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
                             <button class="q-btn q-minus" onclick="changeQty(${idx}, -1)" style="background:#ef4444; color:white; border:none; border-radius:4px; width:24px;">-</button>
 
@@ -2485,13 +2526,13 @@ function updateCartUI(rebuildList = true) {
 
                             <button class="q-btn q-plus" onclick="changeQty(${idx}, 1)" style="background:#10b981; color:white; border:none; border-radius:4px; width:24px;">+</button>
 
-                            <b style="min-width:70px; text-align:right; color:#1e293b;" id="row-total-${idx}">${itemTotal.toFixed(3)}</b>
+                            <b style="min-width:70px; text-align:right; color:#1e293b;" id="row-total-${idx}">${itemTotal.toFixed(cdec())}</b>
                         </div>
                     </div>
                 </div>`;
         } else {
             // Agar list rebuild nahi karni (sirf totals update karne hain)
-            document.getElementById(`row-total-${idx}`).innerText = itemTotal.toFixed(3);
+            document.getElementById(`row-total-${idx}`).innerText = itemTotal.toFixed(cdec());
         }
     });
 
@@ -2501,10 +2542,10 @@ function updateCartUI(rebuildList = true) {
     let g = _t.grand;
 
     // UI Updates
-    document.getElementById('sub-total-disp').innerText = sub.toFixed(3);
-    if(document.getElementById('cart-total')) document.getElementById('cart-total').innerText = `OMR ${g.toFixed(3)}`;
-    document.getElementById('grand-total').innerText = g.toFixed(3);
-    document.getElementById('vat-total').innerText = vt.toFixed(3);
+    document.getElementById('sub-total-disp').innerText = sub.toFixed(cdec());
+    if(document.getElementById('cart-total')) document.getElementById('cart-total').innerText = `${curCode()} ${g.toFixed(cdec())}`;
+    document.getElementById('grand-total').innerText = g.toFixed(cdec());
+    document.getElementById('vat-total').innerText = vt.toFixed(cdec());
     document.getElementById('cart-count').innerText = `${cart.reduce((a,b)=>parseFloat(a)+parseFloat(b.qty),0)} ITEMS`;
     persistTicketCart();
 }
@@ -3073,11 +3114,11 @@ function refreshReports(force) {
         if (d.slice(0, 4) === yearPrefix) yearTotal += a;
     });
     const setT = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
-    setT('daySale', 'OMR ' + dayTotal.toFixed(3));
-    setT('monthSale', 'OMR ' + monthTotal.toFixed(3));
-    setT('yearSale', 'OMR ' + yearTotal.toFixed(3));
+    setT('daySale', curCode() + ' ' + dayTotal.toFixed(cdec()));
+    setT('monthSale', curCode() + ' ' + monthTotal.toFixed(cdec()));
+    setT('yearSale', curCode() + ' ' + yearTotal.toFixed(cdec()));
     setT('totalBillsCount', sales.length);
-    setT('avgOrderVal', (sales.length ? yearTotal / sales.length : 0).toFixed(3));
+    setT('avgOrderVal', (sales.length ? yearTotal / sales.length : 0).toFixed(cdec()));
 
     if (_repCurrentFilter === 'manual') {
         const s = document.getElementById('repManualStart').value, e = document.getElementById('repManualEnd').value;
@@ -3154,7 +3195,7 @@ function renderSalesDashboardRange(start, end, label){
     const inRange = sales.filter(s => s.date >= startKey && s.date <= endKey);
 
     // --- Summary totals ---
-    let totalRevenue = 0, totalCash = 0, totalAtm = 0, totalTransfer = 0, totalPending = 0;
+    let totalRevenue = 0, totalCash = 0, totalAtm = 0, totalTransfer = 0, totalPending = 0, totalMpesa = 0;
 
     inRange.forEach(s => {
         const amt = parseFloat(s.amount) || 0;
@@ -3163,6 +3204,7 @@ function renderSalesDashboardRange(start, end, label){
         if (method.includes('atm')) totalAtm += amt;
         else if (method.includes('cash')) totalCash += amt;
         else if (method.includes('transfer')) totalTransfer += amt;
+        else if (method.includes('pesa')) totalMpesa += amt;
         else totalPending += amt;
     });
 
@@ -3170,13 +3212,14 @@ function renderSalesDashboardRange(start, end, label){
     const aov = totalOrders > 0 ? (totalRevenue / totalOrders) : 0;
 
     document.getElementById('repPeriodLabel').innerText = label + (repFmtKey(start) === repFmtKey(end) ? '' : (' (' + repFmtNice(start) + ' – ' + repFmtNice(end) + ')'));
-    document.getElementById('repTotalRevenue').innerHTML = totalRevenue.toFixed(3) + ' <span style="font-size:12px; opacity:0.7;">OMR</span>';
+    document.getElementById('repTotalRevenue').innerHTML = totalRevenue.toFixed(cdec()) + ' <span style="font-size:12px; opacity:0.7;">' + curCode() + '</span>';
     document.getElementById('repTotalOrders').innerText = totalOrders;
-    document.getElementById('repAov').innerText = aov.toFixed(3);
-    document.getElementById('repCashTransfer').innerText = totalTransfer.toFixed(3);
-    document.getElementById('repCashAtm').innerText = totalAtm.toFixed(3);
-    document.getElementById('repCashCash').innerText = totalCash.toFixed(3);
-    document.getElementById('repCashPending').innerText = totalPending.toFixed(3);
+    document.getElementById('repAov').innerText = aov.toFixed(cdec());
+    document.getElementById('repCashTransfer').innerText = totalTransfer.toFixed(cdec());
+    document.getElementById('repCashAtm').innerText = totalAtm.toFixed(cdec());
+    document.getElementById('repCashCash').innerText = totalCash.toFixed(cdec());
+    document.getElementById('repCashMpesa').innerText = totalMpesa.toFixed(cdec());
+    document.getElementById('repCashPending').innerText = totalPending.toFixed(cdec());
 }
 
 // Shared helper: aggregate item quantity/revenue for a date range (used by Top Selling screen)
@@ -3263,7 +3306,7 @@ function renderTopSellingRange(start, end){
             </div>
             <div style="text-align:right; flex-shrink:0;">
                 <div style="font-weight:800; font-size:13px; color:#1e293b;">${item.qty} pcs</div>
-                <div style="font-size:11px; color:#64748b; margin-top:2px;">${item.revenue.toFixed(3)} OMR</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">${item.revenue.toFixed(cdec())} ${curCode()}</div>
             </div>
         </div>`;
     }).join('');
@@ -3302,7 +3345,7 @@ function showDetails(type) {
                 let d = new Date(s.date);
                 return d.getMonth() === i && d.getFullYear() === now.getFullYear();
             }).reduce((a, b) => a + b.amount, 0);
-            addReportRow(list, `${m} ${now.getFullYear()}`, mTotal.toFixed(3), i === now.getMonth(), null);
+            addReportRow(list, `${m} ${now.getFullYear()}`, mTotal.toFixed(cdec()), i === now.getMonth(), null);
         });
     } 
     else if (type === 'year') {
@@ -3310,7 +3353,7 @@ function showDetails(type) {
         const currentYear = now.getFullYear();
         for (let y = 2024; y <= currentYear; y++) {
             let yTotal = sales.filter(s => new Date(s.date).getFullYear() === y).reduce((a, b) => a + b.amount, 0);
-            addReportRow(list, `Year ${y}`, yTotal.toFixed(3), y === currentYear, null);
+            addReportRow(list, `Year ${y}`, yTotal.toFixed(cdec()), y === currentYear, null);
         }
     }
 }
@@ -3329,7 +3372,7 @@ function renderDailyReportsFor(year, month) {
         let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
         let dayTotal = sales.filter(s => s.date === dateKey).reduce((a, b) => a + b.amount, 0);
         let isToday = (i === now.getDate() && month === now.getMonth() && year === now.getFullYear());
-        addReportRow(list, `${months[month]} ${i}`, dayTotal.toFixed(3), isToday, dateKey);
+        addReportRow(list, `${months[month]} ${i}`, dayTotal.toFixed(cdec()), isToday, dateKey);
     }
 }
 
@@ -3507,6 +3550,7 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
     let totalAtm = 0;
     let totalCash = 0;
     let totalPending = 0;
+    let totalMpesa = 0;
 
     filteredBills.forEach(b => {
         let amt = parseFloat(b.amount) || 0;
@@ -3514,35 +3558,40 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
         if (method === 'atm') totalAtm += amt;
         else if (method === 'cash') totalCash += amt;
         else if (method === 'transfer') totalTransfer += amt;
+        else if (method.includes('pesa')) totalMpesa += amt;
         else totalPending += amt;
     });
 
-    let grandTotal = totalTransfer + totalAtm + totalCash + totalPending;
+    let grandTotal = totalTransfer + totalAtm + totalCash + totalMpesa + totalPending;
 
     // SUMMARY CARDS (With Cash Category)
     let summaryHtml = `
         <div style="margin-bottom: 20px;">
             <div style="background: linear-gradient(135deg, #1e293b, #334155); color: white; padding: 15px; border-radius: 14px; text-align: center; margin-bottom: 12px;">
                 <small style="opacity: 0.8; font-weight: bold; font-size: 10px; letter-spacing: 1px;">${saleHeaderText}</small>
-                <div style="font-size: 22px; font-weight: 900;">${grandTotal.toFixed(3)} <span style="font-size: 12px; opacity: 0.7;">OMR</span></div>
+                <div style="font-size: 22px; font-weight: 900;">${grandTotal.toFixed(cdec())} <span style="font-size: 12px; opacity: 0.7;">${curCode()}</span></div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;">
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
                 <div style="background: #f0fdf4; border: 1px solid #dcfce7; padding: 8px 4px; border-radius: 10px; text-align: center;">
                     <small style="color: #166534; font-weight: 800; font-size: 8px;">🏦 TRANS</small>
-                    <div style="font-size: 13px; font-weight: 700; color: #14532d;">${totalTransfer.toFixed(3)}</div>
+                    <div style="font-size: 13px; font-weight: 700; color: #14532d;">${totalTransfer.toFixed(cdec())}</div>
                 </div>
                 <div style="background: #f0f9ff; border: 1px solid #e0f2fe; padding: 8px 4px; border-radius: 10px; text-align: center;">
                     <small style="color: #075985; font-weight: 800; font-size: 8px;">💳 ATM</small>
-                    <div style="font-size: 13px; font-weight: 700; color: #0c4a6e;">${totalAtm.toFixed(3)}</div>
+                    <div style="font-size: 13px; font-weight: 700; color: #0c4a6e;">${totalAtm.toFixed(cdec())}</div>
                 </div>
                 <div style="background: #fffbeb; border: 1px solid #fef3c7; padding: 8px 4px; border-radius: 10px; text-align: center;">
                     <small style="color: #92400e; font-weight: 800; font-size: 8px;">💵 CASH</small>
-                    <div style="font-size: 13px; font-weight: 700; color: #78350f;">${totalCash.toFixed(3)}</div>
+                    <div style="font-size: 13px; font-weight: 700; color: #78350f;">${totalCash.toFixed(cdec())}</div>
+                </div>
+                <div style="background: #ecfdf5; border: 1px solid #d1fae5; padding: 8px 4px; border-radius: 10px; text-align: center;">
+                    <small style="color: #047857; font-weight: 800; font-size: 8px;">📱 M-PESA</small>
+                    <div style="font-size: 13px; font-weight: 700; color: #065f46;">${totalMpesa.toFixed(cdec())}</div>
                 </div>
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 4px; border-radius: 10px; text-align: center;">
                     <small style="color: #475569; font-weight: 800; font-size: 8px;">⏳ PENDING</small>
-                    <div style="font-size: 13px; font-weight: 700; color: #334155;">${totalPending.toFixed(3)}</div>
+                    <div style="font-size: 13px; font-weight: 700; color: #334155;">${totalPending.toFixed(cdec())}</div>
                 </div>
             </div>
         </div>
@@ -3571,6 +3620,9 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
             } else if (lowerMethod === 'cash') {
                 methodIcon = '💵';
                 themeColor = '#d97706'; // Orange for Cash
+            } else if (lowerMethod.includes('pesa')) {
+                methodIcon = '📱';
+                themeColor = '#059669'; // Green for M-Pesa
             }
 
             container.innerHTML += `
@@ -3587,7 +3639,7 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
                         </div>
                         
                         <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-                            <span style="font-weight:bold; color:#0f172a; font-size:14px;">${parseFloat(b.amount).toFixed(3)}</span>
+                            <span style="font-weight:bold; color:#0f172a; font-size:14px;">${parseFloat(b.amount).toFixed(cdec())}</span>
                             
                             <select onchange="updateMethodDropdown('${b.billNo}', this.value, '${dateKey}', '${displayLabel}')" 
                                     style="border:1px solid #e2e8f0; background:#f8fafc; color:#475569; font-size:10px; padding:1px 4px; border-radius:6px; font-weight:bold; outline:none;">
@@ -3595,6 +3647,7 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
                                 <option value="Transfer" ${lowerMethod === 'transfer' ? 'selected' : ''}>🏦 Transfer</option>
                                 <option value="ATM" ${lowerMethod === 'atm' ? 'selected' : ''}>💳 ATM Card</option>
                                 <option value="Cash" ${lowerMethod === 'cash' ? 'selected' : ''}>💵 Cash</option>
+                                <option value="M-Pesa Lipa" ${lowerMethod.includes('pesa') ? 'selected' : ''}>📱 M-Pesa Lipa</option>
                             </select>
                         </div>
                     </div>
@@ -3689,14 +3742,14 @@ function renderEditItems() {
     }
 
     editCartItems.forEach((item, idx) => {
-        let itemTotal = (parseFloat(item.price) * parseFloat(item.qty)).toFixed(3);
+        let itemTotal = (parseFloat(item.price) * parseFloat(item.qty)).toFixed(cdec());
         list.innerHTML += `
             <div style="padding:12px 0; border-bottom:1px solid #f1f5f9;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
                     <b style="font-size:14px; color:#1e293b; word-break:break-word; overflow-wrap:break-word; flex:1; min-width:0;">${item.name}</b>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; gap:8px;">
-                    <small style="color:#64748b; flex-shrink:0;">${parseFloat(item.price).toFixed(3)} OMR each</small>
+                    <small style="color:#64748b; flex-shrink:0;">${parseFloat(item.price).toFixed(cdec())} ${curCode()} each</small>
                     <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
                         <button onclick="editQtyChange(${idx}, -1)"
                                 style="background:#ef4444; color:white; border:none; border-radius:6px; width:28px; height:28px; font-size:16px; font-weight:bold; cursor:pointer;">−</button>
@@ -3722,7 +3775,7 @@ function editQtyChange(idx, delta) {
     } else {
         editCartItems[idx].qty = newQty;
         document.getElementById(`editQty-${idx}`).value = newQty;
-        document.getElementById(`editRowTotal-${idx}`).innerText = (newQty * parseFloat(editCartItems[idx].price)).toFixed(3);
+        document.getElementById(`editRowTotal-${idx}`).innerText = (newQty * parseFloat(editCartItems[idx].price)).toFixed(cdec());
     }
     recalcEditTotals();
 }
@@ -3732,7 +3785,7 @@ function editQtyManual(idx, val) {
     let newQty = parseFloat(val);
     if (!isNaN(newQty) && newQty >= 0) {
         editCartItems[idx].qty = newQty;
-        document.getElementById(`editRowTotal-${idx}`).innerText = (newQty * parseFloat(editCartItems[idx].price)).toFixed(3);
+        document.getElementById(`editRowTotal-${idx}`).innerText = (newQty * parseFloat(editCartItems[idx].price)).toFixed(cdec());
         recalcEditTotals();
     }
 }
@@ -3743,9 +3796,9 @@ function recalcEditTotals() {
     const _et = calcBillTotals(sub, document.getElementById('editDiscount').value, document.getElementById('editVatPerc').value, document.getElementById('editDelivery').value);
     let vat = _et.vat, grand = _et.grand;
 
-    document.getElementById('editSubTotal').innerText = sub.toFixed(3);
-    document.getElementById('editVat').innerText = vat.toFixed(3);
-    document.getElementById('editGrandTotal').innerHTML = `${grand.toFixed(3)} <small style="font-size:12px;">OMR</small>`;
+    document.getElementById('editSubTotal').innerText = sub.toFixed(cdec());
+    document.getElementById('editVat').innerText = vat.toFixed(cdec());
+    document.getElementById('editGrandTotal').innerHTML = `${grand.toFixed(cdec())} <small style="font-size:12px;">${curCode()}</small>`;
 }
 
 // ===== PAYMENT METHOD SELECT =====
@@ -3755,7 +3808,8 @@ function setEditMethod(method) {
         '': document.getElementById('editLbl-p'),
         'Transfer': document.getElementById('editLbl-t'),
         'ATM': document.getElementById('editLbl-a'),
-        'Cash': document.getElementById('editLbl-c')
+        'Cash': document.getElementById('editLbl-c'),
+        'M-Pesa Lipa': document.getElementById('editLbl-m')
     };
     for (let key in labels) {
         labels[key].style.border = '1.5px solid #f1f5f9';
@@ -3886,7 +3940,7 @@ function renderUltraCompactCard(item) {
             ${item.date || item.month || item.year}
         </div>
         <div style="font-size: 14px; font-weight: 800; color: #10b981;">
-            ${item.total.toFixed(3)} <span style="font-size: 9px; color: #94a3b8;">OMR</span>
+            ${item.total.toFixed(cdec())} <span style="font-size: 9px; color: #94a3b8;">${curCode()}</span>
         </div>
     </div>`;
 }
@@ -3929,7 +3983,7 @@ function addReportRow(parent, label, amt, active, dateKey) {
 
     div.innerHTML = `
         <span>${label}</span>
-        <span style="font-weight:800;">OMR ${amt}</span>
+        <span style="font-weight:800;">${curCode()} ${amt}</span>
     `;
     parent.appendChild(div);
 }
@@ -3965,23 +4019,23 @@ function exportToExcel() {
 
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     let filtered = sales.filter(s => s.date >= start && s.date <= end);
-    let totalRev = filtered.reduce((a, b) => a + b.amount, 0).toFixed(3);
+    let totalRev = filtered.reduce((a, b) => a + b.amount, 0).toFixed(cdec());
 
     // ---- Real .xlsx workbook (SheetJS) ----
     let rows = [];
     rows.push([getShopInfo().name + " - EXECUTIVE FINANCIAL STATEMENT"]);
     rows.push([]);
     rows.push(["REPORT SUMMARY", "", "", "Store: " + getShopInfo().name]);
-    rows.push([`Total Revenue: ${totalRev} OMR`, "", "", "Status: Verified"]);
+    rows.push([`Total Revenue: ${totalRev} ${curCode()}`, "", "", "Status: Verified"]);
     rows.push([`Date Range: ${start} to ${end}`]);
     rows.push([]);
     rows.push(["TRANSACTION LEDGER DETAILS"]);
-    rows.push(["BILL NO", "TICKET NO", "DATE", "TIME", "METHOD", "TOTAL (OMR)"]);
+    rows.push(["BILL NO", "TICKET NO", "DATE", "TIME", "METHOD", "TOTAL (" + curCode() + ")"]);
 
     filtered.forEach(s => {
         let bNo = s.billNo || "---";
         let method = s.method ? s.method : "Pending";
-        rows.push([bNo, s.ticketNo || "", s.date, s.time, method, parseFloat(s.amount).toFixed(3)]);
+        rows.push([bNo, s.ticketNo || "", s.date, s.time, method, parseFloat(s.amount).toFixed(cdec())]);
     });
 
     rows.push([]);
@@ -4413,7 +4467,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 .bd-foot button { flex:1; padding:14px; border:none; border-radius:12px; font-weight:800; font-size:14px; color:#fff; }
 </style>
 <div id="billDesignerPage" class="full-page" style="display:none; flex-direction:column;">
-    <div class="bd-head"><b>🎨 Bill Designer</b><button onclick="closeBillDesigner()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button></div>
+    <div class="bd-head"><b>🎨 Bill Designer</b><select class="cur-select" onchange="setCurrency(this.value)" style="margin-left:auto; margin-right:10px; max-width:150px; padding:7px 6px; border-radius:8px; border:1.5px solid #e2e8f0; font-weight:700; font-size:11px; background:#fff;"></select><button onclick="closeBillDesigner()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button></div>
     <div class="bd-tabs"><button id="bdTab80" class="bd-tab on" onclick="bdSwitch('t80')">80mm Thermal</button><button id="bdTabA4" class="bd-tab" onclick="bdSwitch('a4')">A4 Tax Invoice</button><button id="bdEditBtn" class="bd-tab" style="flex:0 0 52px;" onclick="bdToggleEdit()" title="Edit on bill">&#9998;</button></div>
     <iframe id="bdPreview" title="preview"></iframe>
     <div id="bdSheet"></div>
@@ -4682,7 +4736,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 
         <!-- Discount -->
         <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
-            <span>Discount (OMR)</span>
+            <span>Discount (<span class="cur-code">OMR</span>)</span>
             <input type="number" id="editDiscount" value="0" min="0" step="0.001"
                    oninput="recalcEditTotals()"
                    style="width:60px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;">
@@ -4690,7 +4744,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 
         <!-- Delivery -->
         <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
-            <span>Delivery (OMR)</span>
+            <span>Delivery (<span class="cur-code">OMR</span>)</span>
             <input type="number" id="editDelivery" value="0" min="0" step="0.1"
                    oninput="recalcEditTotals()"
                    style="width:70px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;">
@@ -4710,7 +4764,7 @@ function deleteBill(billNo, dateKey, displayLabel){
         <!-- Grand Total -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:6px 10px;">
             <span style="font-weight:800; color:#1e293b; font-size:14px; flex-shrink:0;">GRAND TOTAL</span>
-            <span id="editGrandTotal" style="font-size:24px; font-weight:900; color:#00C7C7; text-align:right; margin-left:auto; white-space:nowrap;">0.000 <small style="font-size:12px;">OMR</small></span>
+            <span id="editGrandTotal" style="font-size:24px; font-weight:900; color:#00C7C7; text-align:right; margin-left:auto; white-space:nowrap;">0.000 <small style="font-size:12px;" class="cur-code">OMR</small></span>
         </div>
 
         <!-- Payment Method -->
@@ -4734,6 +4788,11 @@ function deleteBill(billNo, dateKey, displayLabel){
                  style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
                 <span style="font-size:16px;">💵</span><br>
                 <span style="font-size:9px; font-weight:800; color:#64748b;">CASH</span>
+            </div>
+            <div onclick="setEditMethod('M-Pesa Lipa')" id="editLbl-m"
+                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+                <span style="font-size:16px;">📱</span><br>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">M-PESA</span>
             </div>
         </div>
 
@@ -5079,7 +5138,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_shop_info','asb_bill_design'];
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_shop_info','asb_bill_design','asb_currency'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false;
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -5111,6 +5170,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
             }
             if (changed.indexOf('asb_zero_stock_block') !== -1 && typeof syncZeroStockToggleUI === 'function') syncZeroStockToggleUI();
             if (changed.some(function(k){ return /asb_show_dash_/.test(k); }) && typeof applyDashVisibility === 'function') applyDashVisibility();
+            if (changed.indexOf('asb_currency') !== -1 && typeof applyCurrencyUI === 'function') applyCurrencyUI();
             if (changed.indexOf('asb_shop_info') !== -1 && typeof applyShopInfoUI === 'function') applyShopInfoUI();
             if (changed.indexOf('asb_sales_logs') !== -1 && typeof refreshReports === 'function') refreshReports(true);
             if (changed.some(function(k){ return /stock_add_log|waste_log/.test(k); }) && typeof renderInvHistory === 'function') {
