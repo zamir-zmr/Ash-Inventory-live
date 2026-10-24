@@ -1639,7 +1639,7 @@ function processPastedJson() {
     }
     function bdBillText(data, B) {
         if (data.billNo !== undefined && data.billNo !== null && data.billNo !== '') {
-            return (B.billLabel || 'Bill no:') + ' ' + data.billNo + (data.ticketNo ? '   ' + (B.ticketLabel || 'Ticket no:') + ' ' + data.ticketNo : '');
+            return (B.billLabel || 'Bill no:') + ' ' + data.billNo + ((data.ticketNo && isDashShown('asb_show_ticket_bill')) ? '   ' + (B.ticketLabel || 'Ticket no:') + ' ' + data.ticketNo : '');
         }
         return data.billLine || '';
     }
@@ -2125,10 +2125,7 @@ ${bdEditScript()}
     } else {
         billCount = (parseInt(_ls('asb_bill_count', 0)) || 0) + 1;
     }
-    if (!pendingBill) {
-        _lsSet('asb_last_date', todayLocal);
-        _lsSet('asb_bill_count', billCount);
-    }
+    // NOTE: bill counter / ticket ko yahan commit NAHI karte - bill successfully generate + record hone ke baad hi aage badhega.
 
     // Logo
     let savedPhoto = (function(){ try { return localStorage.getItem('savedPhotoUrl'); } catch(e){ return null; } })();
@@ -2144,7 +2141,9 @@ ${bdEditScript()}
 
     const billLine = "Bill no: " + billCount + (currentTicket ? "   Ticket no: " + currentTicket : "");
 
-    const html = buildReceiptHTML({
+    let html;
+    try {
+    html = buildReceiptHTML({
         logo: savedPhoto,
         billLine: billLine,
         billNo: billCount,
@@ -2162,8 +2161,32 @@ ${bdEditScript()}
         itemsCount: cart.length,
         totalQty: totalQty
     });
+    if (!html || typeof html !== 'string') throw new Error('Bill generate nahi hua');
+    } catch (err) {
+        console.error('Bill generate failed:', err);
+        alert('⚠️ Bill generate nahi hua. Ticket / bill number aage nahi badhaya gaya. Dobara try karein.');
+        return;
+    }
 
-    logSale(g.toFixed(3), billCount); 
+    // Bill record karein aur verify karein ki sach me save hua
+    let recorded = false;
+    try {
+        logSale(g.toFixed(3), billCount);
+        recorded = (_ls('asb_sales_logs', []) || []).some(s => String(s.billNo) === String(billCount) && s.date === todayLocal && String(s.ticketNo || '') === String(currentTicket || ''));
+    } catch (err) {
+        console.error('Bill record failed:', err);
+        recorded = false;
+    }
+    if (!recorded) {
+        alert('⚠️ Bill record nahi ho paya. Ticket / bill number aage nahi badhaya gaya. Dobara try karein.');
+        return;
+    }
+
+    // Ab bill generate + record ho chuka hai - tabhi counter commit karein
+    if (!pendingBill) {
+        _lsSet('asb_last_date', todayLocal);
+        _lsSet('asb_bill_count', billCount);
+    }
     // Ticket ko RED (pending) mark karein - items punched/previewed, abhi actual print (smartPrint) nahi hua
     window.lastPrintTicket = currentTicket || null;
     if (currentTicket) markTicketPending(currentTicket);
@@ -2248,6 +2271,7 @@ async function smartPrint() {
     const originalLabel = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '⏳ Printing...';
+    let printOk = false;
     try {
         const printerName = localStorage.getItem('asb_qz_printer');
         if (printerName && window.currentReceiptFormat !== 'a4') {
@@ -2255,6 +2279,7 @@ async function smartPrint() {
             if (available) {
                 try {
                     await silentPrintReceipt();
+                    printOk = true;
                     btn.innerHTML = originalLabel;
                     btn.disabled = false;
                     return;
@@ -2264,11 +2289,12 @@ async function smartPrint() {
             }
         }
         browserPrintReceipt();
+        printOk = true;
     } finally {
         btn.innerHTML = originalLabel;
         btn.disabled = false;
-        // BLUE state: actual print (smartPrint) trigger ho chuka - RED se BLUE badal dein
-        if (window.lastPrintTicket) {
+        // BLUE state: sirf tab jab print sach me trigger hua - RED se BLUE badal dein
+        if (printOk && window.lastPrintTicket) {
             markTicketPrinted(window.lastPrintTicket);
             window.lastPrintTicket = null;
         }
@@ -2446,6 +2472,7 @@ function applyDashVisibility(){
     if (inv) inv.style.display = isDashShown('asb_show_dash_inventory') ? '' : 'none';
     if (dz) dz.style.display = isDashShown('asb_show_dash_danger') ? '' : 'none';
     const bk = document.getElementById('reportsBackupBox'); if (bk) bk.style.display = isDashShown('asb_show_reports_backup') ? '' : 'none';
+    const tb = document.getElementById('ticketOnBillToggle'); if (tb) tb.checked = isDashShown('asb_show_ticket_bill');
     const rb = document.getElementById('reportsBackupToggle'); if (rb) rb.checked = isDashShown('asb_show_reports_backup');
     const a = document.getElementById('dashInvToggle'); if (a) a.checked = isDashShown('asb_show_dash_inventory');
     const b = document.getElementById('dashDangerToggle'); if (b) b.checked = isDashShown('asb_show_dash_danger');
@@ -4534,6 +4561,13 @@ function deleteBill(billNo, dateKey, displayLabel){
                 <span class="tr"></span><span class="kn"></span>
             </label>
         </div>
+        <div class="mo-row" style="--c:#0ea5e9;">
+            <div class="mo-txt"><div class="mo-title">🎫 Show Ticket No on Bill</div><div class="mo-hint">80mm + A4 bill par ticket number</div></div>
+            <label class="mo-sw">
+                <input type="checkbox" id="ticketOnBillToggle" onchange="toggleDashItem('asb_show_ticket_bill', this)">
+                <span class="tr"></span><span class="kn"></span>
+            </label>
+        </div>
         <div class="mo-row" style="--c:#6366f1;">
             <div class="mo-txt"><div class="mo-title">💾 Show Backup in Reports</div><div class="mo-hint">Export / Import box in Sales Analytics</div></div>
             <label class="mo-sw">
@@ -5162,7 +5196,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_shop_info','asb_bill_design','asb_currency'];
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false;
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -5193,7 +5227,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
             }
             if (changed.indexOf('asb_zero_stock_block') !== -1 && typeof syncZeroStockToggleUI === 'function') syncZeroStockToggleUI();
-            if (changed.some(function(k){ return /asb_show_dash_/.test(k); }) && typeof applyDashVisibility === 'function') applyDashVisibility();
+            if (changed.some(function(k){ return /asb_show_/.test(k); }) && typeof applyDashVisibility === 'function') applyDashVisibility();
             if (changed.indexOf('asb_currency') !== -1 && typeof applyCurrencyUI === 'function') applyCurrencyUI();
             if (changed.indexOf('asb_shop_info') !== -1 && typeof applyShopInfoUI === 'function') applyShopInfoUI();
             if (changed.indexOf('asb_sales_logs') !== -1 && typeof refreshReports === 'function') refreshReports(true);
