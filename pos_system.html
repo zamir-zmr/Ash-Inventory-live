@@ -1520,7 +1520,7 @@ function processPastedJson() {
     function curSelectHTML(style) {
         return '<select class="cur-select" onchange="setCurrency(this.value)" style="' + style + '">' + Object.keys(CURRENCIES).map(k => '<option value="' + k + '"' + (k === curCode() ? ' selected' : '') + '>' + CURRENCIES[k].name + '</option>').join('') + '</select>';
     }
-    function amountInWordsOMR(amount) {
+    function amountInWordsOMR(amount, prefix, unitName) {
         const ones = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN','ELEVEN','TWELVE','THIRTEEN','FOURTEEN','FIFTEEN','SIXTEEN','SEVENTEEN','EIGHTEEN','NINETEEN'];
         const tens = ['','','TWENTY','THIRTY','FORTY','FIFTY','SIXTY','SEVENTY','EIGHTY','NINETY'];
         function below1000(n) {
@@ -1539,9 +1539,8 @@ function processPastedJson() {
             return s;
         }
         const ci = curInfo();
-        let total = Math.round((parseFloat(amount) || 0) * ci.sub);
-        const major = Math.floor(total / ci.sub), minor = total % ci.sub;
-        return 'ONLY ' + words(major) + ((ci.sub > 1 && minor) ? ' & ' + String(minor).padStart(String(ci.sub).length - 1, '0') + '/' + ci.sub : '') + ' ' + ci.words + '.';
+        const major = Math.floor((parseFloat(amount) || 0) + 1e-9);
+        return ((prefix === undefined || prefix === null) ? 'ONLY' : prefix) + ' ' + words(major) + ' ' + (unitName || ci.words) + '.';
     }
     /* ===================== BILL DESIGN (80mm + A4) — editable, saved, synced ===================== */
     const BD_DEFAULTS = {
@@ -1554,10 +1553,10 @@ function processPastedJson() {
             phone:     { show: true, size: 8, bold: false, align: 'center' },
             vat:       { show: true, size: 8, bold: false, align: 'center', label: 'VAT No:' },
             hall:      { show: true, size: 12, bold: true, align: 'center' },
-            billrow:   { show: true, size: 10, bold: false },
+            billrow:   { show: true, size: 10, bold: false, billLabel: 'Bill no:', ticketLabel: 'Ticket no:' },
             datetime:  { show: true, size: 8, dateLabel: 'Date :', timeLabel: 'Time :' },
             shiftrow:  { show: true, size: 8, adminText: 'Admin' },
-            custphone: { show: true, size: 15 },
+            custphone: { show: true, size: 15, prefix: '📞' },
             lines:     { show: true },
             thead:     { show: true, size: 8, bold: true, item: 'Item', qty: 'Qty', price: 'Price', amount: 'Amount' },
             items:     { size: 8, showUnit: true },
@@ -1578,7 +1577,7 @@ function processPastedJson() {
             customer:  { show: true, custLabel: 'Customer:', phoneLabel: 'Phone:', detailsLabel: 'Details:', defaultName: 'Walk-in Customer', showDetails: true },
             table:     { size: 8.5, cCode: true, lCode: 'Item Code', cDesc: true, lDesc: 'Description', cUnit: true, lUnit: 'Unit', cQty: true, lQty: 'Qty', cUPrice: true, lUPrice: 'Unit Price', cNet: true, lNet: 'Net Price', cVatP: true, lVatP: 'VAT %', cVatA: true, lVatA: 'VAT Amount' },
             summary:   { size: 8.5, showSub: true, lSub: 'Sub Total', lDisc: 'Discount', lNonTax: 'Non Tax Amount', showNonTax: true, lTaxable: 'Taxable Amount', showTaxable: true, lVat: 'VAT', lGrand: 'Grand Total (OMR)', grandSize: 10, showDue: true, lDue: 'Due On' },
-            words:     { show: true },
+            words:     { show: true, prefix: 'ONLY', unitName: '' },
             terms:     { show: true, text: '', size: 8.5 },
             receiver:  { show: true, l1: "Receiver's Full Name", l2: 'Receiver Stamp & Signature' },
             footer:    { show: true, size: 7, text: '' },
@@ -1610,6 +1609,9 @@ function processPastedJson() {
         if (o.align) s += 'text-align:' + o.align + ';justify-content:' + (o.align === 'left' ? 'flex-start' : o.align === 'right' ? 'flex-end' : 'center') + ';';
         if (typeof o.bold === 'boolean') s += 'font-weight:' + (o.bold ? 700 : 400) + ';';
         if (o.italic) s += 'font-style:italic;';
+        if (o.color) s += 'color:' + o.color + ';';
+        if (o.bg) s += 'background:' + o.bg + ';';
+        if (o.ff) s += 'font-family:' + String(o.ff).replace(/"/g, "'") + ';';
         if (typeof o.fs === 'number' && o.fs > 0) s += 'font-size:' + o.fs + 'pt;';
         [['mt', 'margin-top'], ['mb', 'margin-bottom'], ['ml', 'margin-left'], ['mr', 'margin-right']].forEach(m => { if (typeof o[m[0]] === 'number') s += m[1] + ':' + o[m[0]] + 'mm;'; });
         return s;
@@ -1634,6 +1636,12 @@ function processPastedJson() {
         if (!bdEditing()) return '';
         const sel = JSON.stringify(window.__bdSel || '');
         return "<script>(function(){var sel=" + sel + ";function mark(){var a=document.querySelectorAll('.bd-sel');for(var i=0;i<a.length;i++)a[i].classList.remove('bd-sel');if(sel){var b=document.querySelectorAll('[data-bd=\"'+sel+'\"]');for(i=0;i<b.length;i++)b[i].classList.add('bd-sel');}}function vis(){var s=document.querySelector('.bd-sel');if(s&&s.scrollIntoView&&sel!=='paper'&&sel!=='page'){s.scrollIntoView({block:'center'});}}mark();setTimeout(vis,60);window.addEventListener('resize',function(){setTimeout(vis,60);});document.addEventListener('click',function(ev){var t=ev.target.closest?ev.target.closest('[data-bd]'):null;if(!t)return;ev.preventDefault();ev.stopPropagation();sel=t.getAttribute('data-bd');mark();try{window.parent.bdOpenSheet(sel);}catch(e){}},true);})();<\/script>";
+    }
+    function bdBillText(data, B) {
+        if (data.billNo !== undefined && data.billNo !== null && data.billNo !== '') {
+            return (B.billLabel || 'Bill no:') + ' ' + data.billNo + (data.ticketNo ? '   ' + (B.ticketLabel || 'Ticket no:') + ' ' + data.ticketNo : '');
+        }
+        return data.billLine || '';
     }
     const bdAl = a => (a === 'left' || a === 'right') ? a : 'center';
     const bdW = b => b ? 700 : 400;
@@ -1727,7 +1735,7 @@ ${bdEditing() ? BD_EDIT_CSS : ''}
 ${D.customer.show ? `<div class="cust" ${bdAt(D.customer, 'customer')}>
   <div><b>${e(D.customer.custLabel)}</b> ${e(D.customer.defaultName)}</div>
   <div><b>${e(D.customer.phoneLabel)}</b> ${e(custPhone || '-')}</div>
-  ${D.customer.showDetails ? `<div><b>${e(D.customer.detailsLabel)}</b> ${e(data.billLine || '')}</div>` : ''}
+  ${D.customer.showDetails ? `<div><b>${e(D.customer.detailsLabel)}</b> ${e(bdBillText(data, getBD().t80.billrow))}</div>` : ''}
   
 </div>` : ''}
 <table class="items" ${bdAt(D.table, 'table')}>
@@ -1737,7 +1745,7 @@ ${D.customer.show ? `<div class="cust" ${bdAt(D.customer, 'customer')}>
 <div class="grow"></div>
 <div class="bottom">
   <div class="left">
-    ${D.words.show ? `<div class="words" ${bdAt(D.words, 'words')}><b>${e(amountInWordsOMR(grand))}</b></div>` : ''}
+    ${D.words.show ? `<div class="words" ${bdAt(D.words, 'words')}><b>${e(amountInWordsOMR(grand, D.words.prefix, D.words.unitName))}</b></div>` : ''}
     ${D.terms.show ? `<div ${bdAt(D.terms, 'terms')}>${e(terms)}</div>` : ''}
   </div>
   <div class="right">
@@ -1785,7 +1793,7 @@ ${bdEditScript()}
 
         let discHtml = (D.discount.show && discAmt > 0) ? `<div class="discount-row" ${bdAt(D.discount, 'discount')}><span>${e(D.discount.label)}</span><span>-${discAmt.toFixed(cdec())}</span></div>` : '';
         let dlvHtml = (D.delivery.show && delivery > 0) ? `<div class="delivery-row" ${bdAt(D.delivery, 'delivery')}><span>${e(D.delivery.label)}</span><span>${delivery.toFixed(cdec())}</span></div>` : '';
-        let custHtml = (D.custphone.show && custPhone) ? `<div class="row" ${bdAt(D.custphone, 'custphone')}><span style="font-size: ${Number(D.custphone.size)}px;">📞 ${e(custPhone)}</span></div>` : '';
+        let custHtml = (D.custphone.show && custPhone) ? `<div class="row" ${bdAt(D.custphone, 'custphone')}><span style="font-size: ${Number(D.custphone.size)}px;">${e(D.custphone.prefix)} ${e(custPhone)}</span></div>` : '';
         let logoHtml = (D.logo.show && logo) ? `<img class="logo" ${bdAtLogo(D.logo, 'logo')} src="${logo}" onerror="this.style.display='none'">` : '';
         const ln = (cls) => D.lines.show ? `<div class="${cls}"></div>` : '';
         const note = (n, cls, sec) => (n.show && (n.text || bdEditing())) ? `<div class="${cls}" ${bdAt(n, sec)}>${e(n.text || (bdEditing() ? '(extra note)' : '')).replace(/\n/g, '<br>')}</div>` : '';
@@ -1840,7 +1848,7 @@ ${(D.addr.show && shop.addr) ? `<div class="addr" ${bdAt(D.addr, 'addr')}>${e(sh
 ${(D.phone.show && shop.phone) ? `<div class="phone" ${bdAt(D.phone, 'phone')}>${e(shop.phone)}</div>` : ''}
 ${(D.vat.show && shop.vat) ? `<div class="vatno" ${bdAt(D.vat, 'vat')}>${e(D.vat.label)} ${e(shop.vat)}</div>` : ''}
 ${(D.hall.show && shop.hall) ? `<div class="hall" ${bdAt(D.hall, 'hall')}>${e(shop.hall)}</div>` : ''}
-${D.billrow.show ? `<div class="billrow" ${bdAt(D.billrow, 'billrow')}>${billLine}</div>` : ''}
+${D.billrow.show ? `<div class="billrow" ${bdAt(D.billrow, 'billrow')}>${e(bdBillText(data, D.billrow))}</div>` : ''}
 ${D.datetime.show ? `<div class="row" ${bdAt(D.datetime, 'datetime')}><span>${e(D.datetime.dateLabel)} ${dateStr}</span><span>${e(D.datetime.timeLabel)} ${timeStr}</span></div>` : ''}
 ${D.shiftrow.show ? `<div class="row shift" ${bdAt(D.shiftrow, 'shiftrow')}><span>${shiftText}</span><span>${e(D.shiftrow.adminText)}</span></div>` : ''}
 ${custHtml}
@@ -1875,10 +1883,10 @@ ${bdEditScript()}
             ['phone', 'Mobile Number', [['show', 'chk', 'Show'], ['size', 'num', 'Size (pt)'], ['bold', 'chk', 'Bold'], ['align', 'al', 'Align']]],
             ['vat', 'VAT / Tax Number', [['show', 'chk', 'Show'], ['label', 'txt', 'Label'], ['size', 'num', 'Size (pt)'], ['bold', 'chk', 'Bold'], ['align', 'al', 'Align']]],
             ['hall', 'Hall / Counter Name', [['show', 'chk', 'Show'], ['size', 'num', 'Size (pt)'], ['bold', 'chk', 'Bold'], ['align', 'al', 'Align']]],
-            ['billrow', 'Bill No / Ticket No', [['show', 'chk', 'Show'], ['size', 'num', 'Size (pt)'], ['bold', 'chk', 'Bold']]],
+            ['billrow', 'Bill No / Ticket No', [['show', 'chk', 'Show'], ['billLabel', 'txt', 'Bill label'], ['ticketLabel', 'txt', 'Ticket label'], ['size', 'num', 'Size (pt)'], ['bold', 'chk', 'Bold']]],
             ['datetime', 'Date / Time', [['show', 'chk', 'Show'], ['dateLabel', 'txt', 'Date label'], ['timeLabel', 'txt', 'Time label'], ['size', 'num', 'Size (pt)']]],
             ['shiftrow', 'Shift / Cashier', [['show', 'chk', 'Show'], ['adminText', 'txt', 'Cashier text'], ['size', 'num', 'Size (pt)']]],
-            ['custphone', 'Customer Phone', [['show', 'chk', 'Show'], ['size', 'num', 'Size (px)']]],
+            ['custphone', 'Customer Phone', [['show', 'chk', 'Show'], ['prefix', 'txt', 'Icon / label'], ['size', 'num', 'Size (px)']]],
             ['lines', 'Dashed / Solid Lines', [['show', 'chk', 'Show lines']]],
             ['thead', 'Table Header', [['show', 'chk', 'Show'], ['item', 'txt', 'Item'], ['qty', 'txt', 'Qty'], ['price', 'txt', 'Price'], ['amount', 'txt', 'Amount'], ['size', 'num', 'Size (pt)'], ['bold', 'chk', 'Bold']]],
             ['items', 'Item Rows', [['size', 'num', 'Size (pt)'], ['showUnit', 'chk', 'Show unit']]],
@@ -1899,7 +1907,7 @@ ${bdEditScript()}
             ['customer', 'Customer Section', [['show', 'chk', 'Show'], ['custLabel', 'txt', 'Customer label'], ['defaultName', 'txt', 'Default name'], ['phoneLabel', 'txt', 'Phone label'], ['showDetails', 'chk', 'Show details'], ['detailsLabel', 'txt', 'Details label']]],
             ['table', 'Item Table Columns', [['size', 'num', 'Size (pt)'], ['cCode', 'chk', 'Code'], ['lCode', 'txt', 'Code label'], ['cDesc', 'chk', 'Description'], ['lDesc', 'txt', 'Desc label'], ['cUnit', 'chk', 'Unit'], ['lUnit', 'txt', 'Unit label'], ['cQty', 'chk', 'Qty'], ['lQty', 'txt', 'Qty label'], ['cUPrice', 'chk', 'Unit price'], ['lUPrice', 'txt', 'Unit price label'], ['cNet', 'chk', 'Net price'], ['lNet', 'txt', 'Net label'], ['cVatP', 'chk', 'VAT %'], ['lVatP', 'txt', 'VAT % label'], ['cVatA', 'chk', 'VAT amount'], ['lVatA', 'txt', 'VAT amount label']]],
             ['summary', 'Summary Table (bottom right)', [['size', 'num', 'Size (pt)'], ['grandSize', 'num', 'Grand size (pt)'], ['showSub', 'chk', 'Sub total'], ['lSub', 'txt', 'Sub label'], ['lDisc', 'txt', 'Discount label'], ['showNonTax', 'chk', 'Non-tax'], ['lNonTax', 'txt', 'Non-tax label'], ['showTaxable', 'chk', 'Taxable'], ['lTaxable', 'txt', 'Taxable label'], ['lVat', 'txt', 'VAT label'], ['lGrand', 'txt', 'Grand label'], ['showDue', 'chk', 'Due date'], ['lDue', 'txt', 'Due label']]],
-            ['words', 'Amount in Words', [['show', 'chk', 'Show']]],
+            ['words', 'Amount in Words', [['show', 'chk', 'Show'], ['prefix', 'txt', 'Starting word'], ['unitName', 'txt', 'Currency name (empty = auto)']]],
             ['terms', 'Terms & Conditions', [['show', 'chk', 'Show'], ['text', 'area', 'Text (empty = auto)'], ['size', 'num', 'Size (pt)']]],
             ['receiver', "Receiver Section", [['show', 'chk', 'Show'], ['l1', 'txt', 'Name label'], ['l2', 'txt', 'Stamp label']]],
             ['note', 'Extra Note', [['show', 'chk', 'Show'], ['text', 'area', 'Text'], ['size', 'num', 'Size (pt)']]],
@@ -1941,10 +1949,18 @@ ${bdEditScript()}
         a4: { company: [['name', 'Store name'], ['addr', 'Address / Location'], ['phone', 'Mobile number'], ['hall', 'Hall / Counter name']], meta: [['vat', 'VAT / Tax number']] }
     };
     let bdShop = null, bdShopDirty = false;
+    const BD_AUTO = {
+        'a4.terms.text': () => bdShop.footer || ('The customer acknowledges that ' + bdShop.name + ' will not exchange or return any goods that were accepted and received in good condition, and/or goods reaching near-expiry or expired after delivery.'),
+        'a4.footer.text': () => bdShop.name + (bdShop.addr ? ' - ' + bdShop.addr : '') + (bdShop.phone ? ' - Tel: ' + bdShop.phone : '') + (bdShop.vat ? ' - VAT: ' + bdShop.vat : ''),
+        't80.footer.text': () => bdShop.footer || ('Generated by ' + bdShop.name + ' POS System'),
+        'a4.words.unitName': () => curInfo().words
+    };
     function bdFieldsHTML(fmt, sec) {
         let h = '';
         sec[2].forEach(f => {
-            const v = bdGet(fmt, sec[0], f[0]);
+            let v = bdGet(fmt, sec[0], f[0]);
+            const au = BD_AUTO[fmt + '.' + sec[0] + '.' + f[0]];
+            if (au && (v === '' || v === undefined || v === null)) v = au();
             const on = `bdSet('${fmt}','${sec[0]}','${f[0]}',`;
             if (f[1] === 'chk') h += `<label class="bd-f chk"><input type="checkbox" ${v ? 'checked' : ''} onchange="${on}this.checked)"><span>${bdEsc(f[2])}</span></label>`;
             else if (f[1] === 'num') h += `<label class="bd-f"><span>${bdEsc(f[2])}</span><input type="number" step="0.5" value="${bdEsc(v)}" oninput="${on}parseFloat(this.value)||0)"></label>`;
@@ -1999,12 +2015,18 @@ ${bdEditScript()}
         </div>
         <div class="bd-tb">${stepper('Size', sk, sz, sk === 'size' && sec === 'logo' ? 2 : 1)}</div>
         <div class="bd-tb">${stepper('Margin Top', 'mt', bdCur('mt'), 1)}${stepper('Margin Bottom', 'mb', bdCur('mb'), 1)}</div>
+        <div class="bd-tb">
+            <label class="bd-st"><span>Text color</span><input type="color" value="${bdEsc(bdCur('color') || '#000000')}" oninput="bdTool('color', this.value)" style="width:44px;height:34px;border:none;background:none;"><button onclick="bdTool('color','')">&#10005;</button></label>
+            <label class="bd-st"><span>Background</span><input type="color" value="${bdEsc(bdCur('bg') || '#ffffff')}" oninput="bdTool('bg', this.value)" style="width:44px;height:34px;border:none;background:none;"><button onclick="bdTool('bg','')">&#10005;</button></label>
+        </div>
+        <div class="bd-tb"><label class="bd-st"><span>Font</span><select onchange="bdTool('ff', this.value)" style="flex:1;padding:8px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;">${[['', 'Default'], ['Arial, Helvetica, sans-serif', 'Sans (Arial)'], ["'Times New Roman', serif", 'Serif (Times)'], ["'Courier New', monospace", 'Mono (Courier)'], ['Verdana, sans-serif', 'Verdana']].map(f => '<option value="' + bdEsc(f[0]) + '"' + ((bdCur('ff') || '') === f[0] ? ' selected' : '') + '>' + f[1] + '</option>').join('')}</select></label></div>
         <div class="bd-tb">${stepper('Margin Left', 'ml', bdCur('ml'), 1)}${stepper('Margin Right', 'mr', bdCur('mr'), 1)}</div>`;
     }
     function bdTool(k, v) {
         if (k === 'bold' || k === 'italic') v = !(bdCur(k) === true);
         bdSet(bdFmt, bdSheetSec, k, v);
-        document.getElementById('bdTool').innerHTML = bdToolHTML();
+        if (k !== 'color' && k !== 'bg') document.getElementById('bdTool').innerHTML = bdToolHTML();
+        else if (v === '') document.getElementById('bdTool').innerHTML = bdToolHTML();
     }
     function bdStep(key, delta) {
         let v = bdCur(key);
@@ -2058,7 +2080,7 @@ ${bdEditScript()}
         const vat = (sub - discAmt) * vatPerc / 100;
         const d = new Date();
         const dd = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
-        return { logo, billLine: 'Bill no: 14 Ticket no: 13', billNo: 14, dateStr: dd, timeStr: d.toLocaleTimeString(), shiftText: 'Afternoon', custPhone: '91234567', items, discAmt, vatPerc, vat, delivery, grand: sub - discAmt + vat + delivery, itemsCount: items.length, totalQty: q };
+        return { logo, billLine: 'Bill no: 14 Ticket no: 13', billNo: 14, ticketNo: 13, dateStr: dd, timeStr: d.toLocaleTimeString(), shiftText: 'Afternoon', custPhone: '91234567', items, discAmt, vatPerc, vat, delivery, grand: sub - discAmt + vat + delivery, itemsCount: items.length, totalQty: q };
     }
     function bdRenderPreview() {
         window.__bdOverride = bdWork || {}; window.__bdEdit = bdEditMode; window.__bdShopOverride = bdShop;
@@ -2126,6 +2148,7 @@ ${bdEditScript()}
         logo: savedPhoto,
         billLine: billLine,
         billNo: billCount,
+        ticketNo: (currentTicket || ''),
         dateStr: dateStr,
         timeStr: timeStr,
         shiftText: shift,
@@ -3911,6 +3934,7 @@ function reprintBill(billNo, dateKey) {
         logo: savedPhoto,
         billLine: billLine,
         billNo: b.billNo,
+        ticketNo: (b.ticketNo || ''),
         dateStr: b.date,
         timeStr: b.time,
         shiftText: currentShift,
