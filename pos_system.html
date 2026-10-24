@@ -368,7 +368,7 @@ body { width: 100%; }
     <div class="mw"><div id="m" class="pg"></div></div>
 
 
-  <div class="cart-bar" id="bottom-cart-bar" onclick="toggleCart(true)">
+  <div class="cart-bar" id="bottom-cart-bar" onclick="openCartOrWarn()">
         <span id="cart-count">0 ITEMS</span>
         <span id="cart-total"><span class="cur-code">OMR</span> 0.000</span>
     </div>
@@ -2616,6 +2616,18 @@ function updateCartUI(rebuildList = true) {
 
     function changeQty(i, d) { if (d > 0 && !stockAllows(cart[i], parseFloat(cart[i].qty) + d)) return; cart[i].qty += d; if (cart[i].qty < 1) cart.splice(i, 1); updateCartUI(); }
     let cartPanelOpen = false;
+    function openCartOrWarn() {
+        if (!cart || !cart.length) {
+            document.getElementById('noItemOv').style.display = 'block';
+            document.getElementById('noItemBox').style.display = 'block';
+            return;
+        }
+        toggleCart(true);
+    }
+    function closeNoItemPopup() {
+        document.getElementById('noItemOv').style.display = 'none';
+        document.getElementById('noItemBox').style.display = 'none';
+    }
     function toggleCart(open) { cartPanelOpen = !!open; const cp = document.getElementById('cart-panel'); if(open) cp.classList.add('open'); else cp.classList.remove('open'); }
     function closeDup() { document.getElementById('dupM').style.display = 'none'; }
     function closeM() { document.querySelectorAll('.modal, .ov').forEach(el => el.style.display = 'none'); }
@@ -5481,5 +5493,14 @@ i.ic-on.fa-spin{color:var(--ic)!important}
 })();
 </script>
 <!-- COLORFUL-ICONS:END -->
+<!-- No-items popup (cart bar click with empty cart) -->
+<div id="noItemOv" onclick="closeNoItemPopup()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
+<div id="noItemBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:340px;background:#fff;border-radius:24px;padding:26px 22px 22px;box-shadow:0 20px 50px rgba(0,0,0,0.28);text-align:center;">
+    <div style="width:68px;height:68px;margin:0 auto 12px;border-radius:50%;background:linear-gradient(135deg,#ccfbf1,#99f6e4);display:flex;align-items:center;justify-content:center;font-size:32px;">🛒</div>
+    <h3 style="margin:0 0 6px;font-size:18px;color:#0f172a;font-weight:800;">No Items Added</h3>
+    <p style="margin:0 0 20px;color:#64748b;font-size:13.5px;line-height:1.5;">Please add at least one item to the order before continuing.</p>
+    <button onclick="closeNoItemPopup()" style="width:100%;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;padding:14px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(13,148,136,.28);">➕ Add Item</button>
+</div>
+
 </body>
 </html>
