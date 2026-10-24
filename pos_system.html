@@ -2093,7 +2093,16 @@ ${bdEditScript()}
         window.__bdOverride = null; window.__bdEdit = false; window.__bdShopOverride = null;
         const fr = document.getElementById('bdPreview');
         let sy = 0; try { sy = fr.contentWindow.scrollY || 0; } catch (e) {}
-        fr.onload = function () { try { fr.contentWindow.scrollTo(0, sy); } catch (e) {} };
+        // Long-press par "search / translate" panel na aaye: text selection + context menu + translate band
+        const _noSel = '<meta name="google" content="notranslate"><style>html,body,*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent}</style>';
+        html = String(html).replace('</head>', _noSel + '</head>').replace('<html', '<html translate="no"');
+        fr.onload = function () {
+            try {
+                fr.contentWindow.scrollTo(0, sy);
+                const d = fr.contentDocument;
+                ['contextmenu', 'selectstart', 'dragstart'].forEach(ev => d.addEventListener(ev, e => e.preventDefault()));
+            } catch (e) {}
+        };
         fr.srcdoc = html;
     }
     function saveBillDesign() {
@@ -4495,6 +4504,8 @@ function deleteBill(billNo, dateKey, displayLabel){
 .bd-tabs { display:flex; gap:8px; padding:8px 12px; background:#fff; flex-shrink:0; }
 .bd-tab { flex:1; padding:10px; border-radius:10px; border:1.5px solid #e2e8f0; background:#f8fafc; font-weight:800; font-size:13px; color:#475569; }
 .bd-tab.on { background:linear-gradient(135deg,#8b5cf6,#6366f1); color:#fff; border-color:transparent; }
+#billDesignerPage, #billDesignerPage * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+#billDesignerPage input, #billDesignerPage textarea, #billDesignerPage select { -webkit-user-select:text; user-select:text; }
 #bdPreview { width:100%; flex:1; min-height:0; border:none; background:#e2e8f0; border-bottom:1px solid #cbd5e1; }
 #bdForm { flex:1; overflow-y:auto; padding:10px 12px 12px; }
 .bd-card { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; margin-bottom:8px; }
@@ -4522,7 +4533,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 .bd-foot { display:flex; gap:10px; padding:10px 12px; background:#fff; border-top:1px solid #e2e8f0; flex-shrink:0; }
 .bd-foot button { flex:1; padding:14px; border:none; border-radius:12px; font-weight:800; font-size:14px; color:#fff; }
 </style>
-<div id="billDesignerPage" class="full-page" style="display:none; flex-direction:column;">
+<div id="billDesignerPage" class="full-page" translate="no" style="display:none; flex-direction:column;">
     <div class="bd-head"><b>🎨 Bill Designer</b><select class="cur-select" onchange="setCurrency(this.value)" style="margin-left:auto; margin-right:10px; max-width:150px; padding:7px 6px; border-radius:8px; border:1.5px solid #e2e8f0; font-weight:700; font-size:11px; background:#fff;"></select><button onclick="closeBillDesigner()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button></div>
     <div class="bd-tabs"><button id="bdTab80" class="bd-tab on" onclick="bdSwitch('t80')">80mm Thermal</button><button id="bdTabA4" class="bd-tab" onclick="bdSwitch('a4')">A4 Invoice</button><button id="bdEditBtn" class="bd-tab" style="flex:0 0 52px;" onclick="bdToggleEdit()" title="Edit on bill">&#9998;</button></div>
     <iframe id="bdPreview" title="preview"></iframe>
