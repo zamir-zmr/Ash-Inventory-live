@@ -1861,7 +1861,7 @@ ${ln('dashed')}
 ${itemsHtml}
 ${ln('dashed')}
 ${discHtml}
-${(D.vatrow.show && vat > 0) ? `<div class="vat-row" ${bdAt(D.vatrow, 'vatrow')}><span>${e(D.vatrow.label)} (${Number(vatPerc)}%)</span><span>${vat.toFixed(cdec())}</span></div>` : ''}
+${D.vatrow.show ? `<div class="vat-row" ${bdAt(D.vatrow, 'vatrow')}><span>${e(D.vatrow.label)} (${Number(vatPerc) || 0}%)</span><span>${(Number(vat) || 0).toFixed(cdec())}</span></div>` : ''}
 ${dlvHtml}
 ${ln('solid')}
 ${D.gtotal.show ? `<div class="gtotal" ${bdAt(D.gtotal, 'gtotal')}><span class="label">${e(D.gtotal.label)}</span><span>${grand.toFixed(cdec())}</span></div>` : ''}
