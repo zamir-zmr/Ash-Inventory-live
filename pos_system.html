@@ -1435,6 +1435,7 @@ function processPastedJson() {
         try { o = JSON.parse(localStorage.getItem('asb_shop_info')) || {}; } catch (e) { o = {}; }
         const s = {};
         Object.keys(SHOP_DEFAULTS).forEach(k => { s[k] = (o[k] !== undefined && o[k] !== null) ? String(o[k]) : SHOP_DEFAULTS[k]; });
+        if (window.__bdShopOverride) return Object.assign(s, window.__bdShopOverride);
         return s;
     }
     function applyShopInfoUI() {
@@ -1559,6 +1560,9 @@ function processPastedJson() {
         try { o = JSON.parse(localStorage.getItem('asb_bill_design')) || {}; } catch (e) { o = {}; }
         return bdMerge(BD_DEFAULTS, o);
     }
+    const bdEditing = () => !!window.__bdEdit;
+    const bdPen = sec => bdEditing() ? `<span class="bd-pen" onclick="window.parent.bdOpenSheet('${sec}')">&#9998;</span>` : '';
+    const BD_PEN_CSS = '.bd-pen{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:22px;height:22px;line-height:22px;text-align:center;background:#8b5cf6;color:#fff;border-radius:50%;font-size:13px;font-style:normal;font-weight:400;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.35);z-index:5;text-decoration:none;display:inline-block}\n*:has(> .bd-pen){position:relative}\n';
     const bdAl = a => (a === 'left' || a === 'right') ? a : 'center';
     const bdW = b => b ? 700 : 400;
 
@@ -1567,6 +1571,7 @@ function processPastedJson() {
         const shop = getShopInfo();
         const D = getBD().a4;
         const e = escReceiptHtml;
+        const pn = bdPen;
         const yr = String(dateStr || '').split('/')[2] || String(dateStr || '').split('-')[0] || new Date().getFullYear();
         const invNo = (D.meta.invPrefix || '') + yr + String(billNo || 0).padStart(6, '0');
         let sub = 0;
@@ -1585,9 +1590,11 @@ function processPastedJson() {
             ['cVatP', 'lVatP', true, () => '<b>' + vp + '%</b>'],
             ['cVatA', 'lVatA', true, (it) => '<b>' + (Number(it.price) * Number(it.qty) * ratio * vp / 100).toFixed(3) + '</b>']
         ].filter(c => T[c[0]]);
-        const head = cols.map(c => `<th${c[2] ? ' class="n"' : ''}>${e(T[c[1]])}</th>`).join('');
+        let head = cols.map(c => `<th${c[2] ? ' class="n"' : ''}>${e(T[c[1]])}</th>`).join('');
+        if (bdEditing()) head = head.replace(/<\/th>$/, pn('table') + '</th>');
         const rows = items.map((it, i) => '<tr>' + cols.map(c => `<td${c[2] ? ' class="n"' : ''}>${c[3](it, i)}</td>`).join('') + '</tr>').join('');
-        const logoHtml = (D.logo.show && logo) ? `<img class="logo" src="${logo}" onerror="this.style.display='none'">` : '';
+        let logoHtml = (D.logo.show && logo) ? `<img class="logo" src="${logo}" onerror="this.style.display='none'">` : '';
+        if (bdEditing() && D.logo.show) logoHtml = '<div style="position:relative">' + logoHtml + pn('logo') + '</div>';
         const terms = D.terms.text || shop.footer || ('The customer acknowledges that ' + shop.name + ' will not exchange or return any goods that were accepted and received in good condition, and/or goods reaching near-expiry or expired after delivery.');
         const S = D.summary;
         const footLine = D.footer.text || (e(shop.name) + (shop.addr ? ' - ' + e(shop.addr) : '') + (shop.phone ? ' - Tel: ' + e(shop.phone) : '') + (shop.vat ? ' - VAT: ' + e(shop.vat) : ''));
@@ -1628,6 +1635,7 @@ table.items .n, table.items th.n { text-align:right; }
 .sign { display:flex; justify-content:space-between; gap:4mm; margin-top:14mm; font-weight:700; font-size:8.5pt; text-decoration:underline; }
 .foot { margin-top:8mm; font-size:${Number(D.footer.size)}pt; font-weight:700; line-height:1.4; }
 .note { margin-top:4mm; font-size:${Number(D.note.size)}pt; white-space:pre-wrap; }
+${bdEditing() ? BD_PEN_CSS : ''}
 @media print {
   @page { size:A4; margin:0; }
   html, body { width:210mm; }
@@ -1637,19 +1645,20 @@ table.items .n, table.items th.n { text-align:right; }
 <body>
 <div class="a4page">
 <div class="top">
-  <div class="l">${D.company.show ? `<div class="cn">${e(shop.name)}</div>${(D.company.showAddr && shop.addr) ? `<div>${e(shop.addr)}</div>` : ''}${(D.company.showPhone && shop.phone) ? `<div>${e(D.company.telLabel)} ${e(shop.phone)}</div>` : ''}${(D.company.showHall && shop.hall) ? `<div>${e(shop.hall)}</div>` : ''}` : ''}</div>
-  <div class="c">${logoHtml}${D.title.show ? `<div class="title">${e(D.title.text)}</div>` : ''}</div>
+  <div class="l">${D.company.show ? `<div class="cn">${e(shop.name)}${pn('company')}</div>${(D.company.showAddr && shop.addr) ? `<div>${e(shop.addr)}</div>` : ''}${(D.company.showPhone && shop.phone) ? `<div>${e(D.company.telLabel)} ${e(shop.phone)}</div>` : ''}${(D.company.showHall && shop.hall) ? `<div>${e(shop.hall)}</div>` : ''}` : ''}</div>
+  <div class="c">${logoHtml}${D.title.show ? `<div class="title">${e(D.title.text)}${pn('title')}</div>` : ''}</div>
   <div class="r">${D.meta.show ? `<table class="meta">
     <tr><td>${e(D.meta.vatLabel)}</td><td>${e(shop.vat || '-')}</td></tr>
     <tr><td>${e(D.meta.invLabel)}</td><td>${e(invNo)}</td></tr>
     <tr><td>${e(D.meta.dateLabel)}</td><td>${e(dateStr)}${D.meta.showTime ? ' ' + e(timeStr || '') : ''}</td></tr>
     <tr><td>${e(D.meta.curLabel)}</td><td>${e(D.meta.currency)}</td></tr>
-  </table>` : ''}</div>
+  </table>${pn('meta')}` : ''}</div>
 </div>
 ${D.customer.show ? `<div class="cust">
   <div><b>${e(D.customer.custLabel)}</b> ${e(D.customer.defaultName)}</div>
   <div><b>${e(D.customer.phoneLabel)}</b> ${e(custPhone || '-')}</div>
   ${D.customer.showDetails ? `<div><b>${e(D.customer.detailsLabel)}</b> ${e(data.billLine || '')}</div>` : ''}
+  ${pn('customer')}
 </div>` : ''}
 <table class="items">
 <thead><tr>${head}</tr></thead>
@@ -1658,10 +1667,11 @@ ${D.customer.show ? `<div class="cust">
 <div class="grow"></div>
 <div class="bottom">
   <div class="left">
-    ${D.words.show ? `<div class="words"><b>${e(amountInWordsOMR(grand))}</b></div>` : ''}
-    ${D.terms.show ? `<div>${e(terms)}</div>` : ''}
+    ${D.words.show ? `<div class="words"><b>${e(amountInWordsOMR(grand))}</b>${pn('words')}</div>` : ''}
+    ${D.terms.show ? `<div>${e(terms)}${pn('terms')}</div>` : ''}
   </div>
   <div class="right">
+    ${pn('summary')}
     <table class="sum">
       ${S.showSub ? `<tr><td><b>${e(S.lSub)}</b></td><td>${sub.toFixed(3)}</td></tr>` : ''}
       ${discAmt > 0 ? `<tr><td><b>${e(S.lDisc)}</b></td><td>-${discAmt.toFixed(3)}</td></tr>` : ''}
@@ -1671,15 +1681,15 @@ ${D.customer.show ? `<div class="cust">
       <tr class="tot"><td>${e(S.lGrand)}</td><td>${grand.toFixed(3)}</td></tr>
     </table>
     ${S.showDue ? `<div class="due"><span>${e(S.lDue)}</span><span>${e(dateStr)}</span></div>` : ''}
-    ${D.receiver.show ? `<div class="sign"><span>${e(D.receiver.l1)}</span><span>${e(D.receiver.l2)}</span></div>` : ''}
+    ${D.receiver.show ? `<div class="sign"><span>${e(D.receiver.l1)}</span><span>${e(D.receiver.l2)}</span>${pn('receiver')}</div>` : ''}
   </div>
 </div>
-${D.note.show && D.note.text ? `<div class="note">${e(D.note.text)}</div>` : ''}
-${D.footer.show ? `<div class="foot">${footHtml}</div>` : ''}
+${(D.note.show && (D.note.text || bdEditing())) ? `<div class="note">${e(D.note.text || (bdEditing() ? '(extra note)' : ''))}${pn('note')}</div>` : ''}
+${D.footer.show ? `<div class="foot">${footHtml}${pn('footer')}</div>` : ''}
 </div>
 <script>
 (function(){
-  function fit(){ var w=document.documentElement.clientWidth; var z=Math.min(1,w/794); document.body.style.zoom=z; }
+  function fit(){ var w=document.documentElement.clientWidth; var z=Math.min(1,w/794); document.body.style.zoom=z; var ps=document.querySelectorAll('.bd-pen'); for(var i=0;i<ps.length;i++){ps[i].style.zoom=(1/z);} }
   window.addEventListener('resize',fit); window.addEventListener('beforeprint',function(){document.body.style.zoom=1;}); window.addEventListener('afterprint',fit); fit();
 })();
 <\/script>
@@ -1693,20 +1703,22 @@ ${D.footer.show ? `<div class="foot">${footHtml}</div>` : ''}
         const shop = getShopInfo();
         const D = getBD().t80;
         const e = escReceiptHtml;
-        let itemsHtml = items.map(it => `
+        const pn = bdPen;
+        let itemsHtml = items.map((it, ix) => `
             <div class="item-row">
                 <div class="col-item">${e(it.name)}</div>
                 <div class="col-qty">${it.qty}${(D.items.showUnit && it.unit) ? ' ' + e(it.unit) : ''}</div>
                 <div class="col-price">${Number(it.price).toFixed(3)}</div>
-                <div class="col-amount">${(Number(it.price) * Number(it.qty)).toFixed(3)}</div>
+                <div class="col-amount">${(Number(it.price) * Number(it.qty)).toFixed(3)}</div>${ix === 0 ? pn('items') : ''}
             </div>`).join('');
 
-        let discHtml = (D.discount.show && discAmt > 0) ? `<div class="discount-row"><span>${e(D.discount.label)}</span><span>-${discAmt.toFixed(3)}</span></div>` : '';
-        let dlvHtml = (D.delivery.show && delivery > 0) ? `<div class="delivery-row"><span>${e(D.delivery.label)}</span><span>${delivery.toFixed(3)}</span></div>` : '';
-        let custHtml = (D.custphone.show && custPhone) ? `<div class="row"><span style="font-size: ${Number(D.custphone.size)}px;">📞 ${e(custPhone)}</span></div>` : '';
+        let discHtml = (D.discount.show && discAmt > 0) ? `<div class="discount-row"><span>${e(D.discount.label)}</span><span>-${discAmt.toFixed(3)}</span>${pn('discount')}</div>` : '';
+        let dlvHtml = (D.delivery.show && delivery > 0) ? `<div class="delivery-row"><span>${e(D.delivery.label)}</span><span>${delivery.toFixed(3)}</span>${pn('delivery')}</div>` : '';
+        let custHtml = (D.custphone.show && custPhone) ? `<div class="row"><span style="font-size: ${Number(D.custphone.size)}px;">📞 ${e(custPhone)}</span>${pn('custphone')}</div>` : '';
         let logoHtml = (D.logo.show && logo) ? `<img class="logo" src="${logo}" onerror="this.style.display='none'">` : '';
+        if (bdEditing() && D.logo.show) logoHtml = '<div style="position:relative">' + logoHtml + pn('logo') + '</div>';
         const ln = (cls) => D.lines.show ? `<div class="${cls}"></div>` : '';
-        const note = (n, cls) => (n.show && n.text) ? `<div class="${cls}">${e(n.text).replace(/\n/g, '<br>')}</div>` : '';
+        const note = (n, cls, sec) => (n.show && (n.text || bdEditing())) ? `<div class="${cls}">${e(n.text || (bdEditing() ? '(extra note)' : '')).replace(/\n/g, '<br>')}${pn(sec)}</div>` : '';
 
         return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
@@ -1741,6 +1753,7 @@ body { font-family: Helvetica, Arial, sans-serif; color:#000; display:flex; just
 .gtotal .label { margin-right:3mm; }
 .itemsqty { font-size:${Number(D.itemsqty.size)}pt; margin:1mm 0; }
 .footer { text-align:${bdAl(D.footer.align)}; font-size:${Number(D.footer.size)}pt; font-weight:${bdW(D.footer.bold)}; margin-top:2mm; }
+${bdEditing() ? BD_PEN_CSS : ''}
 @media print {
   @page { size:80mm auto; margin:0; }
   html, body { width:100%; height:100%; }
@@ -1751,31 +1764,31 @@ body { font-family: Helvetica, Arial, sans-serif; color:#000; display:flex; just
 <body>
 <div class="receipt">
 ${logoHtml}
-${note(D.topNote, 'topnote')}
-${D.shopname.show ? `<div class="shopname">${e(shop.name)}</div>` : ''}
-${(D.addr.show && shop.addr) ? `<div class="addr">${e(shop.addr)}</div>` : ''}
-${(D.phone.show && shop.phone) ? `<div class="phone">${e(shop.phone)}</div>` : ''}
-${(D.vat.show && shop.vat) ? `<div class="vatno">${e(D.vat.label)} ${e(shop.vat)}</div>` : ''}
-${(D.hall.show && shop.hall) ? `<div class="hall">${e(shop.hall)}</div>` : ''}
-${D.billrow.show ? `<div class="billrow">${billLine}</div>` : ''}
-${D.datetime.show ? `<div class="row"><span>${e(D.datetime.dateLabel)} ${dateStr}</span><span>${e(D.datetime.timeLabel)} ${timeStr}</span></div>` : ''}
-${D.shiftrow.show ? `<div class="row shift"><span>${shiftText}</span><span>${e(D.shiftrow.adminText)}</span></div>` : ''}
+${note(D.topNote, 'topnote', 'topNote')}
+${D.shopname.show ? `<div class="shopname">${e(shop.name)}${pn('shopname')}</div>` : ''}
+${(D.addr.show && shop.addr) ? `<div class="addr">${e(shop.addr)}${pn('addr')}</div>` : ''}
+${(D.phone.show && shop.phone) ? `<div class="phone">${e(shop.phone)}${pn('phone')}</div>` : ''}
+${(D.vat.show && shop.vat) ? `<div class="vatno">${e(D.vat.label)} ${e(shop.vat)}${pn('vat')}</div>` : ''}
+${(D.hall.show && shop.hall) ? `<div class="hall">${e(shop.hall)}${pn('hall')}</div>` : ''}
+${D.billrow.show ? `<div class="billrow">${billLine}${pn('billrow')}</div>` : ''}
+${D.datetime.show ? `<div class="row"><span>${e(D.datetime.dateLabel)} ${dateStr}</span><span>${e(D.datetime.timeLabel)} ${timeStr}</span>${pn('datetime')}</div>` : ''}
+${D.shiftrow.show ? `<div class="row shift"><span>${shiftText}</span><span>${e(D.shiftrow.adminText)}</span>${pn('shiftrow')}</div>` : ''}
 ${custHtml}
 ${ln('dashed')}
-${D.thead.show ? `<div class="tblhead"><div class="col-item">${e(D.thead.item)}</div><div class="col-qty">${e(D.thead.qty)}</div><div class="col-price">${e(D.thead.price)}</div><div class="col-amount">${e(D.thead.amount)}</div></div>` : ''}
+${D.thead.show ? `<div class="tblhead"><div class="col-item">${e(D.thead.item)}</div><div class="col-qty">${e(D.thead.qty)}</div><div class="col-price">${e(D.thead.price)}</div><div class="col-amount">${e(D.thead.amount)}</div>${pn('thead')}</div>` : ''}
 ${ln('dashed')}
 ${itemsHtml}
 ${ln('dashed')}
 ${discHtml}
-${(D.vatrow.show && vat > 0) ? `<div class="vat-row"><span>${e(D.vatrow.label)} (${Number(vatPerc)}%)</span><span>${vat.toFixed(3)}</span></div>` : ''}
+${(D.vatrow.show && vat > 0) ? `<div class="vat-row"><span>${e(D.vatrow.label)} (${Number(vatPerc)}%)</span><span>${vat.toFixed(3)}</span>${pn('vatrow')}</div>` : ''}
 ${dlvHtml}
 ${ln('solid')}
-${D.gtotal.show ? `<div class="gtotal"><span class="label">${e(D.gtotal.label)}</span><span>${grand.toFixed(3)}</span></div>` : ''}
+${D.gtotal.show ? `<div class="gtotal"><span class="label">${e(D.gtotal.label)}</span><span>${grand.toFixed(3)}</span>${pn('gtotal')}</div>` : ''}
 ${ln('dashed')}
-${D.itemsqty.show ? `<div class="itemsqty">${e(D.itemsqty.label)} ${itemsCount} / ${totalQty}</div>` : ''}
+${D.itemsqty.show ? `<div class="itemsqty">${e(D.itemsqty.label)} ${itemsCount} / ${totalQty}${pn('itemsqty')}</div>` : ''}
 ${ln('dashed')}
-${D.footer.show ? `<div class="footer">${e(D.footer.text || shop.footer || ("Generated by " + shop.name + " POS System"))}</div>` : ''}
-${note(D.bottomNote, 'botnote')}
+${D.footer.show ? `<div class="footer">${e(D.footer.text || shop.footer || ("Generated by " + shop.name + " POS System"))}${pn('footer')}</div>` : ''}
+${note(D.bottomNote, 'botnote', 'bottomNote')}
 </div>
 </body></html>`;
     }
@@ -1828,14 +1841,16 @@ ${note(D.bottomNote, 'botnote')}
         closeM();
         try { bdWork = JSON.parse(localStorage.getItem('asb_bill_design')) || {}; } catch (e) { bdWork = {}; }
         bdFmt = (getBillFormat() === 'a4') ? 'a4' : 't80';
+        bdShop = getShopInfo(); bdShopDirty = false;
+        document.getElementById('bdSheet').style.display = 'none';
         document.getElementById('billDesignerPage').style.display = 'flex';
         bdRenderForm(); bdRenderPreview();
     }
     function closeBillDesigner() {
-        window.__bdOverride = null;
+        window.__bdOverride = null; window.__bdShopOverride = null; window.__bdEdit = false;
         document.getElementById('billDesignerPage').style.display = 'none';
     }
-    function bdSwitch(f) { bdFmt = f; bdRenderForm(); bdRenderPreview(); }
+    function bdSwitch(f) { bdFmt = f; document.getElementById('bdSheet').style.display = 'none'; bdRenderForm(); bdRenderPreview(); }
     function bdGet(fmt, sec, key) {
         const cur = bdMerge(BD_DEFAULTS, bdWork || {});
         return cur[fmt][sec][key];
@@ -1849,25 +1864,56 @@ ${note(D.bottomNote, 'botnote')}
         bdTimer = setTimeout(bdRenderPreview, 250);
     }
     function bdEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+    const BD_SHOPMAP = {
+        t80: { shopname: [['name', 'Store name']], addr: [['addr', 'Address / Location']], phone: [['phone', 'Mobile number']], vat: [['vat', 'VAT / Tax number']], hall: [['hall', 'Hall / Counter name']] },
+        a4: { company: [['name', 'Store name'], ['addr', 'Address / Location'], ['phone', 'Mobile number'], ['hall', 'Hall / Counter name']], meta: [['vat', 'VAT / Tax number']] }
+    };
+    let bdShop = null, bdShopDirty = false;
+    function bdFieldsHTML(fmt, sec) {
+        let h = '';
+        sec[2].forEach(f => {
+            const v = bdGet(fmt, sec[0], f[0]);
+            const on = `bdSet('${fmt}','${sec[0]}','${f[0]}',`;
+            if (f[1] === 'chk') h += `<label class="bd-f chk"><input type="checkbox" ${v ? 'checked' : ''} onchange="${on}this.checked)"><span>${bdEsc(f[2])}</span></label>`;
+            else if (f[1] === 'num') h += `<label class="bd-f"><span>${bdEsc(f[2])}</span><input type="number" step="0.5" value="${bdEsc(v)}" oninput="${on}parseFloat(this.value)||0)"></label>`;
+            else if (f[1] === 'al') h += `<label class="bd-f"><span>${bdEsc(f[2])}</span><select onchange="${on}this.value)"><option value="left" ${v === 'left' ? 'selected' : ''}>Left</option><option value="center" ${v === 'center' ? 'selected' : ''}>Center</option><option value="right" ${v === 'right' ? 'selected' : ''}>Right</option></select></label>`;
+            else if (f[1] === 'col') h += `<label class="bd-f"><span>${bdEsc(f[2])}</span><input type="color" value="${bdEsc(v)}" oninput="${on}this.value)"></label>`;
+            else if (f[1] === 'area') h += `<label class="bd-f wide"><span>${bdEsc(f[2])}</span><textarea rows="2" oninput="${on}this.value)">${bdEsc(v)}</textarea></label>`;
+            else h += `<label class="bd-f"><span>${bdEsc(f[2])}</span><input type="text" value="${bdEsc(v)}" oninput="${on}this.value)"></label>`;
+        });
+        return h;
+    }
     function bdRenderForm() {
         document.getElementById('bdTab80').className = 'bd-tab' + (bdFmt === 't80' ? ' on' : '');
         document.getElementById('bdTabA4').className = 'bd-tab' + (bdFmt === 'a4' ? ' on' : '');
         let h = '';
         BD_SCHEMA[bdFmt].forEach(sec => {
-            h += `<details class="bd-card"><summary>${bdEsc(sec[1])}</summary><div class="bd-grid">`;
-            sec[2].forEach(f => {
-                const v = bdGet(bdFmt, sec[0], f[0]);
-                const on = `bdSet('${bdFmt}','${sec[0]}','${f[0]}',`;
-                if (f[1] === 'chk') h += `<label class="bd-f chk"><input type="checkbox" ${v ? 'checked' : ''} onchange="${on}this.checked)"><span>${bdEsc(f[2])}</span></label>`;
-                else if (f[1] === 'num') h += `<label class="bd-f"><span>${bdEsc(f[2])}</span><input type="number" step="0.5" value="${bdEsc(v)}" oninput="${on}parseFloat(this.value)||0)"></label>`;
-                else if (f[1] === 'al') h += `<label class="bd-f"><span>${bdEsc(f[2])}</span><select onchange="${on}this.value)"><option value="left" ${v === 'left' ? 'selected' : ''}>Left</option><option value="center" ${v === 'center' ? 'selected' : ''}>Center</option><option value="right" ${v === 'right' ? 'selected' : ''}>Right</option></select></label>`;
-                else if (f[1] === 'col') h += `<label class="bd-f"><span>${bdEsc(f[2])}</span><input type="color" value="${bdEsc(v)}" oninput="${on}this.value)"></label>`;
-                else if (f[1] === 'area') h += `<label class="bd-f wide"><span>${bdEsc(f[2])}</span><textarea rows="2" oninput="${on}this.value)">${bdEsc(v)}</textarea></label>`;
-                else h += `<label class="bd-f"><span>${bdEsc(f[2])}</span><input type="text" value="${bdEsc(v)}" oninput="${on}this.value)"></label>`;
-            });
-            h += '</div></details>';
+            h += `<details class="bd-card"><summary>${bdEsc(sec[1])} <button class="bd-edit" onclick="event.preventDefault(); event.stopPropagation(); bdOpenSheet('${sec[0]}')">&#9998;</button></summary><div class="bd-grid">${bdFieldsHTML(bdFmt, sec)}</div></details>`;
         });
         document.getElementById('bdForm').innerHTML = h;
+    }
+    function bdSetShop(k, v) {
+        bdShop[k] = v; bdShopDirty = true;
+        clearTimeout(bdTimer); bdTimer = setTimeout(bdRenderPreview, 250);
+    }
+    function bdOpenSheet(secKey) {
+        const sec = BD_SCHEMA[bdFmt].find(s => s[0] === secKey);
+        if (!sec) return;
+        let h = `<div class="bd-sh-head"><b>&#9998; ${bdEsc(sec[1])}</b><button onclick="bdCloseSheet()">DONE</button></div><div class="bd-grid">`;
+        ((BD_SHOPMAP[bdFmt] || {})[secKey] || []).forEach(m => {
+            h += `<label class="bd-f wide"><span>${bdEsc(m[1])} (shown on bill)</span><input type="text" value="${bdEsc(bdShop[m[0]])}" oninput="bdSetShop('${m[0]}', this.value)"></label>`;
+        });
+        h += bdFieldsHTML(bdFmt, sec) + '</div>';
+        const sh = document.getElementById('bdSheet');
+        sh.innerHTML = h; sh.style.display = 'block';
+    }
+    function bdCloseSheet() {
+        document.getElementById('bdSheet').style.display = 'none';
+        bdRenderForm();
+    }
+    function bdTogglePreview() {
+        const f = document.getElementById('bdPreview');
+        f.style.height = (f.style.height === '62%') ? '36%' : '62%';
     }
     function bdSampleData() {
         let logo = null; try { logo = localStorage.getItem('savedPhotoUrl') || null; } catch (e) {}
@@ -1884,16 +1930,17 @@ ${note(D.bottomNote, 'botnote')}
         return { logo, billLine: 'Bill no: 14 Ticket no: 13', billNo: 14, dateStr: dd, timeStr: d.toLocaleTimeString(), shiftText: 'Afternoon', custPhone: '91234567', items, discAmt, vatPerc, vat, delivery, grand: sub - discAmt + vat + delivery, itemsCount: items.length, totalQty: q };
     }
     function bdRenderPreview() {
-        window.__bdOverride = bdWork || {};
+        window.__bdOverride = bdWork || {}; window.__bdEdit = true; window.__bdShopOverride = bdShop;
         const data = bdSampleData(); data.format = (bdFmt === 'a4') ? 'a4' : 'thermal';
         let html = '';
         try { html = buildReceiptHTML(data); } catch (e) { html = '<pre>' + e.message + '</pre>'; }
-        window.__bdOverride = null;
+        window.__bdOverride = null; window.__bdEdit = false; window.__bdShopOverride = null;
         const fr = document.getElementById('bdPreview');
         fr.srcdoc = html;
     }
     function saveBillDesign() {
         try { localStorage.setItem('asb_bill_design', JSON.stringify(bdWork || {})); } catch (e) {}
+        if (bdShopDirty && bdShop) { try { localStorage.setItem('asb_shop_info', JSON.stringify(Object.assign({}, bdShop, { t: Date.now() }))); applyShopInfoUI(); } catch (e) {} }
         closeBillDesigner();
         alert('Bill design saved ✓');
     }
@@ -4257,14 +4304,20 @@ function deleteBill(billNo, dateKey, displayLabel){
 .bd-f input[type=text], .bd-f input[type=number], .bd-f select, .bd-f textarea { width:100%; box-sizing:border-box; padding:9px; border:1.5px solid #e2e8f0; border-radius:9px; font-size:13px; font-family:inherit; }
 .bd-f input[type=color] { width:100%; height:38px; border:1.5px solid #e2e8f0; border-radius:9px; padding:2px; }
 .bd-f input[type=checkbox] { width:20px; height:20px; accent-color:#10b981; }
+.bd-edit { float:right; border:none; background:#8b5cf6; color:#fff; width:30px; height:30px; border-radius:50%; font-size:15px; line-height:30px; margin:-4px 0 0 8px; }
+#billDesignerPage { position:fixed; }
+#bdSheet { display:none; position:absolute; left:0; right:0; bottom:74px; max-height:52%; overflow-y:auto; background:#fff; border-radius:18px 18px 0 0; box-shadow:0 -6px 24px rgba(15,23,42,0.28); padding:12px 4px 10px; z-index:10; }
+.bd-sh-head { display:flex; align-items:center; justify-content:space-between; padding:2px 14px 8px; font-size:14px; color:#1e293b; }
+.bd-sh-head button { border:none; background:linear-gradient(135deg,#10b981,#059669); color:#fff; font-weight:800; padding:8px 18px; border-radius:10px; font-size:12px; }
 .bd-foot { display:flex; gap:10px; padding:10px 12px; background:#fff; border-top:1px solid #e2e8f0; flex-shrink:0; }
 .bd-foot button { flex:1; padding:14px; border:none; border-radius:12px; font-weight:800; font-size:14px; color:#fff; }
 </style>
 <div id="billDesignerPage" class="full-page" style="display:none; flex-direction:column;">
     <div class="bd-head"><b>🎨 Bill Designer</b><button onclick="closeBillDesigner()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button></div>
-    <div class="bd-tabs"><button id="bdTab80" class="bd-tab on" onclick="bdSwitch('t80')">80mm Thermal</button><button id="bdTabA4" class="bd-tab" onclick="bdSwitch('a4')">A4 Tax Invoice</button></div>
+    <div class="bd-tabs"><button id="bdTab80" class="bd-tab on" onclick="bdSwitch('t80')">80mm Thermal</button><button id="bdTabA4" class="bd-tab" onclick="bdSwitch('a4')">A4 Tax Invoice</button><button class="bd-tab" style="flex:0 0 46px;" onclick="bdTogglePreview()" title="Expand preview">&#10530;</button></div>
     <iframe id="bdPreview" title="preview"></iframe>
     <div id="bdForm"></div>
+    <div id="bdSheet"></div>
     <div class="bd-foot"><button style="background:#64748b" onclick="resetBillDesign()">RESET</button><button style="background:linear-gradient(135deg,#10b981,#059669)" onclick="saveBillDesign()">SAVE DESIGN</button></div>
 </div>
 
