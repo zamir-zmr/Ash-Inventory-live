@@ -386,7 +386,7 @@ body { width: 100%; }
     
         <select id="bill-format" onchange="setBillFormat(this.value)" style="width:132px; flex-shrink:0; box-sizing:border-box; padding:10px 6px; border-radius:12px; border:1.5px solid #e2e8f0; background:#fff; font-weight:700; font-size:12px; color:#1e293b; outline:none;">
             <option value="thermal">80mm Thermal</option>
-            <option value="a4">A4 Tax Invoice</option>
+            <option value="a4">A4 Invoice</option>
         </select>
     </div>
 
@@ -1571,7 +1571,7 @@ function processPastedJson() {
         a4: {
             page:      { padTop: 12, padSide: 12, padBottom: 10, font: 9, color: '#000000', accent: '#000000' },
             logo:      { show: true, size: 28 },
-            title:     { show: true, text: 'TAX INVOICE', size: 14 },
+            title:     { show: true, text: 'INVOICE', size: 14 },
             company:   { show: true, nameSize: 11, showAddr: true, showPhone: true, showHall: true, telLabel: 'Tel:' },
             meta:      { show: true, vatLabel: 'V.A.T reg', invLabel: 'Invoice No.', dateLabel: 'Date', curLabel: 'Currency', currency: '', invPrefix: 'INV', showTime: true },
             customer:  { show: true, custLabel: 'Customer:', phoneLabel: 'Phone:', detailsLabel: 'Details:', defaultName: 'Walk-in Customer', showDetails: true },
@@ -2304,7 +2304,7 @@ function downloadReceiptPDF() {
 
         const dateStr = (window.currentReceiptDateStr || new Date().toLocaleDateString('en-GB')).replace(/\//g, '-');
         const billNo = window.currentReceiptBillNo || '';
-        const fileName = `${dateStr} ${getShopInfo().name} ${isA4 ? 'Tax Invoice' : 'Bill no.'} ${billNo}.pdf`;
+        const fileName = `${dateStr} ${getShopInfo().name} ${isA4 ? 'Invoice' : 'Bill no.'} ${billNo}.pdf`;
         if (isA4) { try { doc.defaultView.dispatchEvent(new Event('resize')); } catch (e) {} }
         pdf.save(fileName);
     }).catch(e => {
@@ -4492,7 +4492,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 </style>
 <div id="billDesignerPage" class="full-page" style="display:none; flex-direction:column;">
     <div class="bd-head"><b>🎨 Bill Designer</b><select class="cur-select" onchange="setCurrency(this.value)" style="margin-left:auto; margin-right:10px; max-width:150px; padding:7px 6px; border-radius:8px; border:1.5px solid #e2e8f0; font-weight:700; font-size:11px; background:#fff;"></select><button onclick="closeBillDesigner()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button></div>
-    <div class="bd-tabs"><button id="bdTab80" class="bd-tab on" onclick="bdSwitch('t80')">80mm Thermal</button><button id="bdTabA4" class="bd-tab" onclick="bdSwitch('a4')">A4 Tax Invoice</button><button id="bdEditBtn" class="bd-tab" style="flex:0 0 52px;" onclick="bdToggleEdit()" title="Edit on bill">&#9998;</button></div>
+    <div class="bd-tabs"><button id="bdTab80" class="bd-tab on" onclick="bdSwitch('t80')">80mm Thermal</button><button id="bdTabA4" class="bd-tab" onclick="bdSwitch('a4')">A4 Invoice</button><button id="bdEditBtn" class="bd-tab" style="flex:0 0 52px;" onclick="bdToggleEdit()" title="Edit on bill">&#9998;</button></div>
     <iframe id="bdPreview" title="preview"></iframe>
     <div id="bdSheet"></div>
     <div class="bd-foot"><button style="background:#64748b" onclick="resetBillDesign()">RESET</button><button style="background:linear-gradient(135deg,#10b981,#059669)" onclick="saveBillDesign()">SAVE DESIGN</button></div>
