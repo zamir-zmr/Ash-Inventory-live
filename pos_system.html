@@ -2115,9 +2115,11 @@ ${bdEditScript()}
         alert('Bill design saved ✓');
     }
     function resetBillDesign() {
-        if (!confirm('Reset ' + (bdFmt === 'a4' ? 'A4' : '80mm') + ' design to default?')) return;
+        appConfirm('Reset ' + (bdFmt === 'a4' ? 'A4' : '80mm') + ' design to default?', function(){
         bdWork = bdWork || {}; delete bdWork[bdFmt];
         bdRenderForm(); bdRenderPreview();
+        }, {title:'Reset Design', icon:'🎨', okText:'Reset'});
+        return;
     }
 
 
@@ -3793,7 +3795,6 @@ function updateMethodDropdown(billNo, newMethod, dateKey, label) {
 
 // ===== BILL DELETE FUNCTION =====
 function deleteBillOld_unused(billNo, dateKey, displayLabel) {
-    if (!confirm(`Bill ${billNo} delete karna chahte hain? Yeh wapas nahi aayega!`)) return;
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     let target = sales.find(s => String(s.billNo) === String(billNo) && s.date === dateKey);
     sales = sales.filter(s => String(s.billNo) !== String(billNo));
@@ -3876,9 +3877,12 @@ function renderEditItems() {
 function editQtyChange(idx, delta) {
     let newQty = parseFloat(editCartItems[idx].qty) + delta;
     if (newQty <= 0) {
-        if (!confirm(`"${editCartItems[idx].name}" remove karna chahte hain?`)) return;
-        editCartItems.splice(idx, 1);
-        renderEditItems();
+        appConfirm(`"${editCartItems[idx].name}" remove karna chahte hain?`, function(){
+            editCartItems.splice(idx, 1);
+            renderEditItems();
+            recalcEditTotals();
+        }, {title:'Remove Item', icon:'🗑️', okText:'Remove', danger:true});
+        return;
     } else {
         editCartItems[idx].qty = newQty;
         document.getElementById(`editQty-${idx}`).value = newQty;
@@ -4261,7 +4265,7 @@ function importFullBackup(event) {
     reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
-            if (confirm("Restore backup? Current data will be replaced.")) {
+            appConfirm("Restore backup? Current data will be replaced.", function() {
                 _lsSet('asb_m', data.menu);
                 _lsSet('asb_c', data.cats);
                 _lsSet('asb_sales_logs', data.sales);
@@ -4275,7 +4279,7 @@ function importFullBackup(event) {
                 try { localStorage.setItem('asb_import_relink', '1'); } catch(e) {}
                 alert("Restored! Next bill number: " + ((data.billCount || 0) + 1));
                 location.reload();
-            }
+            }, {title:'Restore Backup', icon:'♻️', okText:'Restore'});
         } catch (err) {
             alert("Invalid Backup File!");
         }
@@ -4366,7 +4370,7 @@ function refreshPwManagerUI(){
       <div style="flex:1;min-width:0;">
         <div style="font-size:11px;font-weight:800;color:${x.r==='manager'?'#1d4ed8':'#047857'};letter-spacing:.6px;">${x.r==='manager'?'👑 MANAGER':'👤 USER'}</div>
         <div style="font-size:16px;font-weight:800;color:#0f172a;word-break:break-all;">${esc(x.u)}</div>
-        <div style="font-size:14px;color:#475569;word-break:break-all;">🔑 ${esc(x.p)}</div>
+        <div style="font-size:14px;color:#475569;word-break:break-all;display:flex;align-items:center;gap:8px;">🔑 <span id="pwv_${i}" data-v="${esc(x.p)}" style="letter-spacing:2px;">••••••••</span><i class="fas fa-eye" onclick="togglePwView(${i}, this)" style="cursor:pointer;color:#64748b;padding:6px;"></i></div>
       </div>
       <button onclick="startEditAccount(${i})" style="background:#fff;border:1.5px solid #3b82f6;color:#1d4ed8;width:40px;height:40px;border-radius:12px;font-size:16px;cursor:pointer;">✏️</button>
       <button onclick="deleteAccount(${i})" style="background:#fff;border:1.5px solid #ef4444;color:#b91c1c;width:40px;height:40px;border-radius:12px;font-size:16px;cursor:pointer;">🗑️</button>
@@ -4421,6 +4425,14 @@ function closePwStep(){
   _pwStepMode = null; _pwEditIdx = -1;
 }
 
+function togglePwView(i, el){
+  const s = document.getElementById('pwv_' + i); if (!s) return;
+  const show = s.dataset.shown !== '1';
+  s.dataset.shown = show ? '1' : '0';
+  s.textContent = show ? s.dataset.v : '••••••••';
+  s.style.letterSpacing = show ? '0' : '2px';
+  el.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+}
 function startAddAccount(role){
   openPwStep(role==='manager'?'addManager':'addUser', role==='manager'?'Add Manager':'Add User', 'Username aur password enter karein', '✅ Save', role==='manager'?'👑':'👤');
 }
@@ -4433,11 +4445,12 @@ function startEditAccount(i){
 function deleteAccount(i){
   const acc = getAccounts(), x = acc[i]; if (!x) return;
   if (x.r === 'manager' && acc.filter(a => a.r === 'manager').length <= 1) { showAppAlert('⚠️ Not Allowed', 'Kam se kam ek Manager hona zaroori hai'); return; }
-  if (!confirm('Delete "' + x.u + '" ?')) return;
-  acc.splice(i, 1);
-  saveAccounts(acc);
-  refreshPwManagerUI();
-  authRevalidate();
+  appConfirm('Delete "' + x.u + '" ?', function(){
+    const a2 = getAccounts(); a2.splice(i, 1);
+    saveAccounts(a2);
+    refreshPwManagerUI();
+    authRevalidate();
+  }, {title:'Delete Account', icon:'🗑️', okText:'Delete', danger:true});
 }
 
 function submitPwStep(){
@@ -5645,6 +5658,38 @@ body.role-user #spwBtn{display:none!important}
   setTimeout(authEnsureSeed,3500);
   setTimeout(function(){ var a=validSes(); if(a) post(a); },1200);
   window.addEventListener('message',function(e){ if(e.source===window.parent && e.data && e.data.type==='POS_SYNC_ALL'){ var a=validSes(); if(a) post(a); } });
+})();
+</script>
+
+<div id="appDlgOv" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:500000;backdrop-filter:blur(4px);"></div>
+<div id="appDlgBox" style="display:none;position:fixed;z-index:500001;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:340px;background:#fff;border-radius:24px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
+  <div id="appDlgIcon" style="text-align:center;font-size:42px;margin-bottom:8px;">ℹ️</div>
+  <h3 id="appDlgTitle" style="text-align:center;margin:0 0 6px;font-size:20px;color:#0f172a;font-weight:800;"></h3>
+  <p id="appDlgMsg" style="text-align:center;color:#64748b;font-size:14px;margin:0 0 20px;line-height:1.5;word-break:break-word;white-space:pre-line;"></p>
+  <button id="appDlgOk" style="width:100%;border:none;padding:16px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;color:#fff;">OK</button>
+  <button id="appDlgCancel" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:14px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+</div>
+<script>
+(function(){
+  var ov=document.getElementById('appDlgOv'), bx=document.getElementById('appDlgBox');
+  var ok=document.getElementById('appDlgOk'), ca=document.getElementById('appDlgCancel');
+  var cb=null;
+  function close(){ ov.style.display='none'; bx.style.display='none'; }
+  function open(msg,o,isConfirm,fn){
+    o=o||{}; cb=fn||null;
+    document.getElementById('appDlgIcon').textContent=o.icon||(isConfirm?'❓':'ℹ️');
+    document.getElementById('appDlgTitle').textContent=o.title||(isConfirm?'Confirm':'Notice');
+    document.getElementById('appDlgMsg').textContent=String(msg==null?'':msg);
+    ok.textContent=o.okText||'OK';
+    ok.style.background=o.danger?'linear-gradient(135deg,#ef4444,#dc2626)':'linear-gradient(135deg,#059669,#047857)';
+    ca.style.display=isConfirm?'block':'none';
+    ov.style.display='block'; bx.style.display='block';
+  }
+  ok.onclick=function(){ var f=cb; cb=null; close(); if(f) try{ f(); }catch(e){ console.error(e); } };
+  ca.onclick=function(){ cb=null; close(); };
+  ov.onclick=function(){ if(ca.style.display!=='none'){ cb=null; close(); } };
+  window.appConfirm=function(msg,fn,o){ open(msg,o,true,fn); };
+  window.alert=function(msg){ open(msg,{},false,null); };
 })();
 </script>
 </body>

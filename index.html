@@ -628,7 +628,7 @@ function positionPosFrame(){
     f.style.top='0px';
     f.style.height=window.innerHeight+'px';
 }
-function setAppMode(m){
+function _setAppModeReal(m){
     var pos=(m!=='inv');
     document.body.classList.toggle('mode-pos',pos);
     var f=document.getElementById('posFrame');
@@ -640,13 +640,36 @@ function setAppMode(m){
     window.scrollTo(0,0);
     if(!pos && typeof adjustHeaderSpacer==='function') adjustHeaderSpacer();
 }
+
+window.posRole=null;
+function setAppMode(m){
+    if(m==='inv' && window.posRole!=='manager'){
+        Swal.fire({
+            title:'<span style="font-size:16px;">Admin Access</span>',
+            html:'<div style="margin-top:-5px;"><i class="fas fa-user-shield" style="font-size:2rem;color:#00bac3;margin-bottom:8px;display:block;"></i><div style="font-size:12px;opacity:.7;margin-bottom:6px;">Inventory ke liye Manager login zaroori hai</div><input type="text" id="mgrU" class="swal2-input" placeholder="Manager Username" autocapitalize="none" style="width:85%;height:38px;margin:5px auto;border-radius:12px;border:2px solid #00bac3;"><input type="password" id="mgrP" class="swal2-input" placeholder="Password" style="width:85%;height:38px;margin:5px auto;border-radius:12px;border:2px solid #00bac3;"></div>',
+            background:'var(--panel)', color:'var(--text-main)',
+            confirmButtonText:'UNLOCK', confirmButtonColor:'#00bac3',
+            showCancelButton:true, width:'320px', position:'top', padding:'1.2em',
+            customClass:{popup:'cyan-border-popup swal-top-popup'},
+            preConfirm:function(){
+                var u=document.getElementById('mgrU').value.trim().toLowerCase(), p=document.getElementById('mgrP').value, acc=[];
+                try{ acc=JSON.parse(localStorage.getItem('asb_accounts')||'[]'); }catch(e){}
+                var ok=acc.some(function(x){ return x.r==='manager' && String(x.u).toLowerCase()===u && x.p===p; });
+                if(!ok){ Swal.showValidationMessage('Invalid Manager Credentials! ❌'); return false; }
+                return true;
+            }
+        }).then(function(r){ if(r && r.isConfirmed) _setAppModeReal('inv'); });
+        return;
+    }
+    _setAppModeReal(m);
+}
 window.addEventListener('message',function(e){ if(e.data&&e.data.type==='GO_INV') setAppMode('inv');
   if(e.data&&e.data.type==='POS_AUTH'){
     var d=e.data;
     if(d.user){
-      isAdmin=true; currentUser=d.user;
+      isAdmin=true; currentUser=d.user; window.posRole=d.role;
       try{ updateAdminUI(d.user); document.getElementById('roleLabel').innerText=(d.role==='manager'?'MANAGER':'USER'); render(); }catch(x){}
-    } else if(isAdmin){ isAdmin=false; location.reload(); }
+    } else { window.posRole=null; if(isAdmin){ isAdmin=false; location.reload(); } }
   }
 });
 setAppMode('pos'); // default page: POS System
@@ -5600,14 +5623,14 @@ function addNewCarName() {
                     if(typeof showToast === 'function') {
                         showToast("Car Added Successfully!");
                     } else {
-                        alert("Car Added!");
+                        Swal.fire({icon:"success",title:"Car Added!",timer:1500,showConfirmButton:false,customClass:{popup:"cyan-border-popup"}});
                     }
                     // List ko turant update karne ke liye
                     if(typeof syncCarDropDowns === 'function') syncCarDropDowns();
                 })
                 .catch((error) => {
                     console.error("Firebase Error:", error);
-                    alert("Error saving car: " + error.message);
+                    Swal.fire({icon:"error",title:"Error saving car",text:error.message,customClass:{popup:"cyan-border-popup"}});
                 });
         }
     });
