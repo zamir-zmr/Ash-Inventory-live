@@ -1,4 +1,4 @@
-const CACHE = 'kp-inventory-v3';
+const CACHE = 'kp-inventory-v4';
 const SHELL = ['./', './index.html', './pos_system.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
