@@ -4370,9 +4370,9 @@ function refreshPwManagerUI(){
       <div style="flex:1;min-width:0;">
         <div style="font-size:11px;font-weight:800;color:${x.r==='manager'?'#1d4ed8':'#047857'};letter-spacing:.6px;">${x.r==='manager'?'👑 MANAGER':'👤 USER'}</div>
         <div style="font-size:16px;font-weight:800;color:#0f172a;word-break:break-all;">${esc(x.u)}</div>
-        <div style="font-size:14px;color:#475569;word-break:break-all;display:flex;align-items:center;gap:8px;">🔑 <span id="pwv_${i}" data-v="${esc(x.p)}" style="letter-spacing:2px;">••••••••</span><i class="fas fa-eye" onclick="togglePwView(${i}, this)" style="cursor:pointer;color:#64748b;padding:6px;"></i></div>
+        
       </div>
-      <button onclick="startEditAccount(${i})" style="background:#fff;border:1.5px solid #3b82f6;color:#1d4ed8;width:40px;height:40px;border-radius:12px;font-size:16px;cursor:pointer;">✏️</button>
+      <button onclick="startChangePw(${i})" title="Change Password" style="background:#fff;border:1.5px solid #3b82f6;color:#1d4ed8;width:40px;height:40px;border-radius:12px;font-size:16px;cursor:pointer;">🔑</button>
       <button onclick="deleteAccount(${i})" style="background:#fff;border:1.5px solid #ef4444;color:#b91c1c;width:40px;height:40px;border-radius:12px;font-size:16px;cursor:pointer;">🗑️</button>
     </div>`).join('') || '<p style="text-align:center;color:#94a3b8;">No accounts</p>';
 }
@@ -4405,42 +4405,35 @@ window.addEventListener('popstate', function (e) {
     }
 });
 
-function openPwStep(mode, title, sub, btnLabel, icon, uVal, pVal){
+function openPwStep(mode, title, sub, btnLabel, icon, showUser){
   _pwStepMode = mode;
   document.getElementById('pwStepIcon').innerText = icon || '🔑';
   document.getElementById('pwStepTitle').innerText = title;
   document.getElementById('pwStepSub').innerText = sub;
   document.getElementById('pwStepBtn').innerText = btnLabel;
-  document.getElementById('pwStepUser').value = uVal || '';
-  document.getElementById('pwStepInput').value = pVal || '';
+  const ue = document.getElementById('pwStepUser');
+  ue.value = ''; ue.style.display = showUser ? 'block' : 'none';
+  const pe = document.getElementById('pwStepInput');
+  pe.value = ''; pe.type = 'password'; pe.placeholder = (mode === 'chgOld') ? 'Current password' : (mode === 'chgNew' ? 'New password' : 'Password');
   document.getElementById('pwStepOv').style.display = 'block';
   document.getElementById('pwStepBox').style.display = 'block';
-  setTimeout(() => { const el = document.getElementById('pwStepUser'); if (el) el.focus(); }, 50);
+  setTimeout(() => { const el = showUser ? ue : pe; if (el) el.focus(); }, 50);
 }
 function closePwStep(){
   document.getElementById('pwStepOv').style.display = 'none';
   document.getElementById('pwStepBox').style.display = 'none';
   document.getElementById('pwStepInput').value = '';
   document.getElementById('pwStepUser').value = '';
-  _pwStepMode = null; _pwEditIdx = -1;
+  _pwStepMode = null;
 }
 
-function togglePwView(i, el){
-  const s = document.getElementById('pwv_' + i); if (!s) return;
-  const show = s.dataset.shown !== '1';
-  s.dataset.shown = show ? '1' : '0';
-  s.textContent = show ? s.dataset.v : '••••••••';
-  s.style.letterSpacing = show ? '0' : '2px';
-  el.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
-}
 function startAddAccount(role){
-  openPwStep(role==='manager'?'addManager':'addUser', role==='manager'?'Add Manager':'Add User', 'Enter username and password', '✅ Save', role==='manager'?'👑':'👤');
+  openPwStep(role==='manager'?'addManager':'addUser', role==='manager'?'Add Manager':'Add User', 'Enter username and password', '✅ Save', role==='manager'?'👑':'👤', true);
 }
-function startEditAccount(i){
+function startChangePw(i){
   const x = getAccounts()[i]; if (!x) return;
   _pwEditIdx = i;
-  openPwStep('editAcc', 'Edit ' + (x.r==='manager'?'Manager':'User'), 'Change username / password', '✅ Save', '✏️', x.u, x.p);
-  _pwEditIdx = i;
+  openPwStep('chgOld', 'Change Password', 'Enter the current password for ' + x.u, '➡️ Next', '🔑', false);
 }
 function deleteAccount(i){
   const acc = getAccounts(), x = acc[i]; if (!x) return;
@@ -4456,18 +4449,29 @@ function deleteAccount(i){
 function submitPwStep(){
   const u = document.getElementById('pwStepUser').value.trim();
   const p = document.getElementById('pwStepInput').value.trim();
-  if (!u || !p.trim()) { showAppAlert('⚠️ Required', 'Please enter both username and password'); return; }
   const acc = getAccounts();
   if (_pwStepMode === 'addUser' || _pwStepMode === 'addManager') {
+    if (!u || !p) { showAppAlert('⚠️ Required', 'Please enter both username and password'); return; }
     if (acc.some(x => x.u.toLowerCase() === u.toLowerCase())) { showAppAlert('⚠️ Exists', 'This username already exists'); return; }
     acc.push({ u: u, p: p, r: _pwStepMode === 'addManager' ? 'manager' : 'user' });
     saveAccounts(acc); closePwStep(); refreshPwManagerUI();
-  } else if (_pwStepMode === 'editAcc') {
+  } else if (_pwStepMode === 'chgOld') {
     const x = acc[_pwEditIdx]; if (!x) { closePwStep(); return; }
-    if (acc.some((y, j) => j !== _pwEditIdx && y.u.toLowerCase() === u.toLowerCase())) { showAppAlert('⚠️ Exists', 'This username already exists'); return; }
-    x.u = u; x.p = p;
-    saveAccounts(acc); closePwStep(); refreshPwManagerUI();
+    if (p !== String(x.p).trim()) { showAppAlert('❌ Incorrect Password', 'The current password is incorrect'); return; }
+    const idx = _pwEditIdx;
+    closePwStep(); _pwEditIdx = idx;
+    openPwStep('chgNew', 'Change Password', 'Enter the new password for ' + x.u, '✅ Save', '🔑', false);
+  } else if (_pwStepMode === 'chgNew') {
+    const x = acc[_pwEditIdx]; if (!x) { closePwStep(); return; }
+    if (!p) { showAppAlert('⚠️ Required', 'Please enter a new password'); return; }
+    let own = false;
+    try { const s = JSON.parse(localStorage.getItem('asb_session') || 'null'); own = !!s && String(s.u).toLowerCase() === x.u.toLowerCase(); } catch(e){}
+    x.p = p;
+    saveAccounts(acc);
+    if (own) localStorage.setItem('asb_session', JSON.stringify({ u: x.u, p: p }));
+    closePwStep(); _pwEditIdx = -1; refreshPwManagerUI();
     authRevalidate();
+    showAppAlert('✅ Success', 'Password changed successfully');
   }
 }
 
@@ -5312,7 +5316,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_accounts','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency'];
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_acc2','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false, lastLocalWrite = {};
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -5342,7 +5346,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 var tp = document.getElementById('ticketPage');
                 if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
             }
-            if (changed.indexOf('asb_accounts') !== -1 && window.authRevalidate) authRevalidate();
+            if (changed.indexOf('asb_acc2') !== -1 && window.authRevalidate) authRevalidate();
             if (changed.indexOf('asb_zero_stock_block') !== -1 && typeof syncZeroStockToggleUI === 'function') syncZeroStockToggleUI();
             if (changed.some(function(k){ return /asb_show_/.test(k); }) && typeof applyDashVisibility === 'function') applyDashVisibility();
             if (changed.indexOf('asb_currency') !== -1 && typeof applyCurrencyUI === 'function') applyCurrencyUI();
@@ -5611,10 +5615,10 @@ body.role-user #spwBtn{display:none!important}
 </div>
 <script>
 (function(){
-  var KEY='asb_accounts', SES='asb_session';
+  var KEY='asb_acc2', SES='asb_session';
   window.getAccounts=function(){ try{ var a=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } };
   window.saveAccounts=function(a){ localStorage.setItem(KEY, JSON.stringify(a)); };
-  window.authEnsureSeed=function(){ if(!getAccounts().length) saveAccounts([{u:'Zamir',p:'admin',r:'manager'}]); };
+  window.authEnsureSeed=function(){ if(!getAccounts().length) saveAccounts([{u:'Zamir',p:'admin',r:'manager'},{u:'Peter',p:'admin',r:'manager'},{u:'Mariana',p:'admin',r:'user'}]); };
   function getSes(){ try{ return JSON.parse(localStorage.getItem(SES)||'null'); }catch(e){ return null; } }
   function validSes(){
     var s=getSes(); if(!s) return null;

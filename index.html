@@ -653,7 +653,7 @@ function setAppMode(m){
             customClass:{popup:'cyan-border-popup swal-top-popup'},
             preConfirm:function(){
                 var u=document.getElementById('mgrU').value.trim().toLowerCase(), p=document.getElementById('mgrP').value.trim(), acc=[];
-                try{ acc=JSON.parse(localStorage.getItem('asb_accounts')||'[]'); }catch(e){}
+                try{ acc=JSON.parse(localStorage.getItem('asb_acc2')||'[]'); }catch(e){}
                 var ok=acc.some(function(x){ return x.r==='manager' && String(x.u).trim().toLowerCase()===u && String(x.p).trim()===p; });
                 if(!ok){ Swal.showValidationMessage('Invalid Manager Credentials! ❌'); return false; }
                 return true;
@@ -7289,9 +7289,37 @@ async function runSalesExport() {
         };
         img.src=src;
     }
-    var syncCache=null;
-    function sendSync(){ if(syncCache===null) return; reply({type:'POS_SYNC_ALL',data:syncCache}); }
+    var syncCache=null, accCache=null, accLoaded=false;
+    function accKey(u){ return String(u).replace(/[.#$\/\[\]]/g,'_'); }
+    function accToTree(arr){
+        var o={managers:{},users:{}};
+        (arr||[]).forEach(function(x){ if(!x||!x.u) return; (x.r==='manager'?o.managers:o.users)[accKey(x.u)]={Username:String(x.u),Password:String(x.p)}; });
+        if(!Object.keys(o.managers).length) delete o.managers;
+        if(!Object.keys(o.users).length) delete o.users;
+        return o;
+    }
+    function accToArr(tree){
+        var out=[];
+        [['managers','manager'],['users','user']].forEach(function(g){
+            var n=(tree&&tree[g[0]])||{};
+            Object.keys(n).forEach(function(k){
+                var v=n[k]||{}; var u=v.Username!=null?v.Username:(v.username!=null?v.username:k);
+                var p=v.Password!=null?v.Password:v.password;
+                if(p===undefined||p===null) return;
+                out.push({u:String(u),p:String(p),r:g[1]});
+            });
+        });
+        return out;
+    }
+    function buildSync(){
+        var d={}; for(var k in syncCache) if(k!=='asb_accounts') d[k]=syncCache[k];
+        if(accCache) d.asb_acc2=JSON.stringify(accToArr(accCache));
+        return d;
+    }
+    function sendSync(){ if(syncCache===null||!accLoaded) return; reply({type:'POS_SYNC_ALL',data:buildSync()}); }
     db.ref('pos_sync').on('value',function(sn){ syncCache=sn.val()||{}; sendSync(); });
+    db.ref('accounts').on('value',function(sn){ accCache=sn.val(); accLoaded=true; sendSync(); });
+    try{ db.ref('pos_sync/asb_accounts').remove(); }catch(e){}
     var logoCache=null;
     function sendLogo(){ reply({type:'LOGO_SYNC',logo:logoCache}); }
     db.ref('appSettings/logo').on('value',function(sn){
@@ -7305,6 +7333,11 @@ async function runSalesExport() {
         var d=e.data; if(!d||!d.type) return;
         if(d.type==='POS_READY'){ send(); sendLogo(); sendSync(); }
         if(d.type==='POS_LOGO') posSetLogo(d.logo);
+        if(d.type==='POS_SYNC_SET' && d.key==='asb_acc2'){
+            if(d.value===null||d.value===undefined) db.ref('accounts').remove();
+            else { try{ db.ref('accounts').set(accToTree(JSON.parse(d.value))); }catch(x){} }
+            return;
+        }
         if(d.type==='POS_SYNC_SET' && d.key){
             var ref=db.ref('pos_sync/'+d.key);
             if(d.value===null||d.value===undefined) ref.remove(); else ref.set(d.value);
