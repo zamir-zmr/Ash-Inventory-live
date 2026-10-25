@@ -4417,8 +4417,34 @@ function openPwStep(mode, title, sub, btnLabel, icon, showUser){
   pe.value = ''; pe.type = 'password'; pe.placeholder = (mode === 'chgOld') ? 'Current password' : (mode === 'chgNew' ? 'New password' : 'Password');
   document.getElementById('pwStepOv').style.display = 'block';
   document.getElementById('pwStepBox').style.display = 'block';
-  setTimeout(() => { const el = showUser ? ue : pe; if (el) el.focus(); }, 50);
+  window._pwBaseH = window.innerHeight;
+  placePwStep();
+  setTimeout(() => { const el = showUser ? ue : pe; if (el) el.focus(); placePwStep(); }, 50);
+  [250, 500, 900].forEach(ms => setTimeout(placePwStep, ms));
 }
+function placePwStep(){
+  const bx = document.getElementById('pwStepBox');
+  if (!bx || bx.style.display === 'none') return;
+  const vv = window.visualViewport;
+  const curH = vv ? vv.height : window.innerHeight;
+  const off = vv ? vv.offsetTop : 0;
+  const base = window._pwBaseH || window.innerHeight;
+  const ae = document.activeElement;
+  const typing = ae && bx.contains(ae) && (ae.tagName === 'INPUT');
+  const h = bx.offsetHeight;
+  let top;
+  if (!typing) {
+    top = off + (curH - h) / 2;
+  } else {
+    const bottom = (curH < base - 120) ? (off + curH) : (off + base * 0.54);
+    top = bottom - h - 6;
+  }
+  bx.style.top = Math.max(8, top) + 'px';
+}
+if (window.visualViewport) { window.visualViewport.addEventListener('resize', placePwStep); window.visualViewport.addEventListener('scroll', placePwStep); }
+window.addEventListener('resize', placePwStep);
+document.addEventListener('focusin', function(){ setTimeout(placePwStep, 50); setTimeout(placePwStep, 350); });
+document.addEventListener('focusout', function(){ setTimeout(placePwStep, 150); });
 function closePwStep(){
   document.getElementById('pwStepOv').style.display = 'none';
   document.getElementById('pwStepBox').style.display = 'none';
@@ -5026,19 +5052,21 @@ function deleteBill(billNo, dateKey, displayLabel){
 
 <!-- Security Password Manager (Create / Change / Delete) — Full Screen Layout -->
 <div id="pwMgrOv" onclick="closePwManager()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;"></div>
-<div id="pwMgrBox" style="display:none;position:fixed;z-index:100001;inset:0;width:100%;height:100%;background:#fff;box-shadow:none;overflow-y:auto;padding:0;">
-  <div style="max-width:480px;margin:0 auto;padding:40px 24px 32px;min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;">
-    <div style="text-align:center;font-size:64px;margin-bottom:10px;">🔒</div>
-    <h3 style="text-align:center;margin:0 0 6px;font-size:28px;color:#0f172a;font-weight:800;">Security Password</h3>
-    <p id="pwMgrStatus" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 28px;"></p>
+<div id="pwMgrBox" style="display:none;position:fixed;z-index:100001;inset:0;width:100%;height:100%;background:#fff;box-shadow:none;overflow:hidden;padding:0;">
+  <div style="max-width:480px;height:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;">
+    <div style="flex:1;min-height:0;overflow-y:auto;padding:24px 24px 8px;">
+      <div style="text-align:center;font-size:56px;margin-bottom:6px;">🔒</div>
+      <h3 style="text-align:center;margin:0 0 6px;font-size:28px;color:#0f172a;font-weight:800;">Security Password</h3>
+      <p id="pwMgrStatus" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 22px;"></p>
 
-    <button style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:14px;" onclick="startAddAccount('user')">➕ Add User</button>
-    <button style="width:100%;text-align:left;background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:22px;" onclick="startAddAccount('manager')">➕ Add Manager</button>
+      <button style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:18px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:12px;" onclick="startAddAccount('user')">➕ Add User</button>
+      <button style="width:100%;text-align:left;background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:18px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:20px;" onclick="startAddAccount('manager')">➕ Add Manager</button>
 
-    <div id="pwMgrList"></div>
-
-    <div style="flex:1;"></div>
-    <button onclick="closePwManager()" style="width:100%;background:#f8fafc;color:#64748b;border:2px solid #e2e8f0;padding:18px;border-radius:18px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;">↩️ Close</button>
+      <div id="pwMgrList"></div>
+    </div>
+    <div style="flex-shrink:0;padding:10px 24px 18px;background:#fff;">
+      <button onclick="closePwManager()" style="width:100%;background:#f8fafc;color:#64748b;border:2px solid #e2e8f0;padding:16px;border-radius:18px;font-size:16px;font-weight:700;cursor:pointer;">↩️ Close</button>
+    </div>
   </div>
 </div>
 
