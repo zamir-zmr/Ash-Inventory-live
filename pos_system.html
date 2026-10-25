@@ -5239,7 +5239,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
     var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
-    var applyingRemote = false, timers = {}, remoteSeen = false;
+    var applyingRemote = false, timers = {}, remoteSeen = false, lastLocalWrite = {};
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
     function isSync(k){ return SYNC_KEYS.indexOf(k) !== -1; }
     function pushKey(k){
@@ -5253,11 +5253,11 @@ input[type="checkbox"] { accent-color: #0d9488; }
     }
     Storage.prototype.setItem = function(k, v){
         _origSet.call(this, k, v);
-        if (!applyingRemote && this === window.localStorage && isSync(k)) schedule(k);
+        if (!applyingRemote && this === window.localStorage && isSync(k)) { lastLocalWrite[k] = Date.now(); schedule(k); }
     };
     Storage.prototype.removeItem = function(k){
         _origRemove.call(this, k);
-        if (!applyingRemote && this === window.localStorage && isSync(k)) schedule(k);
+        if (!applyingRemote && this === window.localStorage && isSync(k)) { lastLocalWrite[k] = Date.now(); schedule(k); }
     };
     function refreshAfterRemote(changed){
         try {
@@ -5291,6 +5291,8 @@ input[type="checkbox"] { accent-color: #0d9488; }
             var rv = (data[k] === undefined) ? null : data[k];
             var lv = null; try { lv = localStorage.getItem(k); } catch(e){}
             if (rv === lv) return;
+            // Abhi-abhi local change hua hai (e.g. ticket RED) -> purana remote snapshot usse overwrite na kare
+            if (!first && lastLocalWrite[k] && (Date.now() - lastLocalWrite[k]) < 5000) { schedule(k); return; }
             if (rv === null) { if (lv !== null) toPush.push(k); return; }   // remote empty: seed from this device
             if (first && ARRAY_KEYS[k] && lv) {                              // first connect: merge both sides
                 try {
