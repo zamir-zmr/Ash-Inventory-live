@@ -1024,7 +1024,7 @@ function processPastedJson() {
     let rawText = document.getElementById('jsonTextInput').value.trim();
     
     if (!rawText) {
-        showAppAlertHTML("⚠️ Empty Input", "<p style='color:#ef4444;'>Kripya pehle JSON text paste karein!</p>", true);
+        showAppAlertHTML("⚠️ Empty Input", "<p style='color:#ef4444;'>Please paste the JSON text first!</p>", true);
         return;
     }
 
@@ -1102,7 +1102,7 @@ function processPastedJson() {
         } else if (addedItems.length > 0 && skippedItems.length === 0) {
             showAppAlertHTML("✅ Import Successful!", htmlReport, false);
         } else {
-            showAppAlertHTML("⚠️ No Items Found", "<p>JSON mein koi naya item nahi mila.</p>", true);
+            showAppAlertHTML("⚠️ No Items Found", "<p>No new items found in the JSON.</p>", true);
         }
 
     } catch (err) {
@@ -2183,7 +2183,7 @@ ${bdEditScript()}
     if (!html || typeof html !== 'string') throw new Error('Bill generate nahi hua');
     } catch (err) {
         console.error('Bill generate failed:', err);
-        alert('⚠️ Bill generate nahi hua. Ticket / bill number aage nahi badhaya gaya. Dobara try karein.');
+        alert('⚠️ Bill could not be generated. The ticket / bill number was not advanced. Please try again.');
         return;
     }
 
@@ -2197,7 +2197,7 @@ ${bdEditScript()}
         recorded = false;
     }
     if (!recorded) {
-        alert('⚠️ Bill record nahi ho paya. Ticket / bill number aage nahi badhaya gaya. Dobara try karein.');
+        alert('⚠️ Bill could not be recorded. The ticket / bill number was not advanced. Please try again.');
         return;
     }
 
@@ -2973,7 +2973,7 @@ function updateCartUI(rebuildList = true) {
     }
     // ===== Sale item edit & delete (adjusts the underlying bill) =====
     function deleteInvSaleItem(billNo, dateKey, itemIndex) {
-  if (!isManager()) { showAppAlert('⛔ Access Denied', 'Bill delete karne ka adhikar sirf Manager ko hai'); return; }
+  if (!isManager()) { showAppAlert('⛔ Access Denied', 'Only a Manager can delete bills'); return; }
         let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
         let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
         if (idx === -1) return;
@@ -3877,7 +3877,7 @@ function renderEditItems() {
 function editQtyChange(idx, delta) {
     let newQty = parseFloat(editCartItems[idx].qty) + delta;
     if (newQty <= 0) {
-        appConfirm(`"${editCartItems[idx].name}" remove karna chahte hain?`, function(){
+        appConfirm(`"${editCartItems[idx].name}" Remove this item?`, function(){
             editCartItems.splice(idx, 1);
             renderEditItems();
             recalcEditTotals();
@@ -4125,7 +4125,7 @@ function exportToExcel() {
     const end = document.getElementById('exportEnd').value;
 
     if (!start || !end) {
-        alert("Pehle Date Range select karein!");
+        alert("Please select a date range first!");
         return;
     }
 
@@ -4325,7 +4325,7 @@ function closeResetConfirmModal() {
     document.getElementById('resetConfirmBox').style.display = 'none';
 }
 function proceedFullReset() {
-    if (!isManager()) { showAppAlert('⛔ Access Denied', 'Sirf Manager'); return; }
+    if (!isManager()) { showAppAlert('⛔ Access Denied', 'Manager access only'); return; }
     closeResetConfirmModal();
     const performReset = function () {
         localStorage.removeItem('asb_sales_logs'); // Sales logs delete
@@ -4380,7 +4380,7 @@ function refreshPwManagerUI(){
 let _pwMgrPageOpen = false;
 
 function openPwManageModal(){
-  if (!isManager()) { showAppAlert('⛔ Access Denied', 'Sirf Manager access kar sakta hai'); return; }
+  if (!isManager()) { showAppAlert('⛔ Access Denied', 'Manager access only'); return; }
   closeM();
   refreshPwManagerUI();
   document.getElementById('pwMgrOv').style.display = 'block';
@@ -4434,17 +4434,17 @@ function togglePwView(i, el){
   el.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
 }
 function startAddAccount(role){
-  openPwStep(role==='manager'?'addManager':'addUser', role==='manager'?'Add Manager':'Add User', 'Username aur password enter karein', '✅ Save', role==='manager'?'👑':'👤');
+  openPwStep(role==='manager'?'addManager':'addUser', role==='manager'?'Add Manager':'Add User', 'Enter username and password', '✅ Save', role==='manager'?'👑':'👤');
 }
 function startEditAccount(i){
   const x = getAccounts()[i]; if (!x) return;
   _pwEditIdx = i;
-  openPwStep('editAcc', 'Edit ' + (x.r==='manager'?'Manager':'User'), 'Username / password badlein', '✅ Save', '✏️', x.u, x.p);
+  openPwStep('editAcc', 'Edit ' + (x.r==='manager'?'Manager':'User'), 'Change username / password', '✅ Save', '✏️', x.u, x.p);
   _pwEditIdx = i;
 }
 function deleteAccount(i){
   const acc = getAccounts(), x = acc[i]; if (!x) return;
-  if (x.r === 'manager' && acc.filter(a => a.r === 'manager').length <= 1) { showAppAlert('⚠️ Not Allowed', 'Kam se kam ek Manager hona zaroori hai'); return; }
+  if (x.r === 'manager' && acc.filter(a => a.r === 'manager').length <= 1) { showAppAlert('⚠️ Not Allowed', 'At least one Manager is required'); return; }
   appConfirm('Delete "' + x.u + '" ?', function(){
     const a2 = getAccounts(); a2.splice(i, 1);
     saveAccounts(a2);
@@ -4455,16 +4455,16 @@ function deleteAccount(i){
 
 function submitPwStep(){
   const u = document.getElementById('pwStepUser').value.trim();
-  const p = document.getElementById('pwStepInput').value;
-  if (!u || !p.trim()) { showAppAlert('⚠️ Required', 'Username aur password dono bharein'); return; }
+  const p = document.getElementById('pwStepInput').value.trim();
+  if (!u || !p.trim()) { showAppAlert('⚠️ Required', 'Please enter both username and password'); return; }
   const acc = getAccounts();
   if (_pwStepMode === 'addUser' || _pwStepMode === 'addManager') {
-    if (acc.some(x => x.u.toLowerCase() === u.toLowerCase())) { showAppAlert('⚠️ Exists', 'Ye username pehle se hai'); return; }
+    if (acc.some(x => x.u.toLowerCase() === u.toLowerCase())) { showAppAlert('⚠️ Exists', 'This username already exists'); return; }
     acc.push({ u: u, p: p, r: _pwStepMode === 'addManager' ? 'manager' : 'user' });
     saveAccounts(acc); closePwStep(); refreshPwManagerUI();
   } else if (_pwStepMode === 'editAcc') {
     const x = acc[_pwEditIdx]; if (!x) { closePwStep(); return; }
-    if (acc.some((y, j) => j !== _pwEditIdx && y.u.toLowerCase() === u.toLowerCase())) { showAppAlert('⚠️ Exists', 'Ye username pehle se hai'); return; }
+    if (acc.some((y, j) => j !== _pwEditIdx && y.u.toLowerCase() === u.toLowerCase())) { showAppAlert('⚠️ Exists', 'This username already exists'); return; }
     x.u = u; x.p = p;
     saveAccounts(acc); closePwStep(); refreshPwManagerUI();
     authRevalidate();
@@ -4488,12 +4488,12 @@ function submitDeletePassword(){
     closePwPromptModal();
     if (action) action();
   } else {
-    showAppAlert('❌ Incorrect Password', 'Aapne jo password dala hai wo sahi nahi hai');
+    showAppAlert('❌ Incorrect Password', 'The password you entered is incorrect');
   }
 }
 
 function deleteBill(billNo, dateKey, displayLabel){
-  if (!isManager()) { showAppAlert('⛔ Access Denied', 'Bill delete karne ka adhikar sirf Manager ko hai'); return; }
+  if (!isManager()) { showAppAlert('⛔ Access Denied', 'Only a Manager can delete bills'); return; }
   document.getElementById('delTitle').innerText = `Bill ${billNo} Delete?`;
   document.getElementById('delOv').style.display='block';
   document.getElementById('delBox').style.display='block';
@@ -5014,7 +5014,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 <div id="pwBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:50%;max-width:320px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 8px 40px rgba(0,0,0,0.25);">
   <div style="text-align:center;font-size:36px;margin-bottom:8px;">🔒</div>
   <h3 style="text-align:center;margin:0 0 6px;font-size:18px;color:#1e293b;font-weight:800;">Enter Security Password</h3>
-  <p style="text-align:center;color:#94a3b8;font-size:12px;margin:0 0 16px;line-height:1.5;">Bill delete karne ke liye password enter karein</p>
+  <p style="text-align:center;color:#94a3b8;font-size:12px;margin:0 0 16px;line-height:1.5;">Enter password to delete the bill</p>
   <input type="password" id="pwPromptInput" placeholder="Password" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;margin-bottom:12px;font-size:15px;box-sizing:border-box;" onkeydown="if(event.key==='Enter'){ submitDeletePassword(); }">
   <button id="pwSubmitBtn" onclick="submitDeletePassword()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">✅ Confirm</button>
   <button onclick="closePwPromptModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
@@ -5603,9 +5603,9 @@ body.role-user #spwBtn{display:none!important}
   <div style="max-width:480px;width:100%;margin:0 auto;padding:40px 24px 32px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;">
     <div style="text-align:center;font-size:64px;margin-bottom:10px;">🔒</div>
     <h3 style="text-align:center;margin:0 0 6px;font-size:28px;color:#0f172a;font-weight:800;">Login</h3>
-    <p id="loginMsg" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 30px;">Username aur password dalein</p>
-    <input type="text" id="lgUser" placeholder="Username" autocomplete="username" autocapitalize="none" style="width:100%;padding:18px;border-radius:16px;border:2px solid #e2e8f0;margin-bottom:14px;font-size:17px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')document.getElementById('lgPass').focus()">
-    <input type="password" id="lgPass" placeholder="Password" autocomplete="current-password" style="width:100%;padding:18px;border-radius:16px;border:2px solid #e2e8f0;margin-bottom:20px;font-size:17px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')doLogin()">
+    <p id="loginMsg" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 30px;">Enter your username and password</p>
+    <input type="text" id="lgUser" placeholder="Username" autocorrect="off" spellcheck="false" autocomplete="username" autocapitalize="none" style="width:100%;padding:18px;border-radius:16px;border:2px solid #e2e8f0;margin-bottom:14px;font-size:17px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')document.getElementById('lgPass').focus()">
+    <input type="password" id="lgPass" placeholder="Password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="current-password" style="width:100%;padding:18px;border-radius:16px;border:2px solid #e2e8f0;margin-bottom:20px;font-size:17px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')doLogin()">
     <button onclick="doLogin()" style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;">🔓 Login</button>
   </div>
 </div>
@@ -5618,7 +5618,7 @@ body.role-user #spwBtn{display:none!important}
   function getSes(){ try{ return JSON.parse(localStorage.getItem(SES)||'null'); }catch(e){ return null; } }
   function validSes(){
     var s=getSes(); if(!s) return null;
-    var a=getAccounts().filter(function(x){ return x.u.toLowerCase()===String(s.u).toLowerCase() && x.p===s.p; })[0];
+    var a=getAccounts().filter(function(x){ return x.u.trim().toLowerCase()===String(s.u).trim().toLowerCase() && String(x.p).trim()===String(s.p).trim(); })[0];
     return a||null;
   }
   window.isManager=function(){ var a=validSes(); return !!a && a.r==='manager'; };
@@ -5638,15 +5638,15 @@ body.role-user #spwBtn{display:none!important}
   }
   window.authRevalidate=function(){ var a=validSes(); if(!a && getSes()){ localStorage.removeItem(SES); post(null); } apply(a); };
   window.doLogin=function(){
-    var u=document.getElementById('lgUser').value.trim().toLowerCase(), p=document.getElementById('lgPass').value;
+    var u=document.getElementById('lgUser').value.trim().toLowerCase(), p=document.getElementById('lgPass').value.trim();
     var msg=document.getElementById('loginMsg');
     var acc=getAccounts();
-    if(!acc.length){ msg.style.color='#f59e0b'; msg.textContent='Accounts load ho rahe hain... thodi der baad try karein'; setTimeout(authEnsureSeed,3500); return; }
-    var a=acc.filter(function(x){ return x.u.toLowerCase()===u && x.p===p; })[0];
-    if(!a){ msg.style.color='#ef4444'; msg.textContent='❌ Galat username ya password'; return; }
+    if(!acc.length){ msg.style.color='#f59e0b'; msg.textContent='Loading accounts... please try again shortly'; setTimeout(authEnsureSeed,3500); return; }
+    var a=acc.filter(function(x){ return x.u.trim().toLowerCase()===u && String(x.p).trim()===p; })[0];
+    if(!a){ msg.style.color='#ef4444'; msg.textContent='❌ Incorrect username or password'; return; }
     localStorage.setItem(SES, JSON.stringify({u:a.u,p:a.p}));
     document.getElementById('lgPass').value='';
-    msg.style.color='#94a3b8'; msg.textContent='Username aur password dalein';
+    msg.style.color='#94a3b8'; msg.textContent='Enter your username and password';
     apply(a);
   };
   window.doLogout=function(){
