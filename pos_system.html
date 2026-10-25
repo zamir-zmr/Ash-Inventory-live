@@ -3149,15 +3149,32 @@ function updateCartUI(rebuildList = true) {
 
     function previewItemPhoto(input) {
         if (!input.files || !input.files[0]) return;
+        let file = input.files[0];
         let reader = new FileReader();
-        reader.onloadend = function() {
+        const showIt = function(src) {
             let img = document.getElementById('itemPhotoImg');
-            img.src = reader.result;
+            img.src = src;
             img.style.display = 'block';
             document.getElementById('itemPhotoPlaceholder').style.display = 'none';
             document.getElementById('itemRemoveBtn').style.display = 'block';
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.onloadend = function() {
+            // Photo chhoti (max 600px) karo taaki POS <-> Inventory sync tez aur sahi rahe
+            const raw = reader.result;
+            const im = new Image();
+            im.onload = function() {
+                try {
+                    const max = 600, sc = Math.min(1, max / Math.max(im.width, im.height));
+                    const c = document.createElement('canvas');
+                    c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+                    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+                    showIt(c.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.82));
+                } catch (e) { showIt(raw); }
+            };
+            im.onerror = function() { showIt(raw); };
+            im.src = raw;
+        };
+        reader.readAsDataURL(file);
     }
 
     function clearItemPhoto() {
@@ -4253,6 +4270,7 @@ function importFullBackup(event) {
                 
                 if(data.logo) { try { localStorage.setItem('savedPhotoUrl', data.logo); } catch(e) {} }
                 
+                try { localStorage.setItem('asb_import_relink', '1'); } catch(e) {}
                 alert("Restored! Next bill number: " + ((data.billCount || 0) + 1));
                 location.reload();
             }
@@ -5132,8 +5150,11 @@ input[type="checkbox"] { accent-color: #0d9488; }
     function persist(){
         try { localStorage.setItem('asb_m', JSON.stringify(menu)); localStorage.setItem('asb_c', JSON.stringify(cats)); return true; }
         catch(e){
-            menu.forEach(function(m){ if (m.invId != null) m.photo = null; });
-            try { localStorage.setItem('asb_m', JSON.stringify(menu)); localStorage.setItem('asb_c', JSON.stringify(cats)); } catch(e2){}
+            // Storage full: linked items ki photo sirf storage copy se hatao (memory me rehti hai, Inventory se wapas aa jati hai)
+            try {
+                var lite = menu.map(function(m){ if (m.invId == null) return m; var c = {}; for (var k in m) c[k] = m[k]; c.photo = null; return c; });
+                localStorage.setItem('asb_m', JSON.stringify(lite)); localStorage.setItem('asb_c', JSON.stringify(cats));
+            } catch(e2){}
             return false;
         }
     }
@@ -5164,6 +5185,16 @@ input[type="checkbox"] { accent-color: #0d9488; }
     function applySync(d){
         var stocks = d.stocks || {}, icats = d.categories || {}, n = 0;
         var seen = {};
+        // Backup import ke baad: purane invId Inventory me na milen to relink karo (item/photo delete na hon)
+        var imp = false, impSnap = {}, needPush = {}, hasPush = false;
+        try { imp = localStorage.getItem('asb_import_relink') === '1'; } catch(e){}
+        if (imp) {
+            menu.forEach(function(m){
+                impSnap[m.id] = { price: m.price, cat: m.cat, photo: m.photo || null };
+                if (m.invId != null && !stocks[m.invId]) m.invId = null;
+            });
+            cats.forEach(function(c){ c.inv = false; c._sent = false; });
+        }
         var icatNames = {};
         Object.keys(icats).forEach(function(k){
             var nm = icats[k] && icats[k].name ? String(icats[k].name) : null; if (!nm) return;
@@ -5190,20 +5221,43 @@ input[type="checkbox"] { accent-color: #0d9488; }
             m.cat = cname;
             m.unit = s.unit || m.unit || '';
             m.stock = qty;
-            if (!m.photo && s.img) m.photo = s.img;
+            // Photo sync: Inventory = source of truth; sirf Inventory me photo na ho to POS ki photo Inventory ko bheji jati hai
+            var sImg = s.img || '';
+            var holdP = photoHold[id] && (Date.now() - photoHold[id] < 4000);
+            if (!holdP) {
+                if (sImg) { m.photo = sImg; }
+                else if (m.photo) {
+                    if (lastImg[id]) { m.photo = null; }            // Inventory se photo hata di gayi
+                    else { needPush[id] = 1; hasPush = true; }       // Inventory me photo nahi -> POS wali bhejo
+                }
+            }
+            lastImg[id] = sImg;
             last[id] = qty;
         });
         menu = menu.filter(function(m){ return m.invId == null || seen[m.invId]; });
         persist();
         snap();
+        if (hasPush) Object.keys(needPush).forEach(function(id){ if (snapItems[id]) snapItems[id].photo = ''; });
+        if (imp) {
+            // Imported backup ki price/category/photo ko final maano aur Inventory me bhi update karo
+            menu.forEach(function(m){
+                var o = impSnap[m.id]; if (!o || m.invId == null) return;
+                if (o.photo) m.photo = o.photo;
+                if (o.price !== undefined && o.price !== null) m.price = o.price;
+                if (o.cat) { m.cat = o.cat; if (!cats.some(function(c){ return c.n === o.cat; })) cats.push({ n: o.cat, i: '', inv: false }); }
+            });
+            persist();
+            try { localStorage.removeItem('asb_import_relink'); } catch(e){}
+        }
         if (typeof render === 'function') render();
+        if ((imp || hasPush) && typeof window._invStructOut === 'function') window._invStructOut();
     }
 
     /* ---- POS -> Inventory structural sync (items & categories) ---- */
-    var snapItems = {}, snapCats = {}, sentNew = {};
+    var snapItems = {}, snapCats = {}, sentNew = {}, photoHold = {}, lastImg = {};
     function snap(){
         snapItems = {}; snapCats = {};
-        menu.forEach(function(m){ if (m.invId != null) snapItems[m.invId] = { name: m.name, price: m.price, cat: m.cat }; });
+        menu.forEach(function(m){ if (m.invId != null) snapItems[m.invId] = { name: m.name, price: m.price, cat: m.cat, photo: m.photo || '' }; });
         cats.forEach(function(c){ if (c.inv) snapCats[c.n] = 1; });
     }
     function post(o){ try { window.parent.postMessage(o, '*'); } catch(e){} }
@@ -5223,8 +5277,12 @@ input[type="checkbox"] { accent-color: #0d9488; }
             }
             present[m.invId] = 1;
             var o = snapItems[m.invId];
-            if (o && (o.name !== m.name || Number(o.price) !== Number(m.price) || o.cat !== m.cat)) {
-                post({ type: 'POS_UPDATE_ITEM', invId: m.invId, name: m.name, price: m.price, cat: m.cat, photo: m.photo || '' });
+            if (o) {
+                var photoChanged = (o.photo || '') !== (m.photo || '');
+                if (o.name !== m.name || Number(o.price) !== Number(m.price) || o.cat !== m.cat || photoChanged) {
+                    if (photoChanged) photoHold[m.invId] = Date.now();
+                    post({ type: 'POS_UPDATE_ITEM', invId: m.invId, name: m.name, price: m.price, cat: m.cat, photo: m.photo || '', photoChanged: photoChanged });
+                }
             }
         });
         Object.keys(snapItems).forEach(function(id){ if (!present[id]) post({ type: 'POS_DELETE_ITEM', invId: id }); });

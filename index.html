@@ -6566,14 +6566,6 @@ async function exportBackupJSON() {
         for (const ref of refs) {
             const snap = await db.ref(ref).once('value');
             let data = snap.val();
-            if (ref === 'stocks' && data) {
-                const cleaned = {};
-                for (const id in data) {
-                    const { img, image, photo, imageUrl, photoUrl, ...rest } = data[id];
-                    cleaned[id] = rest;
-                }
-                data = cleaned;
-            }
             backup[ref] = data || null;
         }
 
@@ -6711,7 +6703,7 @@ async function confirmImport() {
                             for (const pf of ['img', 'image', 'photo', 'imageUrl', 'photoUrl']) {
                                 if (existing[pf] !== undefined) photoFields[pf] = existing[pf];
                             }
-                            updates[id] = { ...backupStocks[id], ...photoFields };
+                            updates[id] = { ...photoFields, ...backupStocks[id] };   // backup me photo ho to wahi, warna maujooda photo
                         }
                         await db.ref('stocks').set(updates);
                     } else {
@@ -7368,7 +7360,7 @@ async function runSalesExport() {
     function posUpdateItem(d){
         if(!d||!d.invId) return;
         var u={name:String(d.name),price:parseFloat(d.price)||0,catId:ensureCat(d.cat||'Inventory')};
-        if(d.photo) u.img=d.photo;
+        if(d.photoChanged) u.img=(typeof d.photo==='string')?d.photo:''; else if(d.photo) u.img=d.photo;
         db.ref('stocks/'+d.invId).update(u);
     }
     function posDeleteCat(name){
