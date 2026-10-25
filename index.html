@@ -672,7 +672,7 @@ if(window.ResizeObserver){ new ResizeObserver(positionPosFrame).observe(document
             <i class="fas fa-database" style="font-size:16px;"></i> MANAGE
         </div>
         
-        <div onclick="openSharePanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:var(--accent); font-weight:700; font-size:14px; letter-spacing:1px;">
+        <div id="menuItemDistribution" onclick="openSharePanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:var(--accent); font-weight:700; font-size:14px; letter-spacing:1px;">
             <i class="fas fa-share-alt" style="font-size:16px;"></i> DISTRIBUTION
         </div>
         <div onclick="openPurchasedPanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:#28a745; font-weight:700; font-size:14px; letter-spacing:1px;">
@@ -681,7 +681,7 @@ if(window.ResizeObserver){ new ResizeObserver(positionPosFrame).observe(document
         <div onclick="openWastedPanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:#dc3545; font-weight:700; font-size:14px; letter-spacing:1px;">
             <i class="fas fa-trash-alt" style="font-size:16px;"></i> WASTAGE
         </div>
-        <div onclick="openPetrolPanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:#b8860b; font-weight:700; font-size:14px; letter-spacing:1px;">
+        <div id="menuItemPetrol" onclick="openPetrolPanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:#b8860b; font-weight:700; font-size:14px; letter-spacing:1px;">
             <i class="fas fa-gas-pump" style="font-size:16px;"></i> PETROL
         </div>
         <div onclick="openReportPanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:var(--accent); font-weight:700; font-size:14px; letter-spacing:1px;">
@@ -987,6 +987,14 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
             <button onclick="openCarManageModal();" style="display:flex; align-items:center; gap:12px; padding:16px; border-radius:14px; border:1px solid var(--border); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; cursor:pointer; width:100%; box-sizing:border-box;">
                 <i class="fas fa-gas-pump" style="color:#f59e0b; font-size:18px; width:20px;"></i> Petrol
             </button>
+            <div class="mv-row" style="--c:#3b82f6;">
+                <span class="mv-lbl"><i class="fas fa-share-alt" style="color:#3b82f6; font-size:18px; width:20px;"></i> Show Distribution in Menu</span>
+                <label class="mv-sw"><input type="checkbox" id="mvDistToggle" checked onchange="toggleMenuVis('distribution', this)"><span class="tr"></span><span class="kn"></span></label>
+            </div>
+            <div class="mv-row" style="--c:#f59e0b;">
+                <span class="mv-lbl"><i class="fas fa-gas-pump" style="color:#f59e0b; font-size:18px; width:20px;"></i> Show Petrol in Menu</span>
+                <label class="mv-sw"><input type="checkbox" id="mvPetrolToggle" checked onchange="toggleMenuVis('petrol', this)"><span class="tr"></span><span class="kn"></span></label>
+            </div>
         </div>
 
     </div>
@@ -1176,14 +1184,10 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
 <script>
     // 1. Firebase Setup
     const firebaseConfig = {
-        apiKey: "AIzaSyA6A2o_wu4nc-1-MhI7jaXytaX0VuvFjWE",
-        authDomain: "inventorypos-2d0da.firebaseapp.com",
-        databaseURL: "https://inventorypos-2d0da-default-rtdb.firebaseio.com",
-        projectId: "inventorypos-2d0da",
-        storageBucket: "inventorypos-2d0da.firebasestorage.app",
-        messagingSenderId: "879151872279",
-        appId: "1:879151872279:web:97946e2f0265dff1579f52",
-        measurementId: "G-4TXFG9JN16"
+        apiKey: "AIzaSyA3bsKfP7CxS0Sb0CY6xu_vFogVcxbJCII",
+        authDomain: "ashcostingapp.firebaseapp.com",
+        databaseURL: "https://ashcostingapp-default-rtdb.firebaseio.com",
+        projectId: "ashcostingapp",
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -7534,5 +7538,52 @@ i.ic-on.fa-spin{color:var(--ic)!important}
 })();
 </script>
 <!-- COLORFUL-ICONS:END -->
+<style>
+.mv-hide { display:none !important; }
+.mv-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border-radius:14px; border:1px solid var(--border); border-left:5px solid var(--c,#10b981); background:var(--panel); color:var(--text-main); font-weight:700; font-size:15px; box-sizing:border-box; width:100%; }
+.mv-lbl { display:flex; align-items:center; gap:12px; min-width:0; }
+.mv-sw { position:relative; display:inline-block; width:48px; height:27px; flex-shrink:0; }
+.mv-sw input { opacity:0; width:0; height:0; position:absolute; }
+.mv-sw .tr { position:absolute; inset:0; background:#cbd5e1; border-radius:27px; transition:.22s; cursor:pointer; box-shadow:inset 0 1px 3px rgba(15,23,42,.18); }
+.mv-sw .kn { position:absolute; height:21px; width:21px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.22s; box-shadow:0 1px 4px rgba(15,23,42,.35); pointer-events:none; }
+.mv-sw input:checked + .tr { background:linear-gradient(135deg,#34d399,#059669); }
+.mv-sw input:checked + .tr + .kn { transform:translateX(21px); }
+</style>
+<script>
+/* Menu visibility (Distribution / Petrol) - Firebase synced: appSettings/menuVisibility */
+(function () {
+    var LS = 'asb_menu_vis';
+    var MAP = { distribution: ['menuItemDistribution', 'mvDistToggle'], petrol: ['menuItemPetrol', 'mvPetrolToggle'] };
+    var st = {};
+    try { st = JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { st = {}; }
+    function apply() {
+        Object.keys(MAP).forEach(function (k) {
+            var shown = st[k] !== false;
+            var item = document.getElementById(MAP[k][0]);
+            if (item) item.classList.toggle('mv-hide', !shown);
+            var cb = document.getElementById(MAP[k][1]);
+            if (cb) cb.checked = shown;
+        });
+    }
+    function save() { try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) {} }
+    window.toggleMenuVis = function (key, cb) {
+        st[key] = !!cb.checked;
+        save(); apply();
+        try { db.ref('appSettings/menuVisibility/' + key).set(!!cb.checked); } catch (e) {}
+    };
+    apply();
+    document.addEventListener('DOMContentLoaded', apply);
+    window.addEventListener('load', function () {
+        apply();
+        try {
+            db.ref('appSettings/menuVisibility').on('value', function (snap) {
+                var v = snap.val() || {};
+                st = { distribution: v.distribution !== false, petrol: v.petrol !== false };
+                save(); apply();
+            });
+        } catch (e) {}
+    });
+})();
+</script>
 </body>
 </html>
