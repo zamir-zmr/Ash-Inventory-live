@@ -4447,8 +4447,8 @@ function deleteAccount(i){
 }
 
 function submitPwStep(){
-  const u = document.getElementById('pwStepUser').value.trim();
-  const p = document.getElementById('pwStepInput').value.trim();
+  const u = window.nz(document.getElementById('pwStepUser').value);
+  const p = window.nz(document.getElementById('pwStepInput').value);
   const acc = getAccounts();
   if (_pwStepMode === 'addUser' || _pwStepMode === 'addManager') {
     if (!u || !p) { showAppAlert('⚠️ Required', 'Please enter both username and password'); return; }
@@ -4457,7 +4457,7 @@ function submitPwStep(){
     saveAccounts(acc); closePwStep(); refreshPwManagerUI();
   } else if (_pwStepMode === 'chgOld') {
     const x = acc[_pwEditIdx]; if (!x) { closePwStep(); return; }
-    if (p !== String(x.p).trim()) { showAppAlert('❌ Incorrect Password', 'The current password is incorrect'); return; }
+    if (p !== window.nz(x.p)) { showAppAlert('❌ Incorrect Password', 'The current password is incorrect'); return; }
     const idx = _pwEditIdx;
     closePwStep(); _pwEditIdx = idx;
     openPwStep('chgNew', 'Change Password', 'Enter the new password for ' + x.u, '✅ Save', '🔑', false);
@@ -5044,10 +5044,10 @@ function deleteBill(billNo, dateKey, displayLabel){
 
 <!-- Single-step password input (used for create / old-password / new-password / delete-confirm) -->
 <div id="pwStepOv" onclick="closePwStep()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:100002;backdrop-filter:blur(4px);"></div>
-<div id="pwStepBox" style="display:none;position:fixed;z-index:100003;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:340px;background:#fff;border-radius:24px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
-  <div id="pwStepIcon" style="text-align:center;font-size:42px;margin-bottom:8px;">🔑</div>
+<div id="pwStepBox" style="display:none;position:fixed;z-index:100003;top:12px;left:50%;transform:translateX(-50%);width:88%;max-width:340px;max-height:calc(100% - 24px);overflow-y:auto;background:#fff;border-radius:24px;padding:18px 22px 16px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
+  <div id="pwStepIcon" style="text-align:center;font-size:34px;margin-bottom:4px;">🔑</div>
   <h3 id="pwStepTitle" style="text-align:center;margin:0 0 6px;font-size:20px;color:#0f172a;font-weight:800;">Enter Password</h3>
-  <p id="pwStepSub" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 20px;line-height:1.5;"></p>
+  <p id="pwStepSub" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 12px;line-height:1.4;"></p>
   <input type="text" id="pwStepUser" placeholder="Username" autocomplete="off" style="width:100%;padding:15px;border-radius:14px;border:1.5px solid #e2e8f0;margin-bottom:12px;font-size:16px;box-sizing:border-box;">
   <input type="text" id="pwStepInput" placeholder="Password" autocomplete="off" style="width:100%;padding:15px;border-radius:14px;border:1.5px solid #e2e8f0;margin-bottom:16px;font-size:16px;box-sizing:border-box;" onkeydown="if(event.key==='Enter'){ submitPwStep(); }">
   <button id="pwStepBtn" onclick="submitPwStep()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:16px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;">✅ Continue</button>
@@ -5346,7 +5346,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 var tp = document.getElementById('ticketPage');
                 if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
             }
-            if (changed.indexOf('asb_acc2') !== -1 && window.authRevalidate) authRevalidate();
+            if (changed.indexOf('asb_acc2') !== -1) { if (window.authRevalidate) authRevalidate(); try { refreshPwManagerUI(); } catch(e){} }
             if (changed.indexOf('asb_zero_stock_block') !== -1 && typeof syncZeroStockToggleUI === 'function') syncZeroStockToggleUI();
             if (changed.some(function(k){ return /asb_show_/.test(k); }) && typeof applyDashVisibility === 'function') applyDashVisibility();
             if (changed.indexOf('asb_currency') !== -1 && typeof applyCurrencyUI === 'function') applyCurrencyUI();
@@ -5604,8 +5604,8 @@ body.role-user button[onclick^="deleteBill("]{display:none!important}
 body.role-user #spwBtn{display:none!important}
 </style>
 <div id="loginScreen" style="display:flex;position:fixed;inset:0;z-index:300000;background:#fff;overflow-y:auto;">
-  <div style="max-width:480px;width:100%;margin:0 auto;padding:40px 24px 32px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;">
-    <div style="text-align:center;font-size:64px;margin-bottom:10px;">🔒</div>
+  <div style="max-width:480px;width:100%;margin:0 auto;padding:40px 24px 32px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;padding-top:48px;">
+    <div style="text-align:center;font-size:56px;margin-bottom:6px;">🔒</div>
     <h3 style="text-align:center;margin:0 0 6px;font-size:28px;color:#0f172a;font-weight:800;">Login</h3>
     <p id="loginMsg" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 30px;">Enter your username and password</p>
     <input type="text" id="lgUser" placeholder="Username" autocorrect="off" spellcheck="false" autocomplete="username" autocapitalize="none" style="width:100%;padding:18px;border-radius:16px;border:2px solid #e2e8f0;margin-bottom:14px;font-size:17px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')document.getElementById('lgPass').focus()">
@@ -5619,10 +5619,12 @@ body.role-user #spwBtn{display:none!important}
   window.getAccounts=function(){ try{ var a=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } };
   window.saveAccounts=function(a){ localStorage.setItem(KEY, JSON.stringify(a)); };
   window.authEnsureSeed=function(){ if(!getAccounts().length) saveAccounts([{u:'Zamir',p:'admin',r:'manager'},{u:'Peter',p:'admin',r:'manager'},{u:'Mariana',p:'admin',r:'user'}]); };
+  function nz(s){ return String(s==null?'':s).replace(/[\u200B-\u200D\uFEFF\u00A0]/g,'').trim(); }
+  window.nz=nz;
   function getSes(){ try{ return JSON.parse(localStorage.getItem(SES)||'null'); }catch(e){ return null; } }
   function validSes(){
     var s=getSes(); if(!s) return null;
-    var a=getAccounts().filter(function(x){ return x.u.trim().toLowerCase()===String(s.u).trim().toLowerCase() && String(x.p).trim()===String(s.p).trim(); })[0];
+    var a=getAccounts().filter(function(x){ return nz(x.u).toLowerCase()===nz(s.u).toLowerCase() && nz(x.p)===nz(s.p); })[0];
     return a||null;
   }
   window.isManager=function(){ var a=validSes(); return !!a && a.r==='manager'; };
@@ -5642,11 +5644,11 @@ body.role-user #spwBtn{display:none!important}
   }
   window.authRevalidate=function(){ var a=validSes(); if(!a && getSes()){ localStorage.removeItem(SES); post(null); } apply(a); };
   window.doLogin=function(){
-    var u=document.getElementById('lgUser').value.trim().toLowerCase(), p=document.getElementById('lgPass').value.trim();
+    var u=nz(document.getElementById('lgUser').value).toLowerCase(), p=nz(document.getElementById('lgPass').value);
     var msg=document.getElementById('loginMsg');
     var acc=getAccounts();
     if(!acc.length){ msg.style.color='#f59e0b'; msg.textContent='Loading accounts... please try again shortly'; setTimeout(authEnsureSeed,3500); return; }
-    var a=acc.filter(function(x){ return x.u.trim().toLowerCase()===u && String(x.p).trim()===p; })[0];
+    var a=acc.filter(function(x){ return nz(x.u).toLowerCase()===u && nz(x.p)===p; })[0];
     if(!a){ msg.style.color='#ef4444'; msg.textContent='❌ Incorrect username or password'; return; }
     localStorage.setItem(SES, JSON.stringify({u:a.u,p:a.p}));
     document.getElementById('lgPass').value='';
