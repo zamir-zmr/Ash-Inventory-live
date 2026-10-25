@@ -1196,8 +1196,10 @@ function processPastedJson() {
     function markTicketPending(num) {
         if (num === null || num === undefined) return;
         loadTicketState();
+        ticketsUsed = ticketsUsed.filter(n => n !== num);
         if (!ticketsPending.includes(num)) ticketsPending.push(num);
         localStorage.setItem('asb_ticket_date', todayLocalStr());
+        localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
         localStorage.setItem('asb_tickets_pending', JSON.stringify(ticketsPending));
         renderTicketGrid();
     }
@@ -2352,6 +2354,11 @@ function downloadReceiptPDF() {
         const fileName = `${dateStr} ${getShopInfo().name} ${isA4 ? 'Invoice' : 'Bill no.'} ${billNo}.pdf`;
         if (isA4) { try { doc.defaultView.dispatchEvent(new Event('resize')); } catch (e) {} }
         pdf.save(fileName);
+        // BLUE state: PDF download hone par bhi ticket RED se BLUE
+        if (window.lastPrintTicket) {
+            markTicketPrinted(window.lastPrintTicket);
+            window.lastPrintTicket = null;
+        }
     }).catch(e => {
         console.error('PDF generation failed:', e);
         alert('PDF download failed. Please try again.');
