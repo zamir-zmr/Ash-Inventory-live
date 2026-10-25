@@ -640,7 +640,15 @@ function setAppMode(m){
     window.scrollTo(0,0);
     if(!pos && typeof adjustHeaderSpacer==='function') adjustHeaderSpacer();
 }
-window.addEventListener('message',function(e){ if(e.data&&e.data.type==='GO_INV') setAppMode('inv'); });
+window.addEventListener('message',function(e){ if(e.data&&e.data.type==='GO_INV') setAppMode('inv');
+  if(e.data&&e.data.type==='POS_AUTH'){
+    var d=e.data;
+    if(d.user){
+      isAdmin=true; currentUser=d.user;
+      try{ updateAdminUI(d.user); document.getElementById('roleLabel').innerText=(d.role==='manager'?'MANAGER':'USER'); render(); }catch(x){}
+    } else if(isAdmin){ isAdmin=false; location.reload(); }
+  }
+});
 setAppMode('pos'); // default page: POS System
 window.addEventListener('load',positionPosFrame);
 window.addEventListener('resize',positionPosFrame);
@@ -690,9 +698,7 @@ if(window.ResizeObserver){ new ResizeObserver(positionPosFrame).observe(document
         <div onclick="openBackupPanel(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:#e11d48; font-weight:700; font-size:14px; letter-spacing:1px;">
             <i class="fas fa-cloud-upload-alt" style="font-size:16px;"></i> BACKUP
         </div>
-        <div id="menuLoginLogoutItem" onclick="openLogin(); closeHamburger();" style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:12px; cursor:pointer; color:#e11d48; font-weight:700; font-size:14px; letter-spacing:1px;">
-            <i id="menuLoginLogoutIcon" class="fas fa-sign-out-alt" style="font-size:16px;"></i> <span id="menuLoginLogoutText">LOGOUT</span>
-        </div>
+        
     </div>
 </div>
 
@@ -1892,93 +1898,8 @@ function closeLedger() {
 
 
 // --- 1. ADMIN DATA & LOGIN LOGIC (PASSWORD MATCHING SYSTEM) ---
-function handleLogin(inputUser, inputPass) {
-    const u = (inputUser || (document.getElementById('loginUser') ? document.getElementById('loginUser').value : "")).toLowerCase().trim();
-    const p = inputPass || (document.getElementById('loginPass') ? document.getElementById('loginPass').value : "");
-
-    // --- JAB AAP GITHUB PAR YAHAN PASSWORD BADLENGE, SAB LOGOUT HO JAYENGE ---
-    const users = { 
-        "zamir": "admin", 
-        "peter": "admin",
-        "admin": "admin"
-    };
-
-    if (users[u] && users[u] === p) {
-        isAdmin = true; 
-        currentUser = u.charAt(0).toUpperCase() + u.slice(1);
-        
-        // --- IMPORTANT: User aur Password dono save karne honge ---
-        localStorage.setItem("user", currentUser);
-        localStorage.setItem("userKey", p); 
-        
-        updateAdminUI(currentUser);
-        if(typeof closeModals === 'function') closeModals(); 
-        render();
-        return { success: true, username: currentUser };
-    } else { 
-        return { success: false };
-    }
-}
-
-// --- 2. OPEN LOGIN (SweetAlert Popup) ---
-function openLogin() {
-    if(isAdmin) { 
-        Swal.fire({
-            title: '<span style="font-size: 18px;">Logout?</span>',
-            text: "Do you want to close the session?",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: 'var(--danger)',
-            confirmButtonText: 'Yes, Logout',
-            background: 'var(--panel)',
-            color: 'var(--text-main)',
-            width: '280px',
-            customClass: { popup: 'cyan-border-popup' }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                localStorage.removeItem("user");
-                localStorage.removeItem("userKey");
-                showToast("Logged out successfully! 👋");
-                setTimeout(() => { location.reload(); }, 1000);
-            }
-        });
-    } else {
-        Swal.fire({
-            title: '<span style="font-size: 16px;">Admin Access</span>',
-            html: `
-                <div style="margin-top: -5px;">
-                    <i class="fas fa-user-shield" style="font-size: 2rem; color: #00bac3; margin-bottom: 8px; display: block;"></i>
-                    <input type="text" id="swal-input1" class="swal2-input" placeholder="Username" style="width: 85%; height: 38px; margin: 5px auto; border-radius: 12px; border: 2px solid #00bac3; background: var(--input-bg); color: var(--text-main); font-size: 14px; outline: none;">
-                    <input type="password" id="swal-input2" class="swal2-input" placeholder="Password" style="width: 85%; height: 38px; margin: 5px auto; border-radius: 12px; border: 2px solid #00bac3; background: var(--input-bg); color: var(--text-main); font-size: 14px; outline: none;">
-                </div>
-            `,
-            background: 'var(--panel)',
-            color: 'var(--text-main)',
-            confirmButtonText: 'LOGIN',
-            confirmButtonColor: '#00bac3',
-            showCancelButton: true,
-            width: '320px',
-            position: 'top',
-            padding: '1.2em',
-            customClass: { popup: 'cyan-border-popup swal-top-popup' },
-            preConfirm: () => {
-                const u = document.getElementById('swal-input1').value;
-                const p = document.getElementById('swal-input2').value;
-                const res = handleLogin(u, p);
-                if (res.success) {
-                    return res;
-                } else {
-                    Swal.showValidationMessage('Invalid Credentials! ❌');
-                    return false;
-                }
-            }
-        }).then((result) => {
-            if (result && result.isConfirmed) {
-                showToast(`Welcome Back, ${result.value.username}! ✨`);
-            }
-        });
-    }
-}
+function handleLogin() { return { success: false }; }
+function openLogin() { /* login ab POS System se hota hai */ }
 
 // --- 3. AUTO-LOGOUT & WELCOME LOGIC (JAB APP REFRESH HO) ---
 function updateCurrentDate() {
@@ -1994,35 +1915,6 @@ window.addEventListener('DOMContentLoaded', () => {
     updateCurrentDate();
     loadAppLogo();
     loadCompanyName();
-    const savedUser = localStorage.getItem("user");
-    const savedPass = localStorage.getItem("userKey");
-
-    if (savedUser && savedPass) {
-        // GITHUB PAR JO NAYE PASSWORDS HAIN UNHE CHECK KAREIN
-        const users = { 
-            "zamir": "admin", 
-            "ashfaque": "admin",
-            "nazir": "admin"
-        };
-        
-        const uLower = savedUser.toLowerCase();
-
-        // CHECK: Kya saved password GitHub wale password se match karta hai?
-        if (users[uLower] && users[uLower] === savedPass) {
-            isAdmin = true;
-            currentUser = savedUser;
-            updateAdminUI(savedUser);
-            render();
-            setTimeout(() => { showToast(`Welcome, ${currentUser}! 👋`); }, 1500);
-        } else {
-            // AGAR GITHUB PAR PASSWORD BADAL GAYA HAI TOH FORCE LOGOUT
-            localStorage.removeItem("user");
-            localStorage.removeItem("userKey");
-            isAdmin = false;
-            showToast("Security Update: Please Login Again! 🔒");
-            setTimeout(() => { location.reload(); }, 2000);
-        }
-    }
 });
 
 // Long-press detection removed - using oncontextmenu handlers instead for module-specific popups
@@ -3111,12 +3003,6 @@ function filter() {
 
     // Init
     if(localStorage.getItem('theme') === 'dark') toggleTheme();
-    const savedUser = localStorage.getItem("user");
-    if(savedUser) { 
-        document.getElementById('loginUser').value = savedUser; 
-        document.getElementById('loginPass').value = "admin"; 
-        handleLogin(); 
-    }
     render();
     if (isAdmin) cleanupInvalidStocks();
     

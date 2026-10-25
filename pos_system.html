@@ -328,7 +328,7 @@ body { width: 100%; }
             <div class="logo-box">
                 <button id="hb" onclick="history.back()" style="background:#f1f5f9; border:none; padding:8px; border-radius:10px; display:none">🏠</button>
                 <div class="logo-circle" id="main-logo-container"><b>KP</b><span>HARDWARE</span></div>
-                <b id="shopNameHdr" style="color:var(--primary); text-align:left;">KP<br>HARDWARE</b>
+                <div style="display:flex;flex-direction:column;align-items:flex-start;min-width:0"><span id="loginBadge" style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:.4px;text-transform:uppercase;line-height:1;margin-bottom:3px;white-space:nowrap"></span><b id="shopNameHdr" style="color:var(--primary); text-align:left;">KP<br>HARDWARE</b></div>
 
                 
 
@@ -512,7 +512,8 @@ body { width: 100%; }
     <button class="btn" style="background:#059669; width:100%; margin-bottom:10px" onclick="openJsonPasteModal()">📋 PASTE JSON TEXT</button>
 
     <!-- ===== Security Password (Bill Delete Protection) ===== -->
-    <button class="btn" style="background:#0f172a; width:100%; margin-bottom:10px" onclick="openPwManageModal()">🔒 SECURITY PASSWORD</button>
+    <button id="spwBtn" class="btn" style="background:#0f172a; width:100%; margin-bottom:10px" onclick="openPwManageModal()">🔒 SECURITY PASSWORD</button>
+    <button class="btn" style="background:#ef4444; width:100%; margin-bottom:10px" onclick="doLogout()">🚪 LOGOUT</button>
 
     <button class="btn" style="width:100%; background:var(--slate)" onclick="closeM()">CLOSE</button>
 </div>
@@ -621,7 +622,7 @@ width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
         
         <div id="dashTileInventory" class="dash-tile bg-reports" onclick="showInventoryDash()"><span>📦</span>Inventory</div>
         <div class="dash-tile bg-pos" onclick="closeDash()"><span>🖥️</span>POS</div>
-        <div class="dash-tile bg-logout" onclick="location.reload()"><span>⬅️</span>Logout</div>
+        <div class="dash-tile bg-logout" onclick="doLogout()"><span>⬅️</span>Logout</div>
         
         
         <div id="dashDangerZone" style="background: #fff; padding: 15px; border-radius: 15px; margin: 10px 20px 80px 20px; border: 1px solid #fecaca; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);">
@@ -2970,6 +2971,7 @@ function updateCartUI(rebuildList = true) {
     }
     // ===== Sale item edit & delete (adjusts the underlying bill) =====
     function deleteInvSaleItem(billNo, dateKey, itemIndex) {
+  if (!isManager()) { showAppAlert('⛔ Access Denied', 'Bill delete karne ka adhikar sirf Manager ko hai'); return; }
         let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
         let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
         if (idx === -1) return;
@@ -4319,6 +4321,7 @@ function closeResetConfirmModal() {
     document.getElementById('resetConfirmBox').style.display = 'none';
 }
 function proceedFullReset() {
+    if (!isManager()) { showAppAlert('⛔ Access Denied', 'Sirf Manager'); return; }
     closeResetConfirmModal();
     const performReset = function () {
         localStorage.removeItem('asb_sales_logs'); // Sales logs delete
@@ -4343,34 +4346,37 @@ function closeDelModal(){
   document.getElementById('delOv').style.display='none';
   document.getElementById('delBox').style.display='none';
 }
-function getSecurityPassword(){ return localStorage.getItem('asb_delete_password') || ''; }
+function getSecurityPassword(){ return ''; }
 
 // ===== Security Password Manager (Create / Change / Delete) =====
-let _pwStepMode = null; // 'create' | 'changeOld' | 'changeNew' | 'delete'
+let _pwStepMode = null; // 'addUser' | 'addManager' | 'editAcc'
+let _pwEditIdx = -1;
+
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function refreshPwManagerUI(){
-  const cur = getSecurityPassword();
-  const statusEl = document.getElementById('pwMgrStatus');
-  const createBtn = document.getElementById('pwMgrCreateBtn');
-  const changeBtn = document.getElementById('pwMgrChangeBtn');
-  const deleteBtn = document.getElementById('pwMgrDeleteBtn');
-  if (cur) {
-    if (statusEl) statusEl.innerText = '🔒 Password is currently SET';
-    if (createBtn) { createBtn.innerText = '✅ Created Password'; createBtn.style.opacity = '0.55'; createBtn.style.cursor = 'default'; createBtn.onclick = null; }
-    if (changeBtn) changeBtn.style.display = 'block';
-    if (deleteBtn) deleteBtn.style.display = 'block';
-  } else {
-    if (statusEl) statusEl.innerText = '🔓 No password set';
-    if (createBtn) { createBtn.innerText = '➕ Create Password'; createBtn.style.opacity = '1'; createBtn.style.cursor = 'pointer'; createBtn.onclick = startCreatePassword; }
-    if (changeBtn) changeBtn.style.display = 'none';
-    if (deleteBtn) deleteBtn.style.display = 'none';
-  }
+  const acc = getAccounts();
+  const m = acc.filter(x => x.r === 'manager').length, u = acc.length - m;
+  const st = document.getElementById('pwMgrStatus');
+  if (st) st.innerText = '👑 ' + m + ' Manager' + (m===1?'':'s') + '  •  👤 ' + u + ' User' + (u===1?'':'s');
+  const box = document.getElementById('pwMgrList');
+  if (!box) return;
+  box.innerHTML = acc.map((x, i) => `
+    <div style="border:2px solid ${x.r==='manager'?'#3b82f6':'#10b981'};border-radius:16px;padding:14px 16px;margin-bottom:12px;background:${x.r==='manager'?'#eff6ff':'#ecfdf5'};display:flex;align-items:center;gap:10px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:800;color:${x.r==='manager'?'#1d4ed8':'#047857'};letter-spacing:.6px;">${x.r==='manager'?'👑 MANAGER':'👤 USER'}</div>
+        <div style="font-size:16px;font-weight:800;color:#0f172a;word-break:break-all;">${esc(x.u)}</div>
+        <div style="font-size:14px;color:#475569;word-break:break-all;">🔑 ${esc(x.p)}</div>
+      </div>
+      <button onclick="startEditAccount(${i})" style="background:#fff;border:1.5px solid #3b82f6;color:#1d4ed8;width:40px;height:40px;border-radius:12px;font-size:16px;cursor:pointer;">✏️</button>
+      <button onclick="deleteAccount(${i})" style="background:#fff;border:1.5px solid #ef4444;color:#b91c1c;width:40px;height:40px;border-radius:12px;font-size:16px;cursor:pointer;">🗑️</button>
+    </div>`).join('') || '<p style="text-align:center;color:#94a3b8;">No accounts</p>';
 }
 
-
-  let _pwMgrPageOpen = false;
+let _pwMgrPageOpen = false;
 
 function openPwManageModal(){
+  if (!isManager()) { showAppAlert('⛔ Access Denied', 'Sirf Manager access kar sakta hai'); return; }
   closeM();
   refreshPwManagerUI();
   document.getElementById('pwMgrOv').style.display = 'block';
@@ -4395,63 +4401,60 @@ window.addEventListener('popstate', function (e) {
     }
 });
 
-function openPwStep(mode, title, sub, btnLabel, icon){
+function openPwStep(mode, title, sub, btnLabel, icon, uVal, pVal){
   _pwStepMode = mode;
   document.getElementById('pwStepIcon').innerText = icon || '🔑';
   document.getElementById('pwStepTitle').innerText = title;
   document.getElementById('pwStepSub').innerText = sub;
   document.getElementById('pwStepBtn').innerText = btnLabel;
-  document.getElementById('pwStepInput').value = '';
+  document.getElementById('pwStepUser').value = uVal || '';
+  document.getElementById('pwStepInput').value = pVal || '';
   document.getElementById('pwStepOv').style.display = 'block';
   document.getElementById('pwStepBox').style.display = 'block';
-  setTimeout(() => { const el = document.getElementById('pwStepInput'); if (el) el.focus(); }, 50);
+  setTimeout(() => { const el = document.getElementById('pwStepUser'); if (el) el.focus(); }, 50);
 }
 function closePwStep(){
   document.getElementById('pwStepOv').style.display = 'none';
   document.getElementById('pwStepBox').style.display = 'none';
   document.getElementById('pwStepInput').value = '';
-  _pwStepMode = null;
+  document.getElementById('pwStepUser').value = '';
+  _pwStepMode = null; _pwEditIdx = -1;
 }
 
-function startCreatePassword(){
-  closePwManager();
-  openPwStep('create', 'Create Password', 'Naya security password set karein', '✅ Save', '➕');
+function startAddAccount(role){
+  openPwStep(role==='manager'?'addManager':'addUser', role==='manager'?'Add Manager':'Add User', 'Username aur password enter karein', '✅ Save', role==='manager'?'👑':'👤');
 }
-function startChangePassword(){
-  closePwManager();
-  openPwStep('changeOld', 'Change Password', 'Pehle apna current password enter karein', '➡️ Next', '🔑');
+function startEditAccount(i){
+  const x = getAccounts()[i]; if (!x) return;
+  _pwEditIdx = i;
+  openPwStep('editAcc', 'Edit ' + (x.r==='manager'?'Manager':'User'), 'Username / password badlein', '✅ Save', '✏️', x.u, x.p);
+  _pwEditIdx = i;
 }
-function startDeletePassword(){
-  closePwManager();
-  openPwStep('delete', 'Delete Password', 'Confirm karne ke liye current password enter karein', '🗑️ Delete', '🗑️');
+function deleteAccount(i){
+  const acc = getAccounts(), x = acc[i]; if (!x) return;
+  if (x.r === 'manager' && acc.filter(a => a.r === 'manager').length <= 1) { showAppAlert('⚠️ Not Allowed', 'Kam se kam ek Manager hona zaroori hai'); return; }
+  if (!confirm('Delete "' + x.u + '" ?')) return;
+  acc.splice(i, 1);
+  saveAccounts(acc);
+  refreshPwManagerUI();
+  authRevalidate();
 }
 
 function submitPwStep(){
-  const val = document.getElementById('pwStepInput').value;
-  const saved = getSecurityPassword();
-
-  if (_pwStepMode === 'create') {
-    if (!val.trim()) { showAppAlert('⚠️ Required', 'Please enter a password'); return; }
-    localStorage.setItem('asb_delete_password', val);
-    closePwStep();
-    showAppAlert('✅ Success', 'Password created successfully');
-  }
-  else if (_pwStepMode === 'changeOld') {
-    if (val !== saved) { showAppAlert('❌ Incorrect Password', 'Old password galat hai'); return; }
-    closePwStep();
-    openPwStep('changeNew', 'Change Password', 'Ab naya password enter karein', '✅ Save', '🔑');
-  }
-  else if (_pwStepMode === 'changeNew') {
-    if (!val.trim()) { showAppAlert('⚠️ Required', 'Please enter a new password'); return; }
-    localStorage.setItem('asb_delete_password', val);
-    closePwStep();
-    showAppAlert('✅ Success', 'Password changed successfully');
-  }
-  else if (_pwStepMode === 'delete') {
-    if (val !== saved) { showAppAlert('❌ Incorrect Password', 'Password galat hai'); return; }
-    localStorage.removeItem('asb_delete_password');
-    closePwStep();
-    showAppAlert('🗑️ Removed', 'Password removed successfully');
+  const u = document.getElementById('pwStepUser').value.trim();
+  const p = document.getElementById('pwStepInput').value;
+  if (!u || !p.trim()) { showAppAlert('⚠️ Required', 'Username aur password dono bharein'); return; }
+  const acc = getAccounts();
+  if (_pwStepMode === 'addUser' || _pwStepMode === 'addManager') {
+    if (acc.some(x => x.u.toLowerCase() === u.toLowerCase())) { showAppAlert('⚠️ Exists', 'Ye username pehle se hai'); return; }
+    acc.push({ u: u, p: p, r: _pwStepMode === 'addManager' ? 'manager' : 'user' });
+    saveAccounts(acc); closePwStep(); refreshPwManagerUI();
+  } else if (_pwStepMode === 'editAcc') {
+    const x = acc[_pwEditIdx]; if (!x) { closePwStep(); return; }
+    if (acc.some((y, j) => j !== _pwEditIdx && y.u.toLowerCase() === u.toLowerCase())) { showAppAlert('⚠️ Exists', 'Ye username pehle se hai'); return; }
+    x.u = u; x.p = p;
+    saveAccounts(acc); closePwStep(); refreshPwManagerUI();
+    authRevalidate();
   }
 }
 
@@ -4477,6 +4480,7 @@ function submitDeletePassword(){
 }
 
 function deleteBill(billNo, dateKey, displayLabel){
+  if (!isManager()) { showAppAlert('⛔ Access Denied', 'Bill delete karne ka adhikar sirf Manager ko hai'); return; }
   document.getElementById('delTitle').innerText = `Bill ${billNo} Delete?`;
   document.getElementById('delOv').style.display='block';
   document.getElementById('delBox').style.display='block';
@@ -5007,18 +5011,17 @@ function deleteBill(billNo, dateKey, displayLabel){
 <div id="pwMgrOv" onclick="closePwManager()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;"></div>
 <div id="pwMgrBox" style="display:none;position:fixed;z-index:100001;inset:0;width:100%;height:100%;background:#fff;box-shadow:none;overflow-y:auto;padding:0;">
   <div style="max-width:480px;margin:0 auto;padding:40px 24px 32px;min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;">
-    <div style="text-align:center;font-size:64px;margin-bottom:10px;">🔐</div>
+    <div style="text-align:center;font-size:64px;margin-bottom:10px;">🔒</div>
     <h3 style="text-align:center;margin:0 0 6px;font-size:28px;color:#0f172a;font-weight:800;">Security Password</h3>
-    <p id="pwMgrStatus" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 36px;">🔓 No password set</p>
+    <p id="pwMgrStatus" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 28px;"></p>
 
-    <button id="pwMgrCreateBtn" style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:16px;" onclick="startCreatePassword()">➕ Create Password</button>
+    <button style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:14px;" onclick="startAddAccount('user')">➕ Add User</button>
+    <button style="width:100%;text-align:left;background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:22px;" onclick="startAddAccount('manager')">➕ Add Manager</button>
 
-    <button id="pwMgrChangeBtn" style="width:100%;text-align:left;background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:16px;display:none;" onclick="startChangePassword()">✏️ Change Password</button>
-
-    <button id="pwMgrDeleteBtn" style="width:100%;text-align:left;background:#fef2f2;border:2px solid #ef4444;color:#b91c1c;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:28px;display:none;" onclick="startDeletePassword()">🗑️ Delete Password</button>
+    <div id="pwMgrList"></div>
 
     <div style="flex:1;"></div>
-    <button onclick="closePwManager()" style="width:100%;background:#f8fafc;color:#64748b;border:2px solid #e2e8f0;padding:18px;border-radius:18px;font-size:16px;font-weight:700;cursor:pointer;">↩️ Close</button>
+    <button onclick="closePwManager()" style="width:100%;background:#f8fafc;color:#64748b;border:2px solid #e2e8f0;padding:18px;border-radius:18px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;">↩️ Close</button>
   </div>
 </div>
 
@@ -5028,7 +5031,8 @@ function deleteBill(billNo, dateKey, displayLabel){
   <div id="pwStepIcon" style="text-align:center;font-size:42px;margin-bottom:8px;">🔑</div>
   <h3 id="pwStepTitle" style="text-align:center;margin:0 0 6px;font-size:20px;color:#0f172a;font-weight:800;">Enter Password</h3>
   <p id="pwStepSub" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 20px;line-height:1.5;"></p>
-  <input type="password" id="pwStepInput" placeholder="Password" style="width:100%;padding:15px;border-radius:14px;border:1.5px solid #e2e8f0;margin-bottom:16px;font-size:16px;box-sizing:border-box;" onkeydown="if(event.key==='Enter'){ submitPwStep(); }">
+  <input type="text" id="pwStepUser" placeholder="Username" autocomplete="off" style="width:100%;padding:15px;border-radius:14px;border:1.5px solid #e2e8f0;margin-bottom:12px;font-size:16px;box-sizing:border-box;">
+  <input type="text" id="pwStepInput" placeholder="Password" autocomplete="off" style="width:100%;padding:15px;border-radius:14px;border:1.5px solid #e2e8f0;margin-bottom:16px;font-size:16px;box-sizing:border-box;" onkeydown="if(event.key==='Enter'){ submitPwStep(); }">
   <button id="pwStepBtn" onclick="submitPwStep()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:16px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;">✅ Continue</button>
   <button onclick="closePwStep()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:14px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
 </div>
@@ -5295,7 +5299,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency'];
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_accounts','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false, lastLocalWrite = {};
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -5325,6 +5329,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 var tp = document.getElementById('ticketPage');
                 if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
             }
+            if (changed.indexOf('asb_accounts') !== -1 && window.authRevalidate) authRevalidate();
             if (changed.indexOf('asb_zero_stock_block') !== -1 && typeof syncZeroStockToggleUI === 'function') syncZeroStockToggleUI();
             if (changed.some(function(k){ return /asb_show_/.test(k); }) && typeof applyDashVisibility === 'function') applyDashVisibility();
             if (changed.indexOf('asb_currency') !== -1 && typeof applyCurrencyUI === 'function') applyCurrencyUI();
@@ -5365,6 +5370,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
             changed.push(k);
         });
         if (changed.length) refreshAfterRemote(changed);
+        try { if (window.authEnsureSeed) authEnsureSeed(); } catch(e){}
         toPush.forEach(function(k){ if (first && ARRAY_KEYS[k] || true) pushKey(k); });
     }
     function applyLogo(logo){
@@ -5575,5 +5581,71 @@ i.ic-on.fa-spin{color:var(--ic)!important}
     <button onclick="closeNoItemPopup()" style="width:100%;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;padding:14px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(13,148,136,.28);">➕ Add Item</button>
 </div>
 
+
+<style>
+body.role-user button[onclick^="deleteBill("]{display:none!important}
+body.role-user #spwBtn{display:none!important}
+</style>
+<div id="loginScreen" style="display:flex;position:fixed;inset:0;z-index:300000;background:#fff;overflow-y:auto;">
+  <div style="max-width:480px;width:100%;margin:0 auto;padding:40px 24px 32px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;">
+    <div style="text-align:center;font-size:64px;margin-bottom:10px;">🔒</div>
+    <h3 style="text-align:center;margin:0 0 6px;font-size:28px;color:#0f172a;font-weight:800;">Login</h3>
+    <p id="loginMsg" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 30px;">Username aur password dalein</p>
+    <input type="text" id="lgUser" placeholder="Username" autocomplete="username" autocapitalize="none" style="width:100%;padding:18px;border-radius:16px;border:2px solid #e2e8f0;margin-bottom:14px;font-size:17px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')document.getElementById('lgPass').focus()">
+    <input type="password" id="lgPass" placeholder="Password" autocomplete="current-password" style="width:100%;padding:18px;border-radius:16px;border:2px solid #e2e8f0;margin-bottom:20px;font-size:17px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()" style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;">🔓 Login</button>
+  </div>
+</div>
+<script>
+(function(){
+  var KEY='asb_accounts', SES='asb_session';
+  window.getAccounts=function(){ try{ var a=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } };
+  window.saveAccounts=function(a){ localStorage.setItem(KEY, JSON.stringify(a)); };
+  window.authEnsureSeed=function(){ if(!getAccounts().length) saveAccounts([{u:'Zamir',p:'admin',r:'manager'}]); };
+  function getSes(){ try{ return JSON.parse(localStorage.getItem(SES)||'null'); }catch(e){ return null; } }
+  function validSes(){
+    var s=getSes(); if(!s) return null;
+    var a=getAccounts().filter(function(x){ return x.u.toLowerCase()===String(s.u).toLowerCase() && x.p===s.p; })[0];
+    return a||null;
+  }
+  window.isManager=function(){ var a=validSes(); return !!a && a.r==='manager'; };
+  function post(a){ try{ if(window.parent!==window) window.parent.postMessage({type:'POS_AUTH', user:a?a.u:null, role:a?a.r:null},'*'); }catch(e){} }
+  function apply(a){
+    var ls=document.getElementById('loginScreen');
+    if(a){
+      ls.style.display='none';
+      document.body.classList.toggle('role-user', a.r!=='manager');
+      var b=document.getElementById('loginBadge'); if(b) b.textContent=a.u+' · '+(a.r==='manager'?'Manager':'User');
+      post(a);
+    } else {
+      ls.style.display='flex';
+      document.body.classList.add('role-user');
+      var b2=document.getElementById('loginBadge'); if(b2) b2.textContent='';
+    }
+  }
+  window.authRevalidate=function(){ var a=validSes(); if(!a && getSes()){ localStorage.removeItem(SES); post(null); } apply(a); };
+  window.doLogin=function(){
+    var u=document.getElementById('lgUser').value.trim().toLowerCase(), p=document.getElementById('lgPass').value;
+    var msg=document.getElementById('loginMsg');
+    var acc=getAccounts();
+    if(!acc.length){ msg.style.color='#f59e0b'; msg.textContent='Accounts load ho rahe hain... thodi der baad try karein'; setTimeout(authEnsureSeed,3500); return; }
+    var a=acc.filter(function(x){ return x.u.toLowerCase()===u && x.p===p; })[0];
+    if(!a){ msg.style.color='#ef4444'; msg.textContent='❌ Galat username ya password'; return; }
+    localStorage.setItem(SES, JSON.stringify({u:a.u,p:a.p}));
+    document.getElementById('lgPass').value='';
+    msg.style.color='#94a3b8'; msg.textContent='Username aur password dalein';
+    apply(a);
+  };
+  window.doLogout=function(){
+    localStorage.removeItem(SES); post(null);
+    setTimeout(function(){ location.reload(); },150);
+  };
+  window.authCurrent=validSes;
+  apply(validSes());
+  setTimeout(authEnsureSeed,3500);
+  setTimeout(function(){ var a=validSes(); if(a) post(a); },1200);
+  window.addEventListener('message',function(e){ if(e.source===window.parent && e.data && e.data.type==='POS_SYNC_ALL'){ var a=validSes(); if(a) post(a); } });
+})();
+</script>
 </body>
 </html>
