@@ -1232,6 +1232,49 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
         if(window.BRANCH==='ug' && !/^(accounts|branchData|\.info)(\/|$)/.test(s)) s='branchData/ug/'+s;
         return _origRef(s);
     };
+    // ===== Product catalog mirror: stocks (except qty), categories, units stay in sync between branches =====
+    (function(){
+        function A(p){ return _origRef(p); }
+        function B(p){ return _origRef('branchData/ug/'+p); }
+        function same(x,y){ return JSON.stringify(x)===JSON.stringify(y); }
+        [['stocks',true],['categories',false],['units',false]].forEach(function(pr){
+            var path=pr[0], isStock=pr[1];
+            var st={a:null,b:null,la:false,lb:false,init:false,pa:null,pb:null};
+            function strip(v){ if(!isStock||!v||typeof v!=='object') return v; var o={}; for(var k in v) if(k!=='qty') o[k]=v[k]; return o; }
+            function apply(id,val,other,refFn){
+                var sv=strip(val);
+                if(!(id in other)){
+                    var nv=(sv&&typeof sv==='object')?Object.assign({},sv):sv;
+                    if(isStock&&nv&&typeof nv==='object') nv.qty='0';
+                    refFn(path+'/'+id).set(nv);
+                    return;
+                }
+                var so=strip(other[id]);
+                if(!sv||typeof sv!=='object'||!so||typeof so!=='object'){ if(!same(sv,so)) refFn(path+'/'+id).set(sv); return; }
+                var upd={}, n=0, k;
+                for(k in sv) if(!same(sv[k],so[k])){ upd[k]=sv[k]; n++; }
+                for(k in so) if(!(k in sv)){ upd[k]=null; n++; }
+                if(n) refFn(path+'/'+id).update(upd);
+            }
+            function union(x,y,refY){ for(var id in x) if(!(id in y)) apply(id,x[id],y,refY); }
+            function onSnap(side,val){
+                st[side]=val||{}; st['l'+side]=true;
+                if(!(st.la&&st.lb)) return;
+                var oth=side==='a'?'b':'a', refOther=side==='a'?B:A;
+                if(!st.init){
+                    st.init=true;
+                    union(st.a,st.b,B); union(st.b,st.a,A);
+                    st.pa=st.a; st.pb=st.b; return;
+                }
+                var cur=st[side], prev=st['p'+side]||{}, o=st[oth], id;
+                for(id in cur){ if(!(id in prev)||!same(strip(cur[id]),strip(prev[id]))) apply(id,cur[id],o,refOther); }
+                for(id in prev){ if(!(id in cur)&&(id in o)) refOther(path+'/'+id).remove(); }
+                st['p'+side]=cur;
+            }
+            A(path).on('value',function(sn){ onSnap('a',sn.val()); });
+            B(path).on('value',function(sn){ onSnap('b',sn.val()); });
+        });
+    })();
 
     let isAdmin = false, isManageMode = false, currentUser = "Guest";
     let cropperInstance = null, currentFileMode = "new", finalImageData = "";
@@ -6394,7 +6437,7 @@ openPetrolPanel = function() {
                     </div>
                     <b style="color:var(--text-main); font-size:16px; display:block; margin-bottom:6px;">Import &amp; Restore</b>
                     <p style="color:var(--text-dim); font-size:12px; margin:0 0 16px; flex:1;">Select a previously exported JSON file to restore all data</p>
-                    <button id="importJsonBtn" onclick="document.getElementById('importFileInput').click()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <button id="importJsonBtn" onclick="pickImportKind()" style="width:100%; padding:14px; border-radius:12px; background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                         <i class="fas fa-upload"></i> IMPORT JSON
                     </button>
                     <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importBackupJSON(this)">
@@ -6473,26 +6516,41 @@ function closeBackupPanel() {
 
 // ========== EXPORT BACKUP JSON ==========
 async function exportBackupJSON() {
+    const pick = await Swal.fire({
+        title: 'Export Data', text: 'Choose what to export',
+        showDenyButton: true, showCancelButton: true,
+        confirmButtonText: 'Product Data', denyButtonText: 'Sales Data', cancelButtonText: 'Cancel',
+        confirmButtonColor: '#0ea5e9', denyButtonColor: '#16a34a',
+        background: 'var(--panel)', color: 'var(--text-main)', customClass: { popup: 'cyan-border-popup' }
+    });
+    const kind = pick.isConfirmed ? 'product' : (pick.isDenied ? 'sales' : null);
+    if (!kind) return;
     const btn = document.getElementById('exportJsonBtn');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
     try {
-        const refs = ['stocks', 'categories', 'units', 'inventory_history', 'transfers', 'purchases', 'wastes', 'petrolLogs', 'carList', 'branches'];
-        const backup = { _exportedAt: new Date().toISOString(), _version: 1 };
-
-        for (const ref of refs) {
-            const snap = await db.ref(ref).once('value');
-            let data = snap.val();
-            backup[ref] = data || null;
+        const brName = window.BRANCH === 'ug' ? 'Uganda' : 'Tanzania';
+        const backup = { _exportedAt: new Date().toISOString(), _version: 2, _type: kind, _branch: window.BRANCH };
+        const stocksSnap = await db.ref('stocks').once('value');
+        const stocks = stocksSnap.val() || {};
+        if (kind === 'product') {
+            const clean = {};
+            for (const id in stocks) { const o = Object.assign({}, stocks[id]); delete o.qty; clean[id] = o; }
+            backup.stocks = Object.keys(clean).length ? clean : null;
+            for (const ref of ['categories', 'units']) { const s = await db.ref(ref).once('value'); backup[ref] = s.val() || null; }
+        } else {
+            const qm = {}; for (const id in stocks) qm[id] = stocks[id].qty;
+            backup.stockQty = Object.keys(qm).length ? qm : null;
+            for (const ref of ['inventory_history', 'transfers', 'purchases', 'wastes', 'petrolLogs', 'carList', 'branches']) {
+                const s = await db.ref(ref).once('value'); backup[ref] = s.val() || null;
+            }
         }
-
-        const json = JSON.stringify(backup, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
         a.href = url;
-        a.download = `kp-hardware-backup-${dateStr}.json`;
+        a.download = `KP_${brName}_${kind === 'product' ? 'ProductData' : 'SalesData'}_${dateStr}.json`;
         a.click();
         URL.revokeObjectURL(url);
         btn.innerHTML = '<i class="fas fa-check"></i> Export Done!';
@@ -6508,6 +6566,21 @@ async function exportBackupJSON() {
         btn.disabled = false;
         showToast("Export failed! ❌");
     }
+}
+
+window._importKind = 'product';
+async function pickImportKind() {
+    const pick = await Swal.fire({
+        title: 'Import Data', text: 'Choose what to import',
+        showDenyButton: true, showCancelButton: true,
+        confirmButtonText: 'Product Data', denyButtonText: 'Sales Data', cancelButtonText: 'Cancel',
+        confirmButtonColor: '#0d9488', denyButtonColor: '#16a34a',
+        background: 'var(--panel)', color: 'var(--text-main)', customClass: { popup: 'cyan-border-popup' }
+    });
+    if (pick.isConfirmed) window._importKind = 'product';
+    else if (pick.isDenied) window._importKind = 'sales';
+    else return;
+    document.getElementById('importFileInput').click();
 }
 
 // ========== IMPORT - file selected ==========
@@ -6551,7 +6624,17 @@ async function confirmImport() {
             return;
         }
 
-        const sections = [
+        const _kind = window._importKind || 'product';
+        const _resetImpBtn = () => { document.getElementById('importJsonBtn').disabled = false; document.getElementById('importJsonBtn').style.opacity = '1'; };
+        if (backup._type && backup._type !== _kind) {
+            Swal.fire({ icon: 'error', title: 'Wrong file type', text: 'This file contains ' + (backup._type === 'sales' ? 'Sales' : 'Product') + ' Data. Please choose the matching import option.', customClass: { popup: 'cyan-border-popup' } });
+            _resetImpBtn(); return;
+        }
+        if (_kind === 'sales' && backup._branch && backup._branch !== window.BRANCH) {
+            Swal.fire({ icon: 'error', title: 'Wrong branch', text: 'This Sales Data file belongs to the ' + (backup._branch === 'ug' ? 'Uganda' : 'Tanzania') + ' branch. Switch to that branch to import it.', customClass: { popup: 'cyan-border-popup' } });
+            _resetImpBtn(); return;
+        }
+        const _allSections = [
             { key: 'categories',        label: 'Categories',     icon: 'fas fa-tags' },
             { key: 'units',             label: 'Units',           icon: 'fas fa-ruler' },
             { key: 'stocks',            label: 'Stock Items',     icon: 'fas fa-boxes' },
@@ -6561,8 +6644,11 @@ async function confirmImport() {
             { key: 'wastes',            label: 'Wastage',         icon: 'fas fa-trash-alt' },
             { key: 'petrolLogs',        label: 'Petrol Logs',     icon: 'fas fa-gas-pump' },
             { key: 'carList',           label: 'Car List',        icon: 'fas fa-car' },
-            { key: 'branches',          label: 'Customers',        icon: 'fas fa-user-tag' }
+            { key: 'branches',          label: 'Customers',        icon: 'fas fa-user-tag' },
+            { key: 'stockQty',          label: 'Stock Quantities', icon: 'fas fa-cubes' }
         ];
+        const _productKeys = ['categories', 'units', 'stocks'];
+        const sections = _allSections.filter(s => _kind === 'product' ? _productKeys.indexOf(s.key) !== -1 : _productKeys.indexOf(s.key) === -1);
 
         const progressDiv = document.getElementById('restoreProgress');
         const listDiv = document.getElementById('restoreProgressList');
@@ -6608,21 +6694,27 @@ async function confirmImport() {
             try {
                 if (backup[section.key] !== undefined && backup[section.key] !== null) {
                     if (section.key === 'stocks') {
-                        // Photos preserve karo: existing stocks fetch karo, phir per-item merge
                         const existingSnap = await db.ref('stocks').once('value');
                         const existingStocks = existingSnap.val() || {};
                         const backupStocks = backup['stocks'];
                         const updates = {};
                         for (const id in backupStocks) {
-                            const existing = existingStocks[id] || {};
-                            // Photo fields existing se preserve karo
-                            const photoFields = {};
-                            for (const pf of ['img', 'image', 'photo', 'imageUrl', 'photoUrl']) {
-                                if (existing[pf] !== undefined) photoFields[pf] = existing[pf];
-                            }
-                            updates[id] = { ...photoFields, ...backupStocks[id] };   // backup me photo ho to wahi, warna maujooda photo
+                            const ex = existingStocks[id] || {};
+                            const bs = Object.assign({}, backupStocks[id]);
+                            const q = bs.qty; delete bs.qty;
+                            const merged = Object.assign({}, ex, bs);
+                            if (merged.qty === undefined) merged.qty = (!backup._type && q !== undefined) ? q : '0';
+                            updates[id] = merged;
                         }
-                        await db.ref('stocks').set(updates);
+                        await db.ref('stocks').update(updates);
+                    } else if (section.key === 'stockQty') {
+                        const exSnap = await db.ref('stocks').once('value');
+                        const ex = exSnap.val() || {};
+                        const ups = {};
+                        for (const id in backup.stockQty) { if (ex[id]) ups[id + '/qty'] = backup.stockQty[id]; }
+                        if (Object.keys(ups).length) await db.ref('stocks').update(ups);
+                    } else if (section.key === 'categories' || section.key === 'units') {
+                        await db.ref(section.key).update(backup[section.key]);
                     } else {
                         await db.ref(section.key).set(backup[section.key]);
                     }

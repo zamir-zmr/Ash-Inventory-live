@@ -763,8 +763,8 @@ width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
         <div id="reportsBackupBox" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
             <b style="display:block; margin-bottom:8px; color: #64748b; font-size:10px;">📦 BACKUP</b>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <button class="pos-btn" style="background:#8b5cf6; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="exportFullBackup()">📤 EXPORT</button>
-                <button class="pos-btn" style="background:#475569; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="document.getElementById('importFile').click()">📥 IMPORT</button>
+                <button class="pos-btn" style="background:#8b5cf6; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="openBackupMenu('export')">📤 EXPORT</button>
+                <button class="pos-btn" style="background:#475569; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="openBackupMenu('import')">📥 IMPORT</button>
                 <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importFullBackup(event)">
             </div>
         </div>
@@ -869,7 +869,7 @@ function exportMenuJSON() {
     let blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     let link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `KP_HARDWARE_MENU_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `KP_${localStorage.getItem('asb_branch')==='ug'?'Uganda':'Tanzania'}_ProductData_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
 }
 
@@ -4251,59 +4251,91 @@ function logSale(total, bNo) {
     adjustStockForItems(newSale.items, -1);
 }
 
-// 1. Poora data (Items + Sales) file mein download karne ke liye
-function exportFullBackup() {
-    const backupData = {
-        menu: JSON.parse(localStorage.getItem('asb_m')) || [],
-        cats: JSON.parse(localStorage.getItem('asb_c')) || [],
-        sales: JSON.parse(localStorage.getItem('asb_sales_logs')) || [],
-        // Yeh line bill number ko save karegi
-        billCount: parseInt(_ls('asb_bill_count', 0)) || 0,
-        lastDate: (function(){ try { return localStorage.getItem('asb_last_date') || ""; } catch(e){ return ""; } })(),
-        logo: (function(){ try { return localStorage.getItem('savedPhotoUrl') || ""; } catch(e){ return ""; } })()
-    };
+function bkBranch(){ return localStorage.getItem('asb_branch') === 'ug' ? 'ug' : 'tz'; }
+function bkBranchName(b){ return b === 'ug' ? 'Uganda' : 'Tanzania'; }
+let _bkMode = 'export', _impKind = 'product';
 
+function openBackupMenu(mode){
+    _bkMode = mode;
+    document.getElementById('bkTitle').textContent = mode === 'export' ? 'Export Data' : 'Import Data';
+    document.getElementById('bkSub').textContent = 'Choose what to ' + mode;
+    document.getElementById('bkOv').style.display = 'block';
+    document.getElementById('bkBox').style.display = 'block';
+}
+function closeBackupMenu(){
+    document.getElementById('bkOv').style.display = 'none';
+    document.getElementById('bkBox').style.display = 'none';
+}
+function pickBackup(kind){
+    closeBackupMenu();
+    if (_bkMode === 'export') { exportFullBackup(kind); }
+    else { _impKind = kind; document.getElementById('importFile').click(); }
+}
+
+function exportFullBackup(kind) {
+    kind = kind || 'product';
+    const br = bkBranch();
+    let backupData;
+    if (kind === 'product') {
+        backupData = {
+            _type: 'product', _branch: br, _version: 2,
+            menu: JSON.parse(localStorage.getItem('asb_m')) || [],
+            cats: JSON.parse(localStorage.getItem('asb_c')) || [],
+            logo: (function(){ try { return localStorage.getItem('savedPhotoUrl') || ""; } catch(e){ return ""; } })()
+        };
+    } else {
+        backupData = {
+            _type: 'sales', _branch: br, _version: 2,
+            sales: JSON.parse(localStorage.getItem('asb_sales_logs')) || [],
+            billCount: parseInt(_ls('asb_bill_count', 0)) || 0,
+            lastDate: (function(){ try { return localStorage.getItem('asb_last_date') || ""; } catch(e){ return ""; } })()
+        };
+    }
     const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `KP_HARDWARE_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `KP_${bkBranchName(br)}_${kind === 'product' ? 'ProductData' : 'SalesData'}_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
 }
 
 function importFullBackup(event) {
-    const file = event.target.files[0];
+    const input = event.target;
+    const file = input.files[0];
     if (!file) return;
+    const kind = _impKind;
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            appConfirm("Restore backup? Current data will be replaced.", function() {
-                _lsSet('asb_m', data.menu);
-                _lsSet('asb_c', data.cats);
-                _lsSet('asb_sales_logs', data.sales);
-                
-                // Bill number ko wapas restore kiya
+        input.value = '';
+        let data;
+        try { data = JSON.parse(e.target.result); } catch (err) { alert("Invalid Backup File!"); return; }
+        if (data._type && data._type !== kind) {
+            alert("This file contains " + (data._type === 'sales' ? 'Sales' : 'Product') + " Data. Please choose the matching import option.");
+            return;
+        }
+        if (kind === 'sales' && data._branch && data._branch !== bkBranch()) {
+            alert("This Sales Data file belongs to the " + bkBranchName(data._branch) + " branch. Switch to that branch to import it.");
+            return;
+        }
+        const title = kind === 'product' ? 'Restore Product Data' : 'Restore Sales Data';
+        appConfirm(kind === 'product' ? "Restore product data (items, categories, photos)? Current product data will be replaced." : "Restore sales data for the " + bkBranchName(bkBranch()) + " branch? Current sales data will be replaced.", function() {
+            if (kind === 'product') {
+                if (data.menu) _lsSet('asb_m', data.menu);
+                if (data.cats) _lsSet('asb_c', data.cats);
+                if (data.logo) { try { localStorage.setItem('savedPhotoUrl', data.logo); } catch(e) {} }
+                try { localStorage.setItem('asb_import_relink', '1'); } catch(e) {}
+                alert("Product data restored!");
+            } else {
+                _lsSet('asb_sales_logs', data.sales || []);
                 try { localStorage.setItem('asb_bill_count', data.billCount || 0); } catch(e) {}
                 try { localStorage.setItem('asb_last_date', data.lastDate || ""); } catch(e) {}
-                
-                if(data.logo) { try { localStorage.setItem('savedPhotoUrl', data.logo); } catch(e) {} }
-                
-                try { localStorage.setItem('asb_import_relink', '1'); } catch(e) {}
-                alert("Restored! Next bill number: " + ((data.billCount || 0) + 1));
-                location.reload();
-            }, {title:'Restore Backup', icon:'♻️', okText:'Restore'});
-        } catch (err) {
-            alert("Invalid Backup File!");
-        }
+                alert("Sales data restored! Next bill number: " + ((data.billCount || 0) + 1));
+            }
+            location.reload();
+        }, {title: title, icon:'♻️', okText:'Restore'});
     };
     reader.readAsText(file);
 }
-
-
-
-
-    
 
 let isResetLocked = true;
 
@@ -5871,5 +5903,15 @@ body.role-user #spwBtn{display:none!important}
   });
 })();
 </script>
+
+<div id="bkOv" onclick="closeBackupMenu()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:100010;backdrop-filter:blur(4px);"></div>
+<div id="bkBox" style="display:none;position:fixed;z-index:100011;top:50%;left:50%;transform:translate(-50%,-50%);width:88%;max-width:340px;background:#fff;border-radius:24px;padding:24px 22px 18px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
+  <div style="text-align:center;font-size:38px;margin-bottom:4px;">📦</div>
+  <h3 id="bkTitle" style="text-align:center;margin:0 0 4px;font-size:20px;color:#0f172a;font-weight:800;">Export Data</h3>
+  <p id="bkSub" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 16px;"></p>
+  <button onclick="pickBackup('product')" style="width:100%;text-align:left;background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:16px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:10px;">🛒 Product Data<div style="font-size:11px;font-weight:600;color:#64748b;margin-top:2px;">Items, categories &amp; photos (all branches)</div></button>
+  <button onclick="pickBackup('sales')" style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:16px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;">🧾 Sales Data<div style="font-size:11px;font-weight:600;color:#64748b;margin-top:2px;">Bills &amp; bill numbers (this branch only)</div></button>
+  <button onclick="closeBackupMenu()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+</div>
 </body>
 </html>
