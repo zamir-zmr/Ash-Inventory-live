@@ -5707,7 +5707,7 @@ body.role-user #spwBtn{display:none!important}
     if(a){
       ls.style.display='none';
       document.body.classList.toggle('role-user', a.r!=='manager');
-      var b=document.getElementById('loginBadge'); if(b) b.textContent=a.u+' · '+(a.r==='manager'?'Manager':'User')+(localStorage.getItem('asb_branch')==='ug'?' · Uganda':'');
+      var b=document.getElementById('loginBadge'); if(b){ var _br=localStorage.getItem('asb_branch')==='ug'?'Uganda':'Tanzania'; b.textContent=a.u+' · '+(a.r==='manager'?'Manager':'User'); var _s2=document.createElement('span'); _s2.textContent='📍 '+_br; _s2.style.cssText='display:block;color:#0d9488;margin-top:3px;font-size:10px;font-weight:900;letter-spacing:.4px'; b.appendChild(_s2); }
       post(a);
     } else {
       ls.style.display='flex';
@@ -5807,8 +5807,10 @@ body.role-user #spwBtn{display:none!important}
         <input type="date" id="bsTo" onchange="renderBranchSales()" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:14px;">
       </div>
       <div id="bsRange" style="text-align:center;color:#94a3b8;font-size:12px;margin-top:8px;"></div>
+      <input id="bsSearch" type="search" placeholder="🔍 Search bill, item, payment method..." oninput="bsSearch(this.value)" style="width:100%;box-sizing:border-box;margin-top:8px;padding:11px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:14px;background:#f8fafc;outline:none;">
     </div>
-    <div style="flex:1;min-height:0;overflow-y:auto;padding:14px 14px 8px;">
+    <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px 14px 8px;">
+      <div id="bsSum" style="margin-bottom:16px;"></div>
       <div id="bsTz" style="margin-bottom:16px;"></div>
       <div id="bsUg"></div>
     </div>
@@ -5841,26 +5843,91 @@ body.role-user #spwBtn{display:none!important}
     return [s, e];
   }
   function esc2(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-  function tbl(id, title, color, arr, rg){
+  var q = '';
+  window.bsSearch = function(v){ q = String(v || '').toLowerCase().trim(); renderBranchSales(); };
+  var MCOL = { Cash:'#16a34a', Transfer:'#2563eb', Card:'#7c3aed', Pending:'#94a3b8' };
+  function mOf(x){ return String(x.method || '').trim() || 'Pending'; }
+  function mcol(m){ return MCOL[m] || '#f59e0b'; }
+  function itemsOf(x){ return Array.isArray(x.items) ? x.items : []; }
+  function itemsTxt(x){ return itemsOf(x).map(function(i){ return (parseFloat(i.qty) || 1) + '× ' + (i.name || ''); }).join(', '); }
+  function rowsFor(arr, rg){
     var s = rg[0], e = rg[1];
     var rows = (s && e) ? arr.filter(function(x){ var d = String(x.date || ''); return d >= s && d <= e; }) : [];
+    if (q) rows = rows.filter(function(x){
+      return (String(x.billNo) + ' ' + mOf(x) + ' ' + itemsTxt(x) + ' ' + x.date + ' ' + x.amount + ' ' + (x.customerPhone || '')).toLowerCase().indexOf(q) !== -1;
+    });
     rows.sort(function(a, b){ return (String(b.date) + String(b.time || '')).localeCompare(String(a.date) + String(a.time || '')); });
-    var total = 0; rows.forEach(function(x){ total += parseFloat(x.amount) || 0; });
+    return rows;
+  }
+  function sum(rows){ var t = 0; rows.forEach(function(x){ t += parseFloat(x.amount) || 0; }); return t; }
+  function byMethod(rows){ var m = {}; rows.forEach(function(x){ var k = mOf(x); m[k] = (m[k] || 0) + (parseFloat(x.amount) || 0); }); return m; }
+  function money(v){ return curCode() + ' ' + v.toFixed(cdec()); }
+  function tbl(id, title, color, rows){
+    var total = sum(rows);
     var act = (localStorage.getItem('asb_branch') === 'ug' ? 'ug' : 'tz') === (id === 'bsTz' ? 'tz' : 'ug');
-    var h = '<div style="background:#fff;border-radius:16px;border:2px solid ' + color + ';overflow:hidden;">' +
-      '<div style="background:' + color + ';color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-weight:800;"><span>' + title + (act ? ' (Active)' : '') + '</span><span>' + rows.length + ' bills</span></div>' +
-      '<div style="padding:10px 14px;font-weight:800;color:#0f172a;border-bottom:1px solid #e2e8f0;">Total: ' + curCode() + ' ' + total.toFixed(cdec()) + '</div>' +
-      '<div style="max-height:260px;overflow-y:auto;"><table class="bst"><thead><tr><th>Date</th><th>Bill</th><th class="r">Amount</th></tr></thead><tbody>';
-    if (!rows.length) h += '<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:18px;">No sales</td></tr>';
-    rows.forEach(function(x){ h += '<tr><td>' + esc2(x.date) + '</td><td>#' + esc2(x.billNo) + '</td><td class="r">' + (parseFloat(x.amount) || 0).toFixed(cdec()) + '</td></tr>'; });
-    h += '</tbody></table></div></div>';
+    var h = '<div style="background:#fff;border-radius:16px;border:2px solid ' + color + ';overflow:hidden;max-width:100%;">' +
+      '<div style="background:' + color + ';color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800;"><span style="min-width:0;overflow-wrap:anywhere;">📍 ' + title + (act ? ' (Active)' : '') + '</span><span style="flex-shrink:0;">' + rows.length + ' bills</span></div>' +
+      '<div style="padding:10px 14px;font-weight:800;color:#0f172a;border-bottom:1px solid #e2e8f0;">Total: ' + money(total) + '</div>' +
+      '<div style="max-height:340px;overflow-y:auto;overflow-x:hidden;">';
+    if (!rows.length) h += '<div style="text-align:center;color:#94a3b8;padding:18px;font-size:14px;">No sales</div>';
+    rows.forEach(function(x){
+      var m = mOf(x), it = itemsOf(x);
+      h += '<div style="padding:10px 14px;border-top:1px solid #f1f5f9;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">' +
+          '<div style="min-width:0;font-weight:800;color:#0f172a;font-size:14px;">#' + esc2(x.billNo) + ' <span style="font-weight:600;color:#94a3b8;font-size:12px;">' + esc2(x.date) + (x.time ? ' · ' + esc2(x.time) : '') + '</span></div>' +
+          '<div style="flex-shrink:0;font-weight:900;color:#0f172a;font-size:15px;">' + (parseFloat(x.amount) || 0).toFixed(cdec()) + '</div>' +
+        '</div>' +
+        '<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' +
+          '<span style="background:' + mcol(m) + '1f;color:' + mcol(m) + ';border:1px solid ' + mcol(m) + '55;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;">💳 ' + esc2(m) + '</span>' +
+          (x.ticketNo ? '<span style="color:#64748b;font-size:11px;font-weight:700;">🎫 ' + esc2(x.ticketNo) + '</span>' : '') +
+          (it.length ? '<span style="color:#64748b;font-size:11px;font-weight:700;">' + it.length + ' item' + (it.length > 1 ? 's' : '') + '</span>' : '') +
+        '</div>' +
+        (it.length ? '<div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">' + it.map(function(i){
+          var qn = parseFloat(i.qty) || 1, pr = parseFloat(i.price) || 0;
+          return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#475569;"><span style="min-width:0;overflow-wrap:anywhere;">' + qn + ' × ' + esc2(i.name || '') + '</span><span style="flex-shrink:0;">' + (qn * pr).toFixed(cdec()) + '</span></div>';
+        }).join('') + '</div>' : '') +
+        '</div>';
+    });
+    h += '</div></div>';
     document.getElementById(id).innerHTML = h;
+  }
+  function summary(tz, ug){
+    var el = document.getElementById('bsSum'); if (!el) return;
+    var tT = sum(tz), tU = sum(ug), mx = Math.max(tT, tU, 0.0001), nAll = tz.length + ug.length, all = tT + tU;
+    function bar(label, color, v, n){
+      return '<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:#334155;gap:8px;"><span>' + label + ' · ' + n + ' bills</span><span>' + money(v) + '</span></div>' +
+        '<div style="height:14px;background:#f1f5f9;border-radius:8px;overflow:hidden;"><div style="height:100%;width:' + (v / mx * 100).toFixed(1) + '%;background:' + color + ';border-radius:8px;"></div></div></div>';
+    }
+    function stack(label, rows){
+      var m = byMethod(rows), t = sum(rows), keys = Object.keys(m);
+      if (!t) return '<div style="margin-bottom:8px;font-size:12px;color:#94a3b8;font-weight:700;">' + label + ': no sales</div>';
+      return '<div style="margin-bottom:10px;"><div style="font-size:12px;font-weight:800;color:#334155;margin-bottom:4px;">' + label + '</div>' +
+        '<div style="display:flex;height:14px;border-radius:8px;overflow:hidden;background:#f1f5f9;">' + keys.map(function(k){ return '<div title="' + esc2(k) + '" style="width:' + (m[k] / t * 100).toFixed(1) + '%;background:' + mcol(k) + ';"></div>'; }).join('') + '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:5px;">' + keys.map(function(k){ return '<span style="font-size:11px;color:#475569;font-weight:700;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + mcol(k) + ';margin-right:4px;"></span>' + esc2(k) + ' ' + (m[k] / t * 100).toFixed(0) + '% · ' + m[k].toFixed(cdec()) + '</span>'; }).join('') + '</div></div>';
+    }
+    var cnt = {};
+    tz.concat(ug).forEach(function(x){ itemsOf(x).forEach(function(i){ var k = i.name || '?'; cnt[k] = (cnt[k] || 0) + (parseFloat(i.qty) || 1); }); });
+    var top = Object.keys(cnt).sort(function(a, b){ return cnt[b] - cnt[a]; }).slice(0, 3);
+    el.innerHTML = '<div style="background:#fff;border-radius:16px;border:1.5px solid #e2e8f0;padding:14px;max-width:100%;overflow:hidden;">' +
+      '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+        '<div style="flex:1;min-width:0;background:#f0fdfa;border-radius:12px;padding:8px 10px;"><div style="font-size:10px;font-weight:800;color:#64748b;">TOTAL SALES</div><div style="font-size:14px;font-weight:900;color:#0f766e;overflow-wrap:anywhere;">' + money(all) + '</div></div>' +
+        '<div style="flex:1;min-width:0;background:#eff6ff;border-radius:12px;padding:8px 10px;"><div style="font-size:10px;font-weight:800;color:#64748b;">BILLS</div><div style="font-size:14px;font-weight:900;color:#1d4ed8;">' + nAll + '</div></div>' +
+        '<div style="flex:1;min-width:0;background:#fff7ed;border-radius:12px;padding:8px 10px;"><div style="font-size:10px;font-weight:800;color:#64748b;">AVG BILL</div><div style="font-size:14px;font-weight:900;color:#b45309;overflow-wrap:anywhere;">' + (nAll ? (all / nAll).toFixed(cdec()) : (0).toFixed(cdec())) + '</div></div>' +
+      '</div>' +
+      '<div style="font-size:11px;font-weight:800;color:#64748b;margin-bottom:6px;">📊 BRANCH COMPARISON</div>' +
+      bar('Tanzania', '#0f766e', tT, tz.length) + bar('Uganda', '#b45309', tU, ug.length) +
+      '<div style="font-size:11px;font-weight:800;color:#64748b;margin:12px 0 6px;">💳 PAYMENT METHODS</div>' +
+      stack('Tanzania', tz) + stack('Uganda', ug) +
+      (top.length ? '<div style="font-size:11px;font-weight:800;color:#64748b;margin:6px 0 4px;">🏆 TOP ITEMS</div>' + top.map(function(k, i){ return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#334155;font-weight:700;"><span style="min-width:0;overflow-wrap:anywhere;">' + (i + 1) + '. ' + esc2(k) + '</span><span style="flex-shrink:0;">' + cnt[k] + ' sold</span></div>'; }).join('') : '') +
+      '</div>';
   }
   window.renderBranchSales = function(){
     var rg = range();
     var el = document.getElementById('bsRange'); if (el) el.textContent = (rg[0] && rg[1]) ? (rg[0] === rg[1] ? rg[0] : rg[0] + '  →  ' + rg[1]) : 'Select a date range';
-    tbl('bsTz', 'Tanzania', '#0f766e', data.tz, rg);
-    tbl('bsUg', 'Uganda', '#b45309', data.ug, rg);
+    var tz = rowsFor(data.tz, rg), ug = rowsFor(data.ug, rg);
+    summary(tz, ug);
+    tbl('bsTz', 'Tanzania', '#0f766e', tz);
+    tbl('bsUg', 'Uganda', '#b45309', ug);
   };
   window.setBsFilter = function(f){
     filter = f;
@@ -5913,5 +5980,16 @@ body.role-user #spwBtn{display:none!important}
   <button onclick="pickBackup('sales')" style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:16px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;">🧾 Sales Data<div style="font-size:11px;font-weight:600;color:#64748b;margin-top:2px;">Bills &amp; bill numbers (this branch only)</div></button>
   <button onclick="closeBackupMenu()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
 </div>
+<style>
+/* header fitting: nothing is cut on the right, branch location always visible */
+.h{box-sizing:border-box;max-width:100%;overflow:hidden}
+.h > div:first-child{flex-wrap:wrap;row-gap:8px;column-gap:8px}
+.h .logo-box{flex:1 1 200px;min-width:0}
+.h > div:first-child > div:last-child{flex:0 0 auto;margin-left:auto;max-width:100%}
+#loginBadge{line-height:1.1 !important;margin-bottom:4px !important}
+#shopNameHdr{overflow-wrap:anywhere}
+#posNavSwitch{max-width:100%}
+#posNavSwitch button{min-width:0}
+</style>
 </body>
 </html>
