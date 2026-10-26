@@ -3707,9 +3707,9 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
                     <small style="color: #92400e; font-weight: 800; font-size: 8px;">💵 CASH</small>
                     <div style="font-size: 13px; font-weight: 700; color: #78350f;">${totalCash.toFixed(cdec())}</div>
                 </div>
-                <div style="background: #ecfdf5; border: 1px solid #d1fae5; padding: 8px 4px; border-radius: 10px; text-align: center;">
-                    <small style="color: #047857; font-weight: 800; font-size: 8px;">📱 M-PESA</small>
-                    <div style="font-size: 13px; font-weight: 700; color: #065f46;">${totalMpesa.toFixed(cdec())}</div>
+                <div style="background: #f5f3ff; border: 1px solid #ddd6fe; padding: 8px 4px; border-radius: 10px; text-align: center;">
+                    <small style="color: #6d28d9; font-weight: 800; font-size: 8px;">📱 M-PESA</small>
+                    <div style="font-size: 13px; font-weight: 700; color: #5b21b6;">${totalMpesa.toFixed(cdec())}</div>
                 </div>
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 4px; border-radius: 10px; text-align: center;">
                     <small style="color: #475569; font-weight: 800; font-size: 8px;">⏳ PENDING</small>
@@ -3726,6 +3726,7 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
         container.innerHTML += `<div style="text-align:center; padding:50px 20px; color: #94a3b8;">No records found.</div>`;
     } else {
         filteredBills.forEach((b, index) => {
+            let sIdx = sales.indexOf(b); // unique position of THIS bill (billNo repeat ho sakta hai)
             let pMethod = b.method || ''; 
             let lowerMethod = pMethod.toLowerCase();
             
@@ -3744,7 +3745,7 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
                 themeColor = '#d97706'; // Orange for Cash
             } else if (lowerMethod.includes('pesa')) {
                 methodIcon = '📱';
-                themeColor = '#059669'; // Green for M-Pesa
+                themeColor = '#7c3aed'; // Purple for M-Pesa
             }
 
             container.innerHTML += `
@@ -3763,11 +3764,11 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
                         <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
                             <span style="font-weight:bold; color:#0f172a; font-size:14px;">${parseFloat(b.amount).toFixed(cdec())}</span>
                             
-                            <select onchange="updateMethodDropdown('${b.billNo}', this.value, '${dateKey}', '${displayLabel}')" 
+                            <select onchange="updateMethodDropdown(${sIdx}, '${b.billNo}', this.value, '${dateKey}', '${displayLabel}')" 
                                     style="border:1px solid #e2e8f0; background:#f8fafc; color:#475569; font-size:10px; padding:1px 4px; border-radius:6px; font-weight:bold; outline:none;">
                                 <option value="" ${!lowerMethod ? 'selected' : ''}>⏳ Pending</option>
                                 <option value="Transfer" ${lowerMethod === 'transfer' ? 'selected' : ''}>🏦 Transfer</option>
-                                <option value="ATM" ${lowerMethod === 'atm' ? 'selected' : ''}>💳 ATM Card</option>
+                                <option value="ATM" ${(lowerMethod === 'atm' || lowerMethod === 'card' || lowerMethod === 'atm card') ? 'selected' : ''}>💳 ATM Card</option>
                                 <option value="Cash" ${lowerMethod === 'cash' ? 'selected' : ''}>💵 Cash</option>
                                 <option value="M-Pesa Lipa" ${lowerMethod.includes('pesa') ? 'selected' : ''}>📱 M-Pesa Lipa</option>
                             </select>
@@ -3793,9 +3794,15 @@ function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) 
 }
 
 // Function to handle Dropdown Change
-function updateMethodDropdown(billNo, newMethod, dateKey, label) {
+function updateMethodDropdown(sIdx, billNo, newMethod, dateKey, label) {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
-    let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
+    let idx = -1;
+    // Pehle exact position (unique) se dhundo, phir fallback billNo+date+ticket se
+    if (sales[sIdx] && String(sales[sIdx].billNo) === String(billNo) && sales[sIdx].date === dateKey) {
+        idx = sIdx;
+    } else {
+        idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
+    }
     
     if (idx !== -1) {
         sales[idx].method = newMethod;
@@ -3803,6 +3810,7 @@ function updateMethodDropdown(billNo, newMethod, dateKey, label) {
         setTicketMethodState(sales[idx].ticketNo, dateKey, newMethod);
         // Refresh the list to update totals and icons
         showIndividualBills(dateKey, label);
+        if (typeof showReports === 'function') { try { showReports(); } catch (e) {} }
     }
 }
 
@@ -5845,9 +5853,9 @@ body.role-user #spwBtn{display:none!important}
   function esc2(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   var q = '';
   window.bsSearch = function(v){ q = String(v || '').toLowerCase().trim(); renderBranchSales(); };
-  var MCOL = { Cash:'#16a34a', Transfer:'#2563eb', Card:'#7c3aed', Pending:'#94a3b8' };
+  var MCOL = { cash:'#d97706', transfer:'#16a34a', atm:'#0284c7', card:'#0284c7', 'atm card':'#0284c7', mpesa:'#7c3aed', pending:'#94a3b8' };
   function mOf(x){ return String(x.method || '').trim() || 'Pending'; }
-  function mcol(m){ return MCOL[m] || '#f59e0b'; }
+  function mcol(m){ var k = String(m || '').trim().toLowerCase(); if (k.indexOf('pesa') !== -1) k = 'mpesa'; return MCOL[k] || '#ec4899'; }
   function itemsOf(x){ return Array.isArray(x.items) ? x.items : []; }
   function itemsTxt(x){ return itemsOf(x).map(function(i){ return (parseFloat(i.qty) || 1) + '× ' + (i.name || ''); }).join(', '); }
   function rowsFor(arr, rg){
