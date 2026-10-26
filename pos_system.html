@@ -651,6 +651,7 @@ body { width: 100%; }
 </div>
 
         </div>
+        <div class="tk-legend"><span><i style="background:#10b981"></i>Free</span><span><i style="background:#4f46e5"></i>In use</span><span><i style="background:#dc2626"></i>Pending</span><span><i style="background:#334155"></i>Billed</span></div>
         <div class="ticket-grid-wrap"><div class="ticket-grid" id="ticketGrid"></div></div>
     </div>
 
@@ -963,7 +964,7 @@ body { width: 100%; }
    
    
     <div id="dashPage" class="full-page">
-    <div class="dash-header"><b style="font-size: 22px;">DASHBOARD</b><button onclick="closeDash()" aria-label="Close dashboard" title="Close dashboard" class="dashboard-corner-close">×</button></div>
+    <div class="dash-header"><b style="font-size: 22px;">📊 DASHBOARD</b><button onclick="closeDash()" aria-label="Close dashboard" title="Close dashboard" class="dashboard-corner-close">×</button></div>
     <div class="dash-container">
         <div class="dash-tile bg-reports" onclick="showReports()"><span>📊</span>Reports</div>
         <div class="dash-tile bg-reports" onclick="showTopSelling()"><span>🏆</span>Top Selling</div>
@@ -4954,7 +4955,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 <div id="topSellingPage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; 
   flex-direction:column;">
     <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
-        <b style="font-size:17px; color:#1e293b;">Top Selling</b>
+        <b style="font-size:17px; color:#1e293b;">🏆 Top Selling</b>
         <button onclick="closeTopSelling()" aria-label="Close Top Selling" title="Close" class="layout-corner-close">×</button>
     </div>
 
@@ -5031,7 +5032,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 <!-- ===== NEW: MANAGE ITEMS (Add / Edit / Delete) SCREEN ===== -->
 <div id="itemManagePage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
     <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
-        <b style="font-size:17px; color:#1e293b;">Manage Options</b>
+        <b style="font-size:17px; color:#1e293b;">📋 Manage Options</b>
         <button onclick="closeItemManage()" aria-label="Close Manage Options" title="Close" class="layout-corner-close">×</button>
     </div>
 
@@ -5108,7 +5109,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 <!-- ===== NEW: INVENTORY DASHBOARD (Add Item / Sale Item / Waste Item) ===== -->
 <div id="invDashPage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
     <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
-        <b style="font-size:17px; color:#1e293b;">Inventory</b>
+        <b style="font-size:17px; color:#1e293b;">📦 Inventory</b>
         <button onclick="closeInventoryDash()" aria-label="Close Inventory" title="Close" class="layout-corner-close">×</button>
     </div>
 
@@ -5450,6 +5451,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 <!-- Security Password Manager (Create / Change / Delete) — Full Screen Layout -->
 <div id="pwMgrOv" onclick="closePwManager()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;"></div>
 <div id="pwMgrBox" style="display:none;position:fixed;z-index:100001;inset:0;width:100%;height:100%;background:#fff;box-shadow:none;overflow:hidden;padding:0;">
+  <div class="pg-hdr" style="--a:#f59e0b;--b:#e11d48"><span class="pg-hdr-ic">🔒</span><b>Security Password</b></div>
   <button id="pwMgrCornerClose" onclick="closePwManager()" aria-label="Close Security Password" title="Close Security Password">×</button>
   <div style="max-width:480px;height:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;">
     <div style="flex:1;min-height:0;overflow-y:auto;padding:24px 24px 8px;">
@@ -6148,6 +6150,7 @@ body.role-user #spwBtn{display:none!important}
 </script>
 
 <div id="branchPage" style="display:none;position:fixed;z-index:100001;inset:0;background:#fff;overflow:hidden;">
+  <div class="pg-hdr" style="--a:#0ea5e9;--b:#6366f1"><span class="pg-hdr-ic">🌍</span><b>Branch</b></div>
   <button onclick="closeBranchPage()" aria-label="Close branch page" title="Close branch page" class="branch-corner-close">×</button>
   <div style="max-width:480px;height:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;">
     <div style="flex:1;min-height:0;overflow-y:auto;padding:28px 24px 8px;">
@@ -7297,3 +7300,70 @@ html body .h .header-actions .ticket-badge{background:linear-gradient(135deg,#ec
   build();
 })();
 </script>
+<style id="colorful-headers-v17">
+html body #dashPage#dashPage .dash-header{background:linear-gradient(135deg,#4f46e5,#7c3aed) !important;border-bottom:none !important;box-shadow:0 4px 14px #4f46e555 !important;}
+html body #dashPage#dashPage .dash-header *{color:#fff !important;text-shadow:0 1px 2px rgba(0,0,0,.2);}
+html body #dashPage#dashPage .dash-header span,html body #dashPage#dashPage .dash-header small{color:rgba(255,255,255,.88) !important;}
+html body #dashPage#dashPage .dash-header select,html body #dashPage#dashPage .dash-header select *,html body #dashPage#dashPage .dash-header option{color:#0f172a !important;text-shadow:none !important;}
+html body #dashPage#dashPage .dash-header .layout-corner-close,html body #dashPage#dashPage .dash-header .dashboard-corner-close,html body #dashPage#dashPage .dash-header .branch-corner-close,html body #dashPage#dashPage .dash-header .bd-corner-close{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.35) !important;box-shadow:none !important;color:#fff !important;}
+html body #reportsPage#reportsPage .dash-header{background:linear-gradient(135deg,#2563eb,#0891b2) !important;border-bottom:none !important;box-shadow:0 4px 14px #2563eb55 !important;}
+html body #reportsPage#reportsPage .dash-header *{color:#fff !important;text-shadow:0 1px 2px rgba(0,0,0,.2);}
+html body #reportsPage#reportsPage .dash-header span,html body #reportsPage#reportsPage .dash-header small{color:rgba(255,255,255,.88) !important;}
+html body #reportsPage#reportsPage .dash-header select,html body #reportsPage#reportsPage .dash-header select *,html body #reportsPage#reportsPage .dash-header option{color:#0f172a !important;text-shadow:none !important;}
+html body #reportsPage#reportsPage .dash-header .layout-corner-close,html body #reportsPage#reportsPage .dash-header .dashboard-corner-close,html body #reportsPage#reportsPage .dash-header .branch-corner-close,html body #reportsPage#reportsPage .dash-header .bd-corner-close{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.35) !important;box-shadow:none !important;color:#fff !important;}
+html body #topSellingPage#topSellingPage .dash-header{background:linear-gradient(135deg,#f59e0b,#ea580c) !important;border-bottom:none !important;box-shadow:0 4px 14px #f59e0b55 !important;}
+html body #topSellingPage#topSellingPage .dash-header *{color:#fff !important;text-shadow:0 1px 2px rgba(0,0,0,.2);}
+html body #topSellingPage#topSellingPage .dash-header span,html body #topSellingPage#topSellingPage .dash-header small{color:rgba(255,255,255,.88) !important;}
+html body #topSellingPage#topSellingPage .dash-header select,html body #topSellingPage#topSellingPage .dash-header select *,html body #topSellingPage#topSellingPage .dash-header option{color:#0f172a !important;text-shadow:none !important;}
+html body #topSellingPage#topSellingPage .dash-header .layout-corner-close,html body #topSellingPage#topSellingPage .dash-header .dashboard-corner-close,html body #topSellingPage#topSellingPage .dash-header .branch-corner-close,html body #topSellingPage#topSellingPage .dash-header .bd-corner-close{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.35) !important;box-shadow:none !important;color:#fff !important;}
+html body #itemManagePage#itemManagePage .dash-header{background:linear-gradient(135deg,#a855f7,#db2777) !important;border-bottom:none !important;box-shadow:0 4px 14px #a855f755 !important;}
+html body #itemManagePage#itemManagePage .dash-header *{color:#fff !important;text-shadow:0 1px 2px rgba(0,0,0,.2);}
+html body #itemManagePage#itemManagePage .dash-header span,html body #itemManagePage#itemManagePage .dash-header small{color:rgba(255,255,255,.88) !important;}
+html body #itemManagePage#itemManagePage .dash-header select,html body #itemManagePage#itemManagePage .dash-header select *,html body #itemManagePage#itemManagePage .dash-header option{color:#0f172a !important;text-shadow:none !important;}
+html body #itemManagePage#itemManagePage .dash-header .layout-corner-close,html body #itemManagePage#itemManagePage .dash-header .dashboard-corner-close,html body #itemManagePage#itemManagePage .dash-header .branch-corner-close,html body #itemManagePage#itemManagePage .dash-header .bd-corner-close{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.35) !important;box-shadow:none !important;color:#fff !important;}
+html body #invDashPage#invDashPage .dash-header{background:linear-gradient(135deg,#059669,#0d9488) !important;border-bottom:none !important;box-shadow:0 4px 14px #05966955 !important;}
+html body #invDashPage#invDashPage .dash-header *{color:#fff !important;text-shadow:0 1px 2px rgba(0,0,0,.2);}
+html body #invDashPage#invDashPage .dash-header span,html body #invDashPage#invDashPage .dash-header small{color:rgba(255,255,255,.88) !important;}
+html body #invDashPage#invDashPage .dash-header select,html body #invDashPage#invDashPage .dash-header select *,html body #invDashPage#invDashPage .dash-header option{color:#0f172a !important;text-shadow:none !important;}
+html body #invDashPage#invDashPage .dash-header .layout-corner-close,html body #invDashPage#invDashPage .dash-header .dashboard-corner-close,html body #invDashPage#invDashPage .dash-header .branch-corner-close,html body #invDashPage#invDashPage .dash-header .bd-corner-close{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.35) !important;box-shadow:none !important;color:#fff !important;}
+html body #dateDetailsPage#dateDetailsPage .dash-header{background:linear-gradient(135deg,#0891b2,#2563eb) !important;border-bottom:none !important;box-shadow:0 4px 14px #0891b255 !important;}
+html body #dateDetailsPage#dateDetailsPage .dash-header *{color:#fff !important;text-shadow:0 1px 2px rgba(0,0,0,.2);}
+html body #dateDetailsPage#dateDetailsPage .dash-header span,html body #dateDetailsPage#dateDetailsPage .dash-header small{color:rgba(255,255,255,.88) !important;}
+html body #dateDetailsPage#dateDetailsPage .dash-header select,html body #dateDetailsPage#dateDetailsPage .dash-header select *,html body #dateDetailsPage#dateDetailsPage .dash-header option{color:#0f172a !important;text-shadow:none !important;}
+html body #dateDetailsPage#dateDetailsPage .dash-header .layout-corner-close,html body #dateDetailsPage#dateDetailsPage .dash-header .dashboard-corner-close,html body #dateDetailsPage#dateDetailsPage .dash-header .branch-corner-close,html body #dateDetailsPage#dateDetailsPage .dash-header .bd-corner-close{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.35) !important;box-shadow:none !important;color:#fff !important;}
+html body #billDesignerPage#billDesignerPage .bd-head{background:linear-gradient(135deg,#7c3aed,#4f46e5) !important;border-bottom:none !important;box-shadow:0 4px 14px #7c3aed55 !important;}
+html body #billDesignerPage#billDesignerPage .bd-head *{color:#fff !important;text-shadow:0 1px 2px rgba(0,0,0,.2);}
+html body #billDesignerPage#billDesignerPage .bd-head span,html body #billDesignerPage#billDesignerPage .bd-head small{color:rgba(255,255,255,.88) !important;}
+html body #billDesignerPage#billDesignerPage .bd-head select,html body #billDesignerPage#billDesignerPage .bd-head select *,html body #billDesignerPage#billDesignerPage .bd-head option{color:#0f172a !important;text-shadow:none !important;}
+html body #billDesignerPage#billDesignerPage .bd-head .layout-corner-close,html body #billDesignerPage#billDesignerPage .bd-head .dashboard-corner-close,html body #billDesignerPage#billDesignerPage .bd-head .branch-corner-close,html body #billDesignerPage#billDesignerPage .bd-head .bd-corner-close{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.35) !important;box-shadow:none !important;color:#fff !important;}
+html body #branchSalesPage#branchSalesPage .dash-header{background:linear-gradient(135deg,#0f766e,#0d9488) !important;border-bottom:none !important;box-shadow:0 4px 14px #0f766e55 !important;}
+html body #branchSalesPage#branchSalesPage .dash-header *{color:#fff !important;text-shadow:0 1px 2px rgba(0,0,0,.2);}
+html body #branchSalesPage#branchSalesPage .dash-header span,html body #branchSalesPage#branchSalesPage .dash-header small{color:rgba(255,255,255,.88) !important;}
+html body #branchSalesPage#branchSalesPage .dash-header select,html body #branchSalesPage#branchSalesPage .dash-header select *,html body #branchSalesPage#branchSalesPage .dash-header option{color:#0f172a !important;text-shadow:none !important;}
+html body #branchSalesPage#branchSalesPage .dash-header .layout-corner-close,html body #branchSalesPage#branchSalesPage .dash-header .dashboard-corner-close,html body #branchSalesPage#branchSalesPage .dash-header .branch-corner-close,html body #branchSalesPage#branchSalesPage .dash-header .bd-corner-close{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.35) !important;box-shadow:none !important;color:#fff !important;}
+html body #billDetailsM#billDetailsM > div:first-child{background:linear-gradient(135deg,#e11d48,#f97316) !important;border-bottom:none !important;box-shadow:0 4px 14px #e11d4855 !important;}
+html body #billDetailsM#billDetailsM > div:first-child *{color:#fff !important;text-shadow:0 1px 2px rgba(0,0,0,.2);}
+html body #billDetailsM#billDetailsM > div:first-child span,html body #billDetailsM#billDetailsM > div:first-child small{color:rgba(255,255,255,.88) !important;}
+html body #billDetailsM#billDetailsM > div:first-child select,html body #billDetailsM#billDetailsM > div:first-child select *,html body #billDetailsM#billDetailsM > div:first-child option{color:#0f172a !important;text-shadow:none !important;}
+html body #billDetailsM#billDetailsM > div:first-child .layout-corner-close,html body #billDetailsM#billDetailsM > div:first-child .dashboard-corner-close,html body #billDetailsM#billDetailsM > div:first-child .branch-corner-close,html body #billDetailsM#billDetailsM > div:first-child .bd-corner-close{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.35) !important;box-shadow:none !important;color:#fff !important;}
+html body #billDetailsM#billDetailsM > div:first-child button{background:rgba(255,255,255,.22) !important;border:1px solid rgba(255,255,255,.4) !important;box-shadow:none !important;}
+</style>
+
+<style id="branch-pw-headers-v18">
+.pg-hdr{position:absolute;top:0;left:0;right:0;height:64px;z-index:1;display:flex;align-items:center;gap:10px;padding:0 70px 0 16px;box-sizing:border-box;background:linear-gradient(135deg,var(--a),var(--b));box-shadow:0 4px 14px rgba(15,23,42,.18);color:#fff;}
+.pg-hdr b{font-size:20px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.22);}
+.pg-hdr-ic{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:0 2px 6px rgba(0,0,0,.2);}
+html body #branchPage > .branch-corner-close,html body #pwMgrBox > #pwMgrCornerClose{position:absolute !important;top:11px !important;right:12px !important;left:auto !important;transform:none !important;width:42px !important;height:42px !important;min-width:42px !important;min-height:42px !important;z-index:5 !important;background:rgba(255,255,255,.24) !important;border:1px solid rgba(255,255,255,.45) !important;color:#fff !important;box-shadow:none !important;border-radius:12px !important;display:flex !important;align-items:center !important;justify-content:center !important;font-size:28px !important;line-height:1 !important;padding:0 !important;}
+html body #branchPage > div:not(.pg-hdr),html body #pwMgrBox > div:not(.pg-hdr){padding-top:64px !important;box-sizing:border-box !important;}
+html body #branchPage > .pg-hdr,html body #pwMgrBox > .pg-hdr{padding:0 70px 0 16px !important;height:64px !important;min-height:0 !important;display:flex !important;align-items:center !important;}
+</style>
+
+<style id="ticket-colors-v19">
+html body .ticket-cell{background:linear-gradient(150deg,#34d399,#059669) !important;box-shadow:0 6px 14px rgba(5,150,105,.30) !important;}
+html body .ticket-cell.used{background:linear-gradient(150deg,var(--secondary-light),var(--secondary)) !important;box-shadow:0 6px 14px rgba(79,70,229,.32) !important;}
+html body .ticket-cell.pending{background:linear-gradient(150deg,#f87171,#dc2626) !important;box-shadow:0 6px 14px rgba(220,38,38,.32) !important;}
+html body .ticket-cell.settled{background:linear-gradient(150deg,#334155,#0f172a) !important;box-shadow:0 6px 14px rgba(15,23,42,.4) !important;}
+.tk-legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;padding:8px 12px 0;font-size:12px;font-weight:700;color:#475569;}
+.tk-legend span{display:inline-flex;align-items:center;gap:5px;}
+.tk-legend i{width:12px;height:12px;border-radius:4px;display:inline-block;}
+</style>
