@@ -655,7 +655,7 @@ body { width: 100%; }
     </div>
 
     <div class="h">
-        <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="pos-main-header" style="display:flex;justify-content:space-between;align-items:center">
             <div class="logo-box">
                 <button id="hb" onclick="history.back()" style="background:#f1f5f9; border:none; padding:8px; border-radius:10px; display:none">🏠</button>
                 <div class="logo-circle" id="main-logo-container"><b>KP</b><span>HARDWARE</span></div>
@@ -664,7 +664,7 @@ body { width: 100%; }
                 
 
             </div>
-            <div style="display:flex;gap:8px; align-items:center">
+            <div class="header-actions" style="display:flex;gap:8px; align-items:center">
                 <div class="ticket-badge" id="ticketBadge" onclick="showTicketPage()">🎫 --</div>
                 <button onclick="showDashboard()" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">📊</button>
                 <button onclick="show('settingsM')" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">⚙️</button>
@@ -6147,31 +6147,34 @@ body.role-user #spwBtn{display:none!important}
 </div>
 
 <div id="branchSalesPage" style="display:none;position:fixed;z-index:100002;inset:0;background:#f8fafc;overflow:hidden;">
-  <button onclick="closeBranchSales()" aria-label="Close branches sale" title="Close branches sale" class="branch-corner-close">×</button>
-  <div style="max-width:1200px;height:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;padding:16px;">
-    <!-- Top Filter Bar -->
-    <div class="bs-top-filter-bar" style="flex-shrink:0;padding:16px;background:#fff;border-radius:16px;border:1.5px solid #e2e8f0;margin-bottom:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:12px;">
-        <h3 style="margin:0;font-size:20px;color:#0f172a;font-weight:800;">Branches Sale</h3>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-          <button class="bsf" data-f="today" onclick="setBsFilter('today')">Day</button>
-          <button class="bsf" data-f="yesterday" onclick="setBsFilter('yesterday')">Yesterday</button>
-          <button class="bsf" data-f="thisMonth" onclick="setBsFilter('thisMonth')">This Month</button>
-          <button class="bsf" data-f="lastMonth" onclick="setBsFilter('lastMonth')">Last Month</button>
-          <button class="bsf" data-f="manual" onclick="setBsFilter('manual')">Manual</button>
-        </div>
-        <!-- Close control is positioned at the top-right corner for mobile and desktop. -->
-      </div>
-      <div id="bsManual" style="display:none;gap:8px;margin-top:10px;width:100%;">
-        <input type="date" id="bsFrom" onchange="renderBranchSales()" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:14px;">
-        <input type="date" id="bsTo" onchange="renderBranchSales()" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:14px;">
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:8px;gap:12px;">
-        <div id="bsRange" style="color:#94a3b8;font-size:12px;font-weight:600;"></div>
-        <input id="bsSearch" type="search" placeholder="🔍 Search bill, item, payment method..." oninput="bsSearch(this.value)" style="max-width:360px;width:100%;box-sizing:border-box;padding:9px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:13px;background:#f8fafc;outline:none;">
-      </div>
+  <div class="bs-page-shell" style="width:100%;height:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;">
+    <!-- Standalone page header, matching the Dashboard header -->
+    <div class="dash-header bs-page-header">
+      <b>Branches Sale</b>
+      <button onclick="closeBranchSales()" aria-label="Close branches sale" title="Close branches sale" class="branch-corner-close">×</button>
     </div>
-    <!-- Graphical Boxes & Data -->
+    <div class="bs-page-content" style="max-width:1200px;width:100%;height:100%;min-height:0;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;padding:12px 16px 16px;">
+      <!-- Filters are separate from the page header -->
+      <div class="bs-top-filter-bar" style="flex-shrink:0;padding:14px 16px;background:#fff;border-radius:16px;border:1.5px solid #e2e8f0;margin-bottom:14px;position:relative;">
+        <div class="bs-filter-row" style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;">
+          <div class="bs-filter-buttons" style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;min-width:0;">
+            <button class="bsf" data-f="today" onclick="setBsFilter('today')">Day</button>
+            <button class="bsf" data-f="yesterday" onclick="setBsFilter('yesterday')">Yesterday</button>
+            <button class="bsf" data-f="thisMonth" onclick="setBsFilter('thisMonth')">This Month</button>
+            <button class="bsf" data-f="lastMonth" onclick="setBsFilter('lastMonth')">Last Month</button>
+            <button class="bsf" data-f="manual" onclick="setBsFilter('manual')">Manual</button>
+          </div>
+        </div>
+        <div id="bsManual" style="display:none;gap:8px;margin-top:10px;width:100%;">
+          <input type="date" id="bsFrom" onchange="renderBranchSales()" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:14px;">
+          <input type="date" id="bsTo" onchange="renderBranchSales()" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:14px;">
+        </div>
+        <div class="bs-range-search" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:8px;gap:12px;">
+          <div id="bsRange" style="color:#94a3b8;font-size:12px;font-weight:600;"></div>
+          <input id="bsSearch" type="search" placeholder="🔍 Search bill, item, payment method..." oninput="bsSearch(this.value)" style="max-width:360px;width:100%;box-sizing:border-box;padding:9px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:13px;background:#f8fafc;outline:none;">
+        </div>
+      </div>
+      <!-- Graphical Boxes & Data -->
     <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:4px;">
       <div id="bsSum" style="margin-bottom:16px;"></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:16px;">
@@ -6180,9 +6183,52 @@ body.role-user #spwBtn{display:none!important}
       </div>
     </div>
   </div>
+  </div>
 </div>
-<style>
-.bsf{background:#fff;border:1.5px solid #cbd5e1;color:#475569;padding:8px 12px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;}
+<style id="branches-sale-professional-header-v10">
+/* Branches Sale: contained close control and polished teal filter toolbar */
+#branchSalesPage .bs-top-filter-bar {
+  position:relative !important; box-sizing:border-box !important;
+  padding:16px 66px 16px 16px !important; border-radius:16px !important;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfefd 100%) !important;
+  box-shadow:0 5px 18px rgba(15,23,42,.045) !important;
+}
+#branchSalesPage .bs-top-filter-bar .branch-corner-close {
+  position:absolute !important; top:12px !important; right:12px !important;
+  transform:none !important; z-index:60 !important;
+  width:40px !important; min-width:40px !important; height:40px !important; min-height:40px !important;
+  font-size:27px !important; border-radius:12px !important;
+}
+#branchSalesPage .bs-top-filter-bar > div:first-child { gap:10px !important; }
+#branchSalesPage .bs-top-filter-bar h3 { color:#0f766e !important; letter-spacing:-.2px; }
+#branchSalesPage .bsf {
+  background:#f0fdfa; border:1px solid #b7e4dc; color:#176b64;
+  padding:9px 13px; border-radius:11px; font-size:13px; font-weight:750;
+  line-height:1.2; white-space:nowrap; transition:background .15s,border-color .15s,transform .15s;
+}
+#branchSalesPage .bsf:hover { background:#ccfbf1; border-color:#5eead4; }
+#branchSalesPage .bsf:active { transform:scale(.98); }
+#branchSalesPage .bsf.on { background:linear-gradient(135deg,#0f766e,#0d9488); border-color:#0f766e; color:#fff; box-shadow:0 3px 8px rgba(13,148,136,.18); }
+#branchSalesPage #bsSearch { border-color:#d8e5e3 !important; }
+#branchSalesPage #bsSearch:focus { border-color:#0d9488 !important; box-shadow:0 0 0 3px rgba(13,148,136,.10); }
+@media (min-width:900px) {
+  #branchSalesPage .bs-top-filter-bar > div:first-child { flex-direction:row !important; align-items:center !important; }
+  #branchSalesPage .bs-top-filter-bar > div:first-child > div { justify-content:flex-end; padding-right:0; }
+}
+@media (max-width:899px) {
+  #branchSalesPage > div { padding:10px !important; }
+  #branchSalesPage .bs-top-filter-bar { padding:14px 58px 14px 12px !important; margin-bottom:10px !important; }
+  #branchSalesPage .bs-top-filter-bar .branch-corner-close { top:10px !important; right:10px !important; width:38px !important; min-width:38px !important; height:38px !important; min-height:38px !important; }
+  #branchSalesPage .bs-top-filter-bar > div:first-child { display:flex !important; flex-direction:column !important; align-items:stretch !important; gap:10px !important; }
+  #branchSalesPage .bs-top-filter-bar h3 { font-size:19px !important; line-height:1.25 !important; padding-right:0 !important; }
+  #branchSalesPage .bs-top-filter-bar > div:first-child > div { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:7px !important; width:100% !important; }
+  #branchSalesPage .bsf { padding:10px 6px !important; font-size:12px !important; border-radius:10px !important; white-space:normal !important; }
+  #branchSalesPage #bsManual { flex-wrap:wrap !important; }
+  #branchSalesPage .bs-top-filter-bar > div:nth-of-type(3) { align-items:stretch !important; flex-direction:column !important; gap:8px !important; }
+  #branchSalesPage #bsSearch { max-width:none !important; width:100% !important; }
+  #branchSalesPage #bsRange { font-size:11px !important; }
+}
+.bsf{background:#f0fdfa;border:1px solid #b7e4dc;color:#176b64;padding:8px 12px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;}
 .bsf.on{background:#0f766e;border-color:#0f766e;color:#fff;}
 .bst{width:100%;border-collapse:collapse;font-size:13px;}
 .bst th{background:#f1f5f9;color:#475569;text-align:left;padding:8px;font-weight:800;position:sticky;top:0;}
@@ -6464,5 +6510,517 @@ body.role-user #spwBtn{display:none!important}
   #branchSalesPage > div {
     padding-top: 68px !important;
   }
+}
+</style>
+
+
+<style id="chatgpt8-professional-main-header">
+/* Professional POS home header: brand row + a clean, separate action row on phones. */
+.h { padding: 16px 18px 18px !important; background: linear-gradient(180deg,#ffffff 0%,#f8fbff 100%) !important; }
+.h .pos-main-header { display:flex !important; align-items:center !important; justify-content:space-between !important; gap:14px !important; flex-wrap:wrap !important; }
+.h .logo-box { display:flex !important; align-items:center !important; gap:14px !important; flex:1 1 260px !important; min-width:0 !important; }
+.h .logo-circle { width:72px !important; height:72px !important; border-radius:22px !important; box-shadow:0 8px 22px rgba(13,148,136,.16) !important; }
+.h #loginBadge { font-size:12px !important; font-weight:850 !important; letter-spacing:.65px !important; line-height:1.25 !important; margin:0 0 5px !important; white-space:normal !important; }
+.h #loginBadge span { font-size:12px !important; font-weight:800 !important; margin-top:5px !important; }
+.h #shopNameHdr { font-size:clamp(22px,5vw,30px) !important; line-height:1.12 !important; font-weight:900 !important; letter-spacing:-.5px !important; overflow-wrap:anywhere !important; }
+.h .header-actions { display:flex !important; align-items:center !important; justify-content:flex-end !important; gap:10px !important; flex-wrap:wrap !important; }
+.h .header-actions button { min-width:48px; min-height:48px; border-radius:16px !important; font-size:18px; box-shadow:0 3px 10px rgba(15,23,42,.05); }
+.h .header-actions .ticket-badge { min-height:48px !important; box-sizing:border-box !important; padding:9px 15px !important; font-size:16px !important; }
+.h .header-actions button[onclick="showAdd()"] { min-width:82px !important; min-height:52px !important; border-radius:18px !important; }
+.h .header-actions button[onclick="showAdd()"] span:first-child { font-size:21px !important; }
+.h #s { margin-top:16px !important; min-height:58px !important; padding:15px 18px !important; border-radius:20px !important; font-size:17px !important; border:1.5px solid #e2e8f0 !important; background:#f4f6fb !important; }
+@media (max-width:600px) {
+ .h { padding:15px 16px 18px !important; }
+ .h .pos-main-header { display:flex !important; flex-direction:column !important; align-items:stretch !important; gap:15px !important; }
+ .h .logo-box { flex:0 0 auto !important; width:100% !important; gap:13px !important; }
+ .h .logo-circle { width:70px !important; height:70px !important; border-radius:21px !important; }
+ .h .header-actions { width:100% !important; display:grid !important; grid-template-columns:minmax(0,1fr) 48px 48px 82px !important; gap:8px !important; align-items:center !important; }
+ .h .header-actions .ticket-badge { justify-content:center !important; width:100% !important; padding:8px 7px !important; font-size:15px !important; white-space:nowrap !important; }
+ .h .header-actions button { width:48px !important; min-width:0 !important; height:48px !important; padding:8px !important; }
+ .h .header-actions button[onclick="showAdd()"] { width:82px !important; min-width:0 !important; height:52px !important; }
+ .h #shopNameHdr { font-size:clamp(22px,6vw,28px) !important; }
+ .h #s { margin-top:16px !important; }
+}
+@media (max-width:360px) {
+ .h .logo-circle { width:60px !important; height:60px !important; }
+ .h .logo-box { gap:10px !important; }
+ .h #shopNameHdr { font-size:21px !important; }
+ .h .header-actions { grid-template-columns:minmax(0,1fr) 42px 42px 72px !important; gap:6px !important; }
+ .h .header-actions button { width:42px !important; }
+ .h .header-actions button[onclick="showAdd()"] { width:72px !important; }
+}
+</style>
+
+<style id="chatgpt9-compact-mobile-pos-header">
+/* ChatGPT 9: compact, balanced mobile POS header. Desktop styling remains unchanged. */
+@media (max-width:600px) {
+  .h {
+    padding:10px 12px 12px !important;
+    overflow:visible !important;
+  }
+  .h .pos-main-header {
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:9px !important;
+  }
+  .h .logo-box {
+    width:100% !important;
+    flex:0 0 auto !important;
+    gap:10px !important;
+    align-items:center !important;
+  }
+  .h .logo-circle {
+    width:54px !important;
+    height:54px !important;
+    min-width:54px !important;
+    border-radius:15px !important;
+    box-shadow:0 4px 12px rgba(13,148,136,.13) !important;
+  }
+  .h #loginBadge {
+    font-size:10px !important;
+    line-height:1.15 !important;
+    letter-spacing:.35px !important;
+    margin:0 0 3px !important;
+  }
+  .h #loginBadge span {
+    font-size:10px !important;
+    margin-top:2px !important;
+  }
+  .h #shopNameHdr {
+    font-size:21px !important;
+    line-height:1.08 !important;
+    letter-spacing:-.25px !important;
+    font-weight:850 !important;
+  }
+  .h .header-actions {
+    width:100% !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) 40px 40px 68px !important;
+    gap:7px !important;
+    align-items:center !important;
+  }
+  .h .header-actions .ticket-badge {
+    width:100% !important;
+    min-width:0 !important;
+    min-height:40px !important;
+    height:40px !important;
+    padding:6px 5px !important;
+    font-size:14px !important;
+    border-radius:13px !important;
+    justify-content:center !important;
+    white-space:nowrap !important;
+  }
+  .h .header-actions button {
+    width:40px !important;
+    min-width:40px !important;
+    height:40px !important;
+    min-height:40px !important;
+    padding:5px !important;
+    border-radius:12px !important;
+    font-size:16px !important;
+    box-shadow:0 2px 6px rgba(15,23,42,.045) !important;
+  }
+  .h .header-actions button[onclick="showAdd()"] {
+    width:68px !important;
+    min-width:68px !important;
+    height:42px !important;
+    min-height:42px !important;
+    padding:3px 5px !important;
+    border-radius:13px !important;
+  }
+  .h .header-actions button[onclick="showAdd()"] span:first-child {
+    font-size:17px !important;
+    margin-bottom:0 !important;
+  }
+  .h .header-actions button[onclick="showAdd()"] span:last-child {
+    font-size:9px !important;
+  }
+  .h #s {
+    margin-top:9px !important;
+    min-height:46px !important;
+    height:46px !important;
+    padding:10px 13px !important;
+    border-radius:14px !important;
+    font-size:15px !important;
+    line-height:1.2 !important;
+  }
+}
+@media (max-width:360px) {
+  .h { padding:9px 10px 10px !important; }
+  .h .logo-circle { width:48px !important; height:48px !important; min-width:48px !important; }
+  .h #shopNameHdr { font-size:19px !important; }
+  .h .header-actions { grid-template-columns:minmax(0,1fr) 36px 36px 62px !important; gap:6px !important; }
+  .h .header-actions button { width:36px !important; min-width:36px !important; height:38px !important; min-height:38px !important; }
+  .h .header-actions .ticket-badge { height:38px !important; min-height:38px !important; font-size:13px !important; }
+  .h .header-actions button[onclick="showAdd()"] { width:62px !important; min-width:62px !important; height:40px !important; min-height:40px !important; }
+  .h #s { min-height:43px !important; height:43px !important; font-size:14px !important; }
+}
+</style>
+
+<style id="chatgpt11-compact-home-and-branch-sales">
+/* v11: compact, professional Branches Sale header and single-row mobile filters */
+#branchSalesPage > div {
+  width:100% !important;
+  max-width:1200px !important;
+  margin:0 auto !important;
+  box-sizing:border-box !important;
+}
+#branchSalesPage .bs-top-filter-bar {
+  position:relative !important;
+  box-sizing:border-box !important;
+  padding:14px 62px 13px 14px !important;
+}
+#branchSalesPage .bs-top-filter-bar .branch-corner-close {
+  position:absolute !important;
+  top:12px !important;
+  right:12px !important;
+  width:40px !important;
+  min-width:40px !important;
+  height:40px !important;
+  min-height:40px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:27px !important;
+  line-height:1 !important;
+  z-index:100010 !important;
+}
+#branchSalesPage .bs-top-filter-bar h3 {
+  margin:0 !important;
+  font-size:20px !important;
+  line-height:1.25 !important;
+  color:#0f766e !important;
+  font-weight:850 !important;
+}
+@media (max-width:899px) {
+  #branchSalesPage > div {
+    padding:8px !important;
+  }
+  #branchSalesPage .bs-top-filter-bar {
+    padding:12px 54px 11px 10px !important;
+    margin-bottom:9px !important;
+    border-radius:14px !important;
+  }
+  #branchSalesPage .bs-top-filter-bar .branch-corner-close {
+    top:10px !important;
+    right:10px !important;
+    width:36px !important;
+    min-width:36px !important;
+    height:36px !important;
+    min-height:36px !important;
+    border-radius:10px !important;
+    font-size:25px !important;
+  }
+  /* Keep the title on its own compact line and all date filters horizontal. */
+  #branchSalesPage .bs-top-filter-bar > div:first-child {
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:9px !important;
+    width:100% !important;
+  }
+  #branchSalesPage .bs-top-filter-bar h3 {
+    font-size:18px !important;
+    line-height:1.2 !important;
+    padding:0 !important;
+    white-space:nowrap !important;
+  }
+  #branchSalesPage .bs-top-filter-bar > div:first-child > div {
+    display:grid !important;
+    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+    gap:5px !important;
+    width:calc(100% + 44px) !important;
+    min-width:0 !important;
+    padding:0 !important;
+  }
+  #branchSalesPage .bsf {
+    min-width:0 !important;
+    width:100% !important;
+    padding:9px 2px !important;
+    border-radius:9px !important;
+    font-size:clamp(9px,2.7vw,11px) !important;
+    line-height:1.1 !important;
+    font-weight:800 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:clip !important;
+  }
+  #branchSalesPage #bsManual {
+    display:none;
+    gap:6px !important;
+    margin-top:8px !important;
+    width:100% !important;
+    flex-wrap:nowrap !important;
+  }
+  #branchSalesPage #bsManual input {
+    min-width:0 !important;
+    width:50% !important;
+    padding:8px 6px !important;
+    font-size:12px !important;
+  }
+  /* Date label and search box share a compact horizontal row. */
+  #branchSalesPage .bs-top-filter-bar > div:nth-of-type(3) {
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    gap:8px !important;
+    width:100% !important;
+    margin-top:8px !important;
+  }
+  #branchSalesPage #bsRange {
+    flex:0 0 auto !important;
+    max-width:42% !important;
+    font-size:10px !important;
+    line-height:1.2 !important;
+    white-space:nowrap !important;
+  }
+  #branchSalesPage #bsSearch {
+    flex:1 1 0 !important;
+    min-width:0 !important;
+    max-width:none !important;
+    width:100% !important;
+    padding:9px 8px !important;
+    font-size:11px !important;
+    border-radius:10px !important;
+  }
+  #branchSalesPage #bsSum { margin-bottom:10px !important; }
+  #branchSalesPage [id="bsTz"], #branchSalesPage [id="bsUg"] { min-width:0 !important; }
+  #branchSalesPage > div > div:nth-child(2) > div {
+    grid-template-columns:minmax(0,1fr) !important;
+    gap:10px !important;
+  }
+}
+
+/* Compact home POS header on phones: less height, narrower controls, same functions. */
+@media (max-width:600px) {
+  .h {
+    padding:8px 10px 10px !important;
+  }
+  .h .pos-main-header {
+    gap:7px !important;
+  }
+  .h .logo-box {
+    gap:9px !important;
+  }
+  .h .logo-circle {
+    width:48px !important;
+    min-width:48px !important;
+    height:48px !important;
+    border-radius:14px !important;
+  }
+  .h #loginBadge {
+    font-size:9px !important;
+    line-height:1.1 !important;
+    margin-bottom:2px !important;
+    letter-spacing:.2px !important;
+  }
+  .h #loginBadge span { font-size:9px !important; margin-top:1px !important; }
+  .h #shopNameHdr {
+    font-size:19px !important;
+    line-height:1.05 !important;
+    letter-spacing:-.35px !important;
+  }
+  .h .header-actions {
+    grid-template-columns:minmax(0,1fr) 36px 36px 62px !important;
+    gap:6px !important;
+  }
+  .h .header-actions button {
+    width:36px !important;
+    min-width:36px !important;
+    height:36px !important;
+    min-height:36px !important;
+    padding:4px !important;
+    border-radius:10px !important;
+    font-size:15px !important;
+  }
+  .h .header-actions .ticket-badge {
+    min-height:36px !important;
+    height:36px !important;
+    padding:5px 4px !important;
+    border-radius:11px !important;
+    font-size:13px !important;
+  }
+  .h .header-actions button[onclick="showAdd()"] {
+    width:62px !important;
+    min-width:62px !important;
+    height:38px !important;
+    min-height:38px !important;
+    padding:2px 4px !important;
+    border-radius:11px !important;
+  }
+  .h .header-actions button[onclick="showAdd()"] span:first-child { font-size:16px !important; }
+  .h .header-actions button[onclick="showAdd()"] span:last-child { font-size:8px !important; }
+  .h #s {
+    margin-top:7px !important;
+    min-height:42px !important;
+    height:42px !important;
+    padding:9px 12px !important;
+    border-radius:12px !important;
+    font-size:14px !important;
+  }
+}
+@media (max-width:360px) {
+  .h #shopNameHdr { font-size:18px !important; }
+  .h .header-actions { grid-template-columns:minmax(0,1fr) 34px 34px 58px !important; gap:5px !important; }
+  .h .header-actions button { width:34px !important; min-width:34px !important; height:34px !important; min-height:34px !important; }
+  .h .header-actions .ticket-badge { height:34px !important; min-height:34px !important; font-size:12px !important; }
+  .h .header-actions button[onclick="showAdd()"] { width:58px !important; min-width:58px !important; height:36px !important; min-height:36px !important; }
+  .h #s { height:40px !important; min-height:40px !important; }
+}
+</style>
+
+<style id="chatgpt12-branches-sale-header-and-horizontal-filters">
+/* v12: dashboard-style full-width title bar; filters remain a separate toolbar. */
+#branchSalesPage .bs-page-shell { width:100% !important; max-width:none !important; padding:0 !important; }
+#branchSalesPage .bs-page-header {
+  position:relative !important; flex:0 0 auto !important; width:100% !important;
+  min-height:72px !important; box-sizing:border-box !important; margin:0 !important;
+  padding:12px 68px 12px 24px !important; display:flex !important; align-items:center !important;
+  justify-content:space-between !important; background:#fff !important;
+  border-bottom:1px solid #e2e8f0 !important; box-shadow:0 2px 8px rgba(15,23,42,.035) !important;
+}
+#branchSalesPage .bs-page-header > b { font-size:22px !important; line-height:1.25 !important; font-weight:850 !important; color:#0f172a !important; }
+#branchSalesPage .bs-page-header .branch-corner-close {
+  position:absolute !important; top:50% !important; right:16px !important; left:auto !important; bottom:auto !important;
+  transform:translateY(-50%) !important; width:42px !important; min-width:42px !important;
+  height:42px !important; min-height:42px !important; max-height:42px !important; margin:0 !important;
+  display:flex !important; align-items:center !important; justify-content:center !important;
+  border:1px solid #e2e8f0 !important; border-radius:12px !important; background:#f1f5f9 !important;
+  color:#64748b !important; font:500 29px/1 Arial,sans-serif !important; z-index:10 !important;
+}
+#branchSalesPage .bs-page-content { flex:1 1 auto !important; overflow:hidden !important; }
+#branchSalesPage .bs-top-filter-bar { padding:12px 14px !important; margin:0 0 12px !important; border-radius:14px !important; }
+#branchSalesPage .bs-filter-row { width:100% !important; min-width:0 !important; }
+#branchSalesPage .bs-filter-buttons { display:flex !important; flex-direction:row !important; flex-wrap:nowrap !important; gap:7px !important; width:100% !important; }
+#branchSalesPage .bsf { flex:1 1 0 !important; min-width:0 !important; width:auto !important; padding:10px 8px !important; font-size:12px !important; white-space:nowrap !important; text-align:center !important; }
+#branchSalesPage .bs-range-search { display:flex !important; flex-direction:row !important; align-items:center !important; justify-content:space-between !important; gap:10px !important; }
+#branchSalesPage #bsRange { flex:0 0 auto !important; max-width:42% !important; white-space:nowrap !important; }
+#branchSalesPage #bsSearch { flex:1 1 280px !important; min-width:0 !important; max-width:360px !important; width:100% !important; }
+@media (max-width:899px) {
+  #branchSalesPage .bs-page-header { min-height:64px !important; padding:10px 60px 10px 16px !important; }
+  #branchSalesPage .bs-page-header > b { font-size:20px !important; }
+  #branchSalesPage .bs-page-header .branch-corner-close { right:10px !important; width:40px !important; min-width:40px !important; height:40px !important; min-height:40px !important; font-size:28px !important; }
+  #branchSalesPage .bs-page-content { padding:10px 10px 12px !important; }
+  #branchSalesPage .bs-top-filter-bar { padding:10px !important; margin-bottom:10px !important; }
+  #branchSalesPage .bs-filter-buttons { display:grid !important; grid-template-columns:repeat(5,minmax(0,1fr)) !important; gap:5px !important; }
+  #branchSalesPage .bsf { padding:9px 2px !important; font-size:clamp(9px,2.7vw,11px) !important; line-height:1.15 !important; border-radius:9px !important; overflow:hidden !important; }
+  #branchSalesPage .bs-range-search { display:flex !important; flex-direction:row !important; align-items:center !important; gap:7px !important; }
+  #branchSalesPage #bsRange { flex:0 0 auto !important; max-width:38% !important; font-size:10px !important; }
+  #branchSalesPage #bsSearch { flex:1 1 0 !important; max-width:none !important; width:100% !important; padding:9px 8px !important; font-size:11px !important; }
+  #branchSalesPage #bsManual { display:none; gap:6px !important; flex-wrap:nowrap !important; }
+  #branchSalesPage #bsManual input { min-width:0 !important; width:50% !important; padding:8px 6px !important; font-size:12px !important; }
+  #branchSalesPage .bs-page-content > div:last-child > div:last-child { grid-template-columns:minmax(0,1fr) !important; }
+}
+@media (max-width:360px) {
+  #branchSalesPage .bs-page-content { padding:8px !important; }
+  #branchSalesPage .bs-top-filter-bar { padding:8px !important; }
+  #branchSalesPage .bs-filter-buttons { gap:3px !important; }
+  #branchSalesPage .bsf { padding:8px 1px !important; font-size:9px !important; }
+  #branchSalesPage .bs-range-search { gap:5px !important; }
+  #branchSalesPage #bsRange { font-size:9px !important; }
+  #branchSalesPage #bsSearch { padding:8px 6px !important; font-size:10px !important; }
+}
+@media (min-width:900px) {
+  #branchSalesPage .bs-page-content { padding:16px 24px 20px !important; }
+  #branchSalesPage .bs-filter-buttons { max-width:900px !important; }
+  #branchSalesPage .bsf { flex:0 1 auto !important; min-width:100px !important; }
+}
+</style>
+
+<style id="branches-sale-layout-v13">
+/* v13: Bring Branches Sale header to the very top, matching Dashboard. */
+#branchSalesPage { padding:0 !important; }
+#branchSalesPage > .bs-page-shell {
+  width:100% !important; max-width:none !important; height:100% !important;
+  margin:0 !important; padding:0 !important; gap:0 !important;
+}
+#branchSalesPage .bs-page-header {
+  position:relative !important; top:auto !important; left:auto !important; right:auto !important;
+  flex:0 0 72px !important; width:100% !important; min-height:72px !important;
+  box-sizing:border-box !important; margin:0 !important; padding:12px 66px 12px 28px !important;
+  display:flex !important; align-items:center !important; justify-content:space-between !important;
+  background:#fff !important; border-bottom:1px solid #e2e8f0 !important;
+  box-shadow:0 2px 8px rgba(15,23,42,.025) !important; z-index:20 !important;
+}
+#branchSalesPage .bs-page-header > b {
+  color:#0f172a !important; font-size:22px !important; line-height:1.25 !important;
+  font-weight:850 !important; letter-spacing:-.35px !important;
+}
+#branchSalesPage .bs-page-header .branch-corner-close {
+  position:absolute !important; top:50% !important; right:20px !important;
+  transform:translateY(-50%) !important; width:44px !important; min-width:44px !important;
+  height:44px !important; min-height:44px !important; border-radius:13px !important;
+}
+#branchSalesPage .bs-page-content {
+  flex:1 1 auto !important; height:auto !important; min-height:0 !important;
+  max-width:1200px !important; width:100% !important; margin:0 auto !important;
+  padding:14px 18px 16px !important; gap:0 !important;
+}
+/* Keep date filters on one horizontal row; allow side-scrolling on narrow phones. */
+#branchSalesPage .bs-top-filter-bar {
+  display:block !important; width:100% !important; padding:12px !important;
+  margin:0 0 10px !important; border-radius:15px !important;
+  background:#fff !important; border:1px solid #e2e8f0 !important;
+  box-shadow:0 3px 12px rgba(15,23,42,.035) !important;
+}
+#branchSalesPage .bs-top-filter-bar > .bs-filter-row {
+  display:block !important; width:100% !important; margin:0 !important;
+}
+#branchSalesPage .bs-filter-buttons {
+  display:flex !important; flex-flow:row nowrap !important; align-items:center !important;
+  justify-content:flex-start !important; gap:7px !important; width:100% !important;
+  min-width:0 !important; overflow-x:auto !important; overflow-y:hidden !important;
+  padding:1px 1px 5px !important; scrollbar-width:thin !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+#branchSalesPage .bs-filter-buttons .bsf {
+  flex:0 0 auto !important; min-height:38px !important; padding:9px 13px !important;
+  font-size:13px !important; line-height:1.15 !important; white-space:nowrap !important;
+}
+#branchSalesPage #bsManual {
+  display:none; flex-flow:row wrap !important; align-items:center !important;
+  margin-top:8px !important; padding-top:8px !important; border-top:1px solid #edf2f7 !important;
+}
+#branchSalesPage #bsManual input { min-width:125px !important; box-sizing:border-box !important; }
+/* Date range and search have their own separate card below the filter row. */
+#branchSalesPage .bs-range-search {
+  display:flex !important; flex-flow:row wrap !important; align-items:center !important;
+  justify-content:space-between !important; gap:8px !important; width:100% !important;
+  box-sizing:border-box !important; margin:0 0 12px !important; padding:10px 12px !important;
+  background:#fff !important; border:1px solid #e2e8f0 !important; border-radius:14px !important;
+  box-shadow:0 2px 8px rgba(15,23,42,.025) !important;
+}
+#branchSalesPage #bsRange { flex:1 1 120px !important; min-width:0 !important; color:#64748b !important; font-size:12px !important; }
+#branchSalesPage #bsSearch {
+  flex:1 1 230px !important; width:auto !important; max-width:none !important; min-width:0 !important;
+  min-height:42px !important; padding:10px 13px !important; border-radius:11px !important;
+  box-sizing:border-box !important; font-size:14px !important; background:#f8fafc !important;
+}
+@media (max-width:899px) {
+  #branchSalesPage .bs-page-header {
+    flex-basis:64px !important; min-height:64px !important; height:64px !important;
+    padding:10px 60px 10px 16px !important;
+  }
+  #branchSalesPage .bs-page-header > b { font-size:20px !important; }
+  #branchSalesPage .bs-page-header .branch-corner-close {
+    top:50% !important; right:12px !important; width:40px !important; min-width:40px !important;
+    height:40px !important; min-height:40px !important; font-size:27px !important;
+    transform:translateY(-50%) !important;
+  }
+  #branchSalesPage .bs-page-content { padding:10px 10px 12px !important; }
+  #branchSalesPage .bs-top-filter-bar { padding:9px !important; margin-bottom:8px !important; }
+  #branchSalesPage .bs-filter-buttons { gap:6px !important; }
+  #branchSalesPage .bs-filter-buttons .bsf { min-height:36px !important; padding:8px 11px !important; font-size:12px !important; }
+  #branchSalesPage .bs-range-search {
+    flex-direction:column !important; align-items:stretch !important; gap:6px !important;
+    margin-bottom:10px !important; padding:9px !important;
+  }
+  #branchSalesPage #bsRange { flex:0 0 auto !important; width:100% !important; }
+  #branchSalesPage #bsSearch { flex:0 0 auto !important; width:100% !important; min-height:40px !important; }
+}
+@media (min-width:900px) {
+  #branchSalesPage .bs-page-header { padding-left:32px !important; }
+  #branchSalesPage .bs-page-content { padding:18px 24px 20px !important; }
+  #branchSalesPage .bs-filter-buttons { overflow:visible !important; flex-wrap:wrap !important; }
 }
 </style>
