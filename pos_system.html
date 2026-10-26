@@ -272,7 +272,46 @@
             .dash-container { padding: 32px; }
             .ticket-grid { grid-template-columns: repeat(8, 1fr); }
         }
-    </style>
+    
+/* Desktop enhancement for Branches Sale Page */
+@media (min-width: 900px) {
+  #branchSalesPage > div {
+    max-width: 1200px !important;
+  }
+  .bs-desktop-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .bs-top-filter-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: #fff !important;
+    padding: 14px 20px !important;
+    border-radius: 16px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    box-shadow: 0 4px 12px rgba(15,23,42,0.04) !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+  .bs-horizontal-boxes {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px !important;
+  }
+  .bs-graph-card {
+    background: #fff !important;
+    border-radius: 16px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 12px rgba(15,23,42,0.04) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+}
+
+</style>
 
 <style id="desktop-fullwidth-fix">
 html { background: #f4f6fb; }
@@ -306,38 +345,6 @@ body { width: 100%; }
   } catch (e) {}
 })();
 </script>
-
-<style id="bs-desktop-custom-style">
-@media (min-width: 900px) {
-  #branchSalesPage > div {
-    max-width: 1350px !important;
-    padding: 24px 32px !important;
-  }
-  #branchSalesPage .bs-top-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    background: #ffffff !important;
-    padding: 16px 24px !important;
-    border-radius: 20px !important;
-    box-shadow: 0 4px 20px rgba(15,23,42,0.05) !important;
-    margin-bottom: 20px !important;
-  }
-  #branchSalesPage .bs-graphics-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 20px !important;
-    margin-bottom: 24px !important;
-  }
-  #branchSalesPage .bs-tables-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 24px !important;
-  }
-}
-</style>
-
 </head>
 <body onload="initApp()">
 <script>
@@ -1770,39 +1777,7 @@ ${bdEditing() ? BD_EDIT_CSS : ''}
   html, body { width:210mm; }
   .a4page { margin:0; width:210mm; min-height:297mm; }
 }
-</style>
-<style id="bs-desktop-custom-style">
-@media (min-width: 900px) {
-  #branchSalesPage > div {
-    max-width: 1350px !important;
-    padding: 24px 32px !important;
-  }
-  #branchSalesPage .bs-top-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    background: #ffffff !important;
-    padding: 16px 24px !important;
-    border-radius: 20px !important;
-    box-shadow: 0 4px 20px rgba(15,23,42,0.05) !important;
-    margin-bottom: 20px !important;
-  }
-  #branchSalesPage .bs-graphics-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 20px !important;
-    margin-bottom: 24px !important;
-  }
-  #branchSalesPage .bs-tables-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 24px !important;
-  }
-}
-</style>
-
-</head>
+</style></head>
 <body>
 <div class="a4page" ${bdEditing() ? 'data-bd="page"' : ''}>
 <div class="top">
@@ -1921,39 +1896,7 @@ ${bdEditing() ? BD_EDIT_CSS : ''}
   body { display:flex; justify-content:center; align-items:flex-start; }
   .receipt { width:80mm; }
 }
-</style>
-<style id="bs-desktop-custom-style">
-@media (min-width: 900px) {
-  #branchSalesPage > div {
-    max-width: 1350px !important;
-    padding: 24px 32px !important;
-  }
-  #branchSalesPage .bs-top-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    background: #ffffff !important;
-    padding: 16px 24px !important;
-    border-radius: 20px !important;
-    box-shadow: 0 4px 20px rgba(15,23,42,0.05) !important;
-    margin-bottom: 20px !important;
-  }
-  #branchSalesPage .bs-graphics-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 20px !important;
-    margin-bottom: 24px !important;
-  }
-  #branchSalesPage .bs-tables-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 24px !important;
-  }
-}
-</style>
-
-</head>
+</style></head>
 <body>
 <div class="receipt" ${bdEditing() ? 'data-bd="paper"' : ''}>
 ${logoHtml}
@@ -2207,71 +2150,7 @@ ${bdEditScript()}
         let sy = 0; try { sy = fr.contentWindow.scrollY || 0; } catch (e) {}
         // Long-press par "search / translate" panel na aaye: text selection + context menu + translate band
         const _noSel = '<meta name="google" content="notranslate"><style>html,body,*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent}</style>';
-        html = String(html).replace('
-<style id="bs-desktop-custom-style">
-@media (min-width: 900px) {
-  #branchSalesPage > div {
-    max-width: 1350px !important;
-    padding: 24px 32px !important;
-  }
-  #branchSalesPage .bs-top-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    background: #ffffff !important;
-    padding: 16px 24px !important;
-    border-radius: 20px !important;
-    box-shadow: 0 4px 20px rgba(15,23,42,0.05) !important;
-    margin-bottom: 20px !important;
-  }
-  #branchSalesPage .bs-graphics-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 20px !important;
-    margin-bottom: 24px !important;
-  }
-  #branchSalesPage .bs-tables-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 24px !important;
-  }
-}
-</style>
-
-</head>', _noSel + '
-<style id="bs-desktop-custom-style">
-@media (min-width: 900px) {
-  #branchSalesPage > div {
-    max-width: 1350px !important;
-    padding: 24px 32px !important;
-  }
-  #branchSalesPage .bs-top-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    background: #ffffff !important;
-    padding: 16px 24px !important;
-    border-radius: 20px !important;
-    box-shadow: 0 4px 20px rgba(15,23,42,0.05) !important;
-    margin-bottom: 20px !important;
-  }
-  #branchSalesPage .bs-graphics-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 20px !important;
-    margin-bottom: 24px !important;
-  }
-  #branchSalesPage .bs-tables-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 24px !important;
-  }
-}
-</style>
-
-</head>').replace('<html', '<html translate="no"');
+        html = String(html).replace('</head>', _noSel + '</head>').replace('<html', '<html translate="no"');
         fr.onload = function () {
             try {
                 fr.contentWindow.scrollTo(0, sy);
@@ -2403,71 +2282,7 @@ function printThermal(html, billNo, dateStr) {
     frame.onload = function () {
         try { ['contextmenu', 'selectstart', 'dragstart'].forEach(ev => frame.contentDocument.addEventListener(ev, e => e.preventDefault())); } catch (e) {}
     };
-    frame.srcdoc = String(html).replace('
-<style id="bs-desktop-custom-style">
-@media (min-width: 900px) {
-  #branchSalesPage > div {
-    max-width: 1350px !important;
-    padding: 24px 32px !important;
-  }
-  #branchSalesPage .bs-top-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    background: #ffffff !important;
-    padding: 16px 24px !important;
-    border-radius: 20px !important;
-    box-shadow: 0 4px 20px rgba(15,23,42,0.05) !important;
-    margin-bottom: 20px !important;
-  }
-  #branchSalesPage .bs-graphics-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 20px !important;
-    margin-bottom: 24px !important;
-  }
-  #branchSalesPage .bs-tables-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 24px !important;
-  }
-}
-</style>
-
-</head>', _noSel + '
-<style id="bs-desktop-custom-style">
-@media (min-width: 900px) {
-  #branchSalesPage > div {
-    max-width: 1350px !important;
-    padding: 24px 32px !important;
-  }
-  #branchSalesPage .bs-top-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    background: #ffffff !important;
-    padding: 16px 24px !important;
-    border-radius: 20px !important;
-    box-shadow: 0 4px 20px rgba(15,23,42,0.05) !important;
-    margin-bottom: 20px !important;
-  }
-  #branchSalesPage .bs-graphics-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 20px !important;
-    margin-bottom: 24px !important;
-  }
-  #branchSalesPage .bs-tables-horizontal {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 24px !important;
-  }
-}
-</style>
-
-</head>').replace('<html', '<html translate="no"');
+    frame.srcdoc = String(html).replace('</head>', _noSel + '</head>').replace('<html', '<html translate="no"');
     document.getElementById('receiptOv').style.display = 'block';
     document.getElementById('receiptPrintM').style.display = 'flex';
     window.currentReceiptBillNo = billNo || '';
@@ -6024,30 +5839,36 @@ body.role-user #spwBtn{display:none!important}
 </div>
 
 <div id="branchSalesPage" style="display:none;position:fixed;z-index:100002;inset:0;background:#f8fafc;overflow:hidden;">
-  <div style="max-width:560px;height:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;">
-    <div style="flex-shrink:0;padding:16px 16px 10px;background:#fff;border-bottom:1px solid #e2e8f0;">
-      <h3 style="margin:0 0 10px;font-size:20px;color:#0f172a;font-weight:800;text-align:center;">Branches Sale</h3>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
-        <button class="bsf" data-f="today" onclick="setBsFilter('today')">Day</button>
-        <button class="bsf" data-f="yesterday" onclick="setBsFilter('yesterday')">Yesterday</button>
-        <button class="bsf" data-f="thisMonth" onclick="setBsFilter('thisMonth')">This Month</button>
-        <button class="bsf" data-f="lastMonth" onclick="setBsFilter('lastMonth')">Last Month</button>
-        <button class="bsf" data-f="manual" onclick="setBsFilter('manual')">Manual</button>
+  <div style="max-width:1200px;height:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;padding:16px;">
+    <!-- Top Filter Bar -->
+    <div class="bs-top-filter-bar" style="flex-shrink:0;padding:16px;background:#fff;border-radius:16px;border:1.5px solid #e2e8f0;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:12px;">
+        <h3 style="margin:0;font-size:20px;color:#0f172a;font-weight:800;">Branches Sale</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <button class="bsf" data-f="today" onclick="setBsFilter('today')">Day</button>
+          <button class="bsf" data-f="yesterday" onclick="setBsFilter('yesterday')">Yesterday</button>
+          <button class="bsf" data-f="thisMonth" onclick="setBsFilter('thisMonth')">This Month</button>
+          <button class="bsf" data-f="lastMonth" onclick="setBsFilter('lastMonth')">Last Month</button>
+          <button class="bsf" data-f="manual" onclick="setBsFilter('manual')">Manual</button>
+        </div>
+        <button onclick="closeBranchSales()" style="background:#f1f5f9;color:#64748b;border:none;padding:10px 18px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Close</button>
       </div>
-      <div id="bsManual" style="display:none;gap:8px;margin-top:10px;">
+      <div id="bsManual" style="display:none;gap:8px;margin-top:10px;width:100%;">
         <input type="date" id="bsFrom" onchange="renderBranchSales()" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:14px;">
         <input type="date" id="bsTo" onchange="renderBranchSales()" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:14px;">
       </div>
-      <div id="bsRange" style="text-align:center;color:#94a3b8;font-size:12px;margin-top:8px;"></div>
-      <input id="bsSearch" type="search" placeholder="🔍 Search bill, item, payment method..." oninput="bsSearch(this.value)" style="width:100%;box-sizing:border-box;margin-top:8px;padding:11px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:14px;background:#f8fafc;outline:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:8px;gap:12px;">
+        <div id="bsRange" style="color:#94a3b8;font-size:12px;font-weight:600;"></div>
+        <input id="bsSearch" type="search" placeholder="🔍 Search bill, item, payment method..." oninput="bsSearch(this.value)" style="max-width:360px;width:100%;box-sizing:border-box;padding:9px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:13px;background:#f8fafc;outline:none;">
+      </div>
     </div>
-    <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px 14px 8px;">
+    <!-- Graphical Boxes & Data -->
+    <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:4px;">
       <div id="bsSum" style="margin-bottom:16px;"></div>
-      <div id="bsTz" style="margin-bottom:16px;"></div>
-      <div id="bsUg"></div>
-    </div>
-    <div style="flex-shrink:0;padding:10px 16px 16px;background:#f8fafc;">
-      <button onclick="closeBranchSales()" style="width:100%;background:#fff;color:#64748b;border:2px solid #e2e8f0;padding:14px;border-radius:16px;font-size:16px;font-weight:700;cursor:pointer;">↩️ Close</button>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:16px;">
+        <div id="bsTz"></div>
+        <div id="bsUg"></div>
+      </div>
     </div>
   </div>
 </div>
