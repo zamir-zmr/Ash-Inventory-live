@@ -652,9 +652,9 @@ function setAppMode(m){
             showCancelButton:true, width:'320px', position:'top', padding:'1.2em',
             customClass:{popup:'cyan-border-popup swal-top-popup'},
             preConfirm:function(){
-                var u=document.getElementById('mgrU').value.trim().toLowerCase(), p=document.getElementById('mgrP').value.trim(), acc=[];
+                var u=document.getElementById('mgrU').value, p=document.getElementById('mgrP').value, acc=[];
                 try{ acc=JSON.parse(localStorage.getItem('asb_acc2')||'[]'); }catch(e){}
-                var ok=acc.some(function(x){ return x.r==='manager' && String(x.u).trim().toLowerCase()===u && String(x.p).trim()===p; });
+                var ok=acc.some(function(x){ var z=function(s){return String(s==null?'':s).replace(/[\u200B-\u200D\uFEFF\u00A0]/g,'').trim();}; return x.r==='manager' && z(x.u).toLowerCase()===z(u).toLowerCase() && z(x.p)===z(p); });
                 if(!ok){ Swal.showValidationMessage('Invalid Manager Credentials! ❌'); return false; }
                 return true;
             }
@@ -1224,6 +1224,14 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    window.BRANCH = (function(){ try{ return localStorage.getItem('asb_branch')==='ug'?'ug':'tz'; }catch(e){ return 'tz'; } })();
+    const _origRef = db.ref.bind(db); window._rootRef = _origRef;
+    db.ref = function(p){
+        if(p===undefined||p===null) return _origRef();
+        var s=String(p);
+        if(window.BRANCH==='ug' && !/^(accounts|branchData|\.info)(\/|$)/.test(s)) s='branchData/ug/'+s;
+        return _origRef(s);
+    };
 
     let isAdmin = false, isManageMode = false, currentUser = "Guest";
     let cropperInstance = null, currentFileMode = "new", finalImageData = "";
@@ -7234,6 +7242,17 @@ async function runSalesExport() {
         return r.key;
     }
     function reply(o){ try{ frame.contentWindow.postMessage(o,'*'); }catch(e){} }
+    var _bsRefs=null;
+    function bsStart(){
+        if(_bsRefs) return;
+        var vals={tz:null,ug:null};
+        function push(){ reply({type:'BRANCH_SALES',tz:vals.tz,ug:vals.ug}); }
+        var a=_origRef('pos_sync/asb_sales_logs'), b=_origRef('branchData/ug/pos_sync/asb_sales_logs');
+        var ca=a.on('value',function(sn){ vals.tz=sn.val(); push(); });
+        var cb=b.on('value',function(sn){ vals.ug=sn.val(); push(); });
+        _bsRefs=[[a,ca],[b,cb]];
+    }
+    function bsStop(){ if(!_bsRefs) return; _bsRefs.forEach(function(x){ try{ x[0].off('value',x[1]); }catch(e){} }); _bsRefs=null; }
     function posAddItem(d){
         if(!d||!d.name) return;
         var catId=ensureCat(d.cat||'Inventory');
@@ -7299,12 +7318,14 @@ async function runSalesExport() {
         return o;
     }
     function accToArr(tree){
-        var out=[];
-        [['managers','manager'],['users','user']].forEach(function(g){
-            var n=(tree&&tree[g[0]])||{};
+        var out=[]; tree=tree||{};
+        function grp(names){ for(var i=0;i<names.length;i++){ if(tree[names[i]]) return tree[names[i]]; } return {}; }
+        [[['managers','Managers','manager','Manager','MANAGER','MANAGERS'],'manager'],[['users','Users','user','User','USER','USERS'],'user']].forEach(function(g){
+            var n=grp(g[0]);
             Object.keys(n).forEach(function(k){
-                var v=n[k]||{}; var u=v.Username!=null?v.Username:(v.username!=null?v.username:k);
-                var p=v.Password!=null?v.Password:v.password;
+                var v=n[k]; if(!v||typeof v!=='object') return;
+                var lo={}; Object.keys(v).forEach(function(q){ lo[q.toLowerCase()]=v[q]; });
+                var u=lo.username!=null?lo.username:k, p=lo.password;
                 if(p===undefined||p===null) return;
                 out.push({u:String(u),p:String(p),r:g[1]});
             });
@@ -7333,6 +7354,9 @@ async function runSalesExport() {
         var d=e.data; if(!d||!d.type) return;
         if(d.type==='POS_READY'){ send(); sendLogo(); sendSync(); }
         if(d.type==='POS_LOGO') posSetLogo(d.logo);
+        if(d.type==='BRANCH_RELOAD'){ location.reload(); return; }
+        if(d.type==='BRANCH_SALES_SUB'){ bsStart(); return; }
+        if(d.type==='BRANCH_SALES_UNSUB'){ bsStop(); return; }
         if(d.type==='POS_SYNC_SET' && d.key==='asb_acc2'){
             if(d.value===null||d.value===undefined) db.ref('accounts').remove();
             else { try{ db.ref('accounts').set(accToTree(JSON.parse(d.value))); }catch(x){} }
