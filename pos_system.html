@@ -5863,7 +5863,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
 <script>
 /* Emoji -> Font Awesome icons (same library as Inventory: FA 6.0.0) */
 (function () {
-    var MAP = {"🗑": "trash-alt", "✅": "check-circle", "⚠": "exclamation-triangle", "↩": "undo", "➕": "plus", "📅": "calendar-alt", "✏": "pen", "⏳": "hourglass-half", "✕": "times", "🏦": "university", "💳": "credit-card", "💵": "money-bill-wave", "❌": "times-circle", "🎫": "ticket-alt", "📦": "box", "🔑": "key", "🔍": "search", "📊": "chart-bar", "📞": "phone", "📥": "file-import", "📤": "file-export", "🔒": "lock", "📜": "scroll", "🧾": "receipt", "🖼": "image", "📋": "clipboard-list", "⛔": "ban", "🔓": "unlock", "🏠": "home", "⚙": "cog", "📁": "folder-open", "📷": "camera", "🏪": "store", "🛠": "tools", "⬇": "download", "🖨": "print", "🏆": "trophy", "🖥": "desktop", "📈": "chart-line", "🔄": "sync-alt", "🕒": "clock", "➡": "arrow-right", "⬅": "arrow-left", "👁": "eye", "🛒": "shopping-cart", "🔐": "lock", "ℹ": "info-circle"};
+    var MAP = {"🗑": "trash-alt", "✅": "check-circle", "⚠": "exclamation-triangle", "↩": "undo", "➕": "plus", "📅": "calendar-alt", "✏": "pen", "⏳": "hourglass-half", "✕": "times", "🏦": "university", "💳": "credit-card", "💵": "money-bill-wave", "❌": "times-circle", "🎫": "ticket-alt", "📦": "box", "🔑": "key", "🔍": "search", "📊": "chart-bar", "📞": "phone", "📥": "file-import", "📤": "file-export", "🔒": "lock", "📜": "scroll", "🧾": "receipt", "🖼": "image", "📋": "clipboard-list", "⛔": "ban", "🔓": "unlock", "🏠": "home", "⚙": "cog", "📁": "folder-open", "📷": "camera", "🏪": "store", "🛠": "tools", "⬇": "download", "🖨": "print", "🏆": "trophy", "🖥": "desktop", "📈": "chart-line", "🔄": "sync-alt", "🕒": "clock", "➡": "arrow-right", "⬅": "arrow-left", "👁": "eye", "🛒": "shopping-cart", "🔐": "lock", "ℹ": "info-circle", "🌍": "globe-africa", "🎨": "palette", "💱": "exchange-alt", "🚪": "door-open", "💾": "save", "🗂": "layer-group"};
     var keys = Object.keys(MAP).sort(function (a, b) { return b.length - a.length; });
     var RE = new RegExp('(' + keys.join('|') + ')\\uFE0F?', 'g');
     var SKIP = {SCRIPT:1, STYLE:1, TEXTAREA:1, OPTION:1, TITLE:1, INPUT:1, SELECT:1, NOSCRIPT:1};
@@ -7366,4 +7366,14 @@ html body .ticket-cell.settled{background:linear-gradient(150deg,#334155,#0f172a
 .tk-legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;padding:8px 12px 0;font-size:12px;font-weight:700;color:#475569;}
 .tk-legend span{display:inline-flex;align-items:center;gap:5px;}
 .tk-legend i{width:12px;height:12px;border-radius:4px;display:inline-block;}
+</style>
+
+<style id="pc-fullscreen-v20">
+@media (min-width:900px){
+  html body #settingsM .st-wrap{max-width:none !important;width:100% !important;}
+  html body #settingsM .st-header{padding-left:max(24px,calc((100% - 1200px)/2)) !important;padding-right:max(24px,calc((100% - 1200px)/2)) !important;width:100% !important;box-sizing:border-box !important;}
+  html body #settingsM .st-body{padding-left:max(24px,calc((100% - 1200px)/2)) !important;padding-right:max(24px,calc((100% - 1200px)/2)) !important;}
+  html body #settingsM .st-footer{padding-left:max(24px,calc((100% - 1200px)/2)) !important;padding-right:max(24px,calc((100% - 1200px)/2)) !important;}
+  html body #settingsM .st-grid{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}
+}
 </style>
