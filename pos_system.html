@@ -802,7 +802,7 @@ body { width: 100%; }
         <!-- Gallery Photo -->
         <div style="margin-bottom:14px; text-align:center;">
             <div style="position:relative; width:90px; height:90px; margin:0 auto 10px;">
-                <div id="catPhotoPreview" style="width:90px; height:90px; border-radius:14px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;" onclick="document.getElementById('catPhotoInput').click()">
+                <div id="catPhotoPreview" style="width:90px; height:90px; border-radius:14px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;" onclick="ZCam.pick(document.getElementById('catPhotoInput'))">
                     <span id="catPhotoPlaceholder" style="font-size:32px;">📷</span>
                     <img id="catPhotoImg" style="display:none; width:100%; height:100%; object-fit:cover;">
                 </div>
@@ -810,7 +810,7 @@ body { width: 100%; }
                 <button id="catRemoveBtn" onclick="clearCatPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;">✕</button>
             </div>
             <input type="file" id="catPhotoInput" accept="image/*" style="display:none" onchange="previewCatPhoto(this)">
-            <button onclick="document.getElementById('catPhotoInput').click()" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">CHOOSE FROM GALLERY</button>
+            <button onclick="ZCam.pick(document.getElementById('catPhotoInput'))" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">📷 TAKE PHOTO</button>
         </div>
 
         <div class="flex-btn">
@@ -824,7 +824,7 @@ body { width: 100%; }
         <!-- Product Photo with corner X -->
         <div style="margin-bottom:12px; text-align:center;">
             <div style="position:relative; width:90px; height:90px; margin:0 auto 10px;">
-                <div id="itemPhotoPreview" style="width:90px; height:90px; border-radius:16px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;" onclick="document.getElementById('itemPhotoInput').click()">
+                <div id="itemPhotoPreview" style="width:90px; height:90px; border-radius:16px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;" onclick="ZCam.pick(document.getElementById('itemPhotoInput'))">
                     <span id="itemPhotoPlaceholder" style="font-size:32px;">🖼️</span>
                     <img id="itemPhotoImg" style="display:none; width:100%; height:100%; object-fit:cover;">
                 </div>
@@ -832,7 +832,7 @@ body { width: 100%; }
                 <button id="itemRemoveBtn" onclick="clearItemPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;">✕</button>
             </div>
             <input type="file" id="itemPhotoInput" accept="image/*" style="display:none" onchange="previewItemPhoto(this)">
-            <button onclick="document.getElementById('itemPhotoInput').click()" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">CHOOSE FROM GALLERY</button>
+            <button onclick="ZCam.pick(document.getElementById('itemPhotoInput'))" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">📷 TAKE PHOTO</button>
         </div>
 
         <input type="text" id="nn" placeholder="Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;">
@@ -6570,6 +6570,175 @@ html body #settingsM{
   #settingsM .st-body{padding:18px 20px 8px;}
 }
 </style>
+<!-- ZCam: in-page camera -->
+<style id="zcam-css">
+#zcamOv{position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483000;background:#000;display:none;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none}
+#zcamOv.on{display:block}
+#zcamVid{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;background:#000}
+#zcamVid.mir{transform:scaleX(-1)}
+#zcamOv .zc-shade{position:absolute;left:0;right:0;bottom:0;height:190px;background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.55));pointer-events:none}
+#zcamOv .zc-pill{position:absolute;border:0;outline:0;color:#fff;background:rgba(40,40,40,.68);padding:13px 22px;border-radius:32px;font-size:18px;font-weight:700;line-height:1;display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit}
+#zcamOv .zc-pill:active{opacity:.7}
+#zcClose{top:calc(env(safe-area-inset-top,0px) + 14px);left:16px}
+#zcFlip{top:calc(env(safe-area-inset-top,0px) + 14px);right:16px}
+#zcGal{bottom:calc(env(safe-area-inset-bottom,0px) + 36px);right:16px;background:rgba(255,255,255,.28);font-size:17px;padding:12px 18px}
+#zcShut{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);left:50%;margin-left:-48px;width:96px;height:96px;border-radius:50%;background:#fff;border:0;outline:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#zcShut:active{transform:scale(.92)}
+</style>
+<div id="zcamOv" role="dialog" aria-label="Camera">
+  <video id="zcamVid" autoplay playsinline muted></video>
+  <div class="zc-shade"></div>
+  <button type="button" class="zc-pill" id="zcClose">✕ Close</button>
+  <button type="button" class="zc-pill" id="zcFlip">🔄 Front / Rear</button>
+  <button type="button" id="zcShut" aria-label="Capture"></button>
+  <button type="button" class="zc-pill" id="zcGal">🖼️ Gallery</button>
+</div>
+<script id="zcam-js">
+(function () {
+  var MAX = 1600, QUALITY = 0.85;
+  var ov, vid, stream = null, cb = null, facing = 'environment', live = false, opened = false, token = 0, built = false;
+  var isApp = !!window.AppInventor || /;\s*wv\)/.test(navigator.userAgent || '');
+
+  function build() {
+    if (built) return;
+    ov = document.getElementById('zcamOv');
+    vid = document.getElementById('zcamVid');
+    document.getElementById('zcClose').onclick = function () { close(); };
+    document.getElementById('zcFlip').onclick = function () { facing = (facing === 'user') ? 'environment' : 'user'; start(); };
+    document.getElementById('zcShut').onclick = shutter;
+    document.getElementById('zcGal').onclick = function () { gallery(finish); };
+    built = true;
+  }
+
+  function stop() {
+    token++;
+    if (stream) { try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} }
+    stream = null; live = false;
+    if (vid) { try { vid.pause(); } catch (e) {} vid.srcObject = null; }
+  }
+
+  function start() {
+    stop();
+    if (!opened) return;
+    vid.classList.toggle('mir', facing === 'user');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+    var my = ++token;
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    }).then(function (s) {
+      if (my !== token || !opened) { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+      stream = s; vid.srcObject = s;
+      var p = vid.play(); if (p && p.catch) p.catch(function () {});
+      live = true;
+    }).catch(function () { live = false; });
+  }
+
+  function close() {
+    opened = false; cb = null;
+    stop();
+    if (ov) ov.classList.remove('on');
+  }
+
+  function finish(url) {
+    var f = cb; close();
+    if (f && url) f(url);
+  }
+
+  function drawScaled(src, w, h, mirror) {
+    var sc = Math.min(1, MAX / Math.max(w, h));
+    var cw = Math.round(w * sc), ch = Math.round(h * sc);
+    var c = document.createElement('canvas'); c.width = cw; c.height = ch;
+    var x = c.getContext('2d');
+    if (mirror) { x.translate(cw, 0); x.scale(-1, 1); }
+    x.drawImage(src, 0, 0, cw, ch);
+    return c.toDataURL('image/jpeg', QUALITY);
+  }
+
+  function processFile(file, mirror, done) {
+    if (!file) return;
+    var u = URL.createObjectURL(file), im = new Image();
+    im.onload = function () {
+      var out = null;
+      try { out = drawScaled(im, im.naturalWidth || im.width, im.naturalHeight || im.height, mirror); } catch (e) {}
+      URL.revokeObjectURL(u);
+      if (out) done(out);
+    };
+    im.onerror = function () { URL.revokeObjectURL(u); };
+    im.src = u;
+  }
+
+  function fileInput(capture, mirror, done) {
+    var i = document.createElement('input');
+    i.type = 'file'; i.accept = 'image/*';
+    if (capture) i.setAttribute('capture', capture);
+    i.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;width:1px;height:1px';
+    i.onchange = function () {
+      var f = i.files && i.files[0];
+      processFile(f, mirror, done);
+      setTimeout(function () { if (i.parentNode) i.parentNode.removeChild(i); }, 1000);
+    };
+    document.body.appendChild(i);
+    i.click();
+  }
+
+  function gallery(done) { fileInput(null, false, done); }
+
+  function shutter() {
+    if (live && vid && vid.videoWidth) {
+      var out = null;
+      try { out = drawScaled(vid, vid.videoWidth, vid.videoHeight, facing === 'user'); } catch (e) {}
+      if (out) { finish(out); return; }
+    }
+    fileInput(facing === 'user' ? 'user' : 'environment', facing === 'user', finish);
+  }
+
+  function open(face, callback) {
+    cb = (typeof callback === 'function') ? callback : null;
+    if (isApp) {
+      var f = cb; cb = null;
+      gallery(function (url) { if (f) f(url); });
+      return;
+    }
+    build();
+    facing = (face === 'user') ? 'user' : 'environment';
+    opened = true;
+    ov.classList.add('on');
+    start();
+  }
+
+  function dataUrlToFile(url) {
+    var p = url.split(','), mime = (p[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+    var bin = atob(p[1]), n = bin.length, u8 = new Uint8Array(n);
+    while (n--) u8[n] = bin.charCodeAt(n);
+    return new File([u8], 'photo_' + Date.now() + '.jpg', { type: mime });
+  }
+
+  // Existing hidden <input type=file> ke handler me photo bhejta hai
+  function pick(input) {
+    open('environment', function (url) {
+      if (!input) return;
+      try {
+        var file = dataUrlToFile(url);
+        try {
+          var dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+        } catch (e) {
+          Object.defineProperty(input, 'files', { configurable: true, value: [file] });
+        }
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      } catch (e) {}
+    });
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) stop(); else if (opened) start();
+  });
+  window.addEventListener('pagehide', stop);
+
+  window.ZCam = { open: open, pick: pick, close: close };
+})();
+</script>
+
 </body>
 </html>
 
