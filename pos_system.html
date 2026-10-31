@@ -4199,6 +4199,21 @@ function deleteBillOld_unused(billNo, dateKey, displayLabel) {
 
 // ===== EDIT PANEL - OPEN =====
 let editCartItems = []; // items jo edit ho rahe hain
+let editOrigItems = []; // bill ki original items (stock check ke liye)
+function editAvailFor(item){
+    const m = (menu || []).find(x => x.id === item.id || String(x.name).toLowerCase() === String(item.name).toLowerCase());
+    if (!m || m.stock === undefined || m.stock === null || m.stock === '') return Infinity;
+    const orig = (editOrigItems || []).filter(i => String(i.name).toLowerCase() === String(item.name).toLowerCase()).reduce((a, b) => a + (parseFloat(b.qty) || 0), 0);
+    return (parseFloat(m.stock) || 0) + orig;
+}
+function editStockAllows(idx, wanted){
+    if (!isZeroStockBlocked()) return true;
+    const it = editCartItems[idx]; if (!it) return true;
+    const same = editCartItems.reduce((a, b, i) => a + ((i !== idx && String(b.name).toLowerCase() === String(it.name).toLowerCase()) ? (parseFloat(b.qty) || 0) : 0), 0);
+    const avail = editAvailFor(it) - same;
+    if (wanted > avail + 1e-9) { zeroStockAlert(it, Math.max(0, avail)); return false; }
+    return true;
+}
 
 function openEditBillModal(billNo, dateKey, displayLabel) {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
@@ -4213,6 +4228,7 @@ function openEditBillModal(billNo, dateKey, displayLabel) {
 
     // Items copy karein (edit ke liye)
     editCartItems = JSON.parse(JSON.stringify(bill.items || []));
+    editOrigItems = JSON.parse(JSON.stringify(bill.items || []));
 
     // Discount & Delivery
     (function(){ const bp = billPartsFromRecord(bill); document.getElementById('editDiscount').value = bp.disc || 0; document.getElementById('editVatPerc').value = bp.vatPerc || 0; })();
@@ -4277,6 +4293,7 @@ function editQtyChange(idx, delta) {
         }, {title:'Remove Item', icon:'🗑️', okText:'Remove', danger:true});
         return;
     } else {
+        if (delta > 0 && !editStockAllows(idx, newQty)) { document.getElementById(`editQty-${idx}`).value = editCartItems[idx].qty; return; }
         editCartItems[idx].qty = newQty;
         document.getElementById(`editQty-${idx}`).value = newQty;
         document.getElementById(`editRowTotal-${idx}`).innerText = (newQty * parseFloat(editCartItems[idx].price)).toFixed(cdec());
@@ -4288,6 +4305,12 @@ function editQtyChange(idx, delta) {
 function editQtyManual(idx, val) {
     let newQty = parseFloat(val);
     if (!isNaN(newQty) && newQty >= 0) {
+        if (newQty > parseFloat(editCartItems[idx].qty) && !editStockAllows(idx, newQty)) {
+            const it = editCartItems[idx];
+            const same = editCartItems.reduce((a, b, i) => a + ((i !== idx && String(b.name).toLowerCase() === String(it.name).toLowerCase()) ? (parseFloat(b.qty) || 0) : 0), 0);
+            newQty = Math.max(0, Math.min(parseFloat(it.qty), editAvailFor(it) - same));
+            const inp = document.getElementById(`editQty-${idx}`); if (inp) inp.value = newQty;
+        }
         editCartItems[idx].qty = newQty;
         document.getElementById(`editRowTotal-${idx}`).innerText = (newQty * parseFloat(editCartItems[idx].price)).toFixed(cdec());
         recalcEditTotals();
@@ -4330,6 +4353,7 @@ function setEditMethod(method) {
 
 // ===== SAVE EDITED BILL =====
 function saveEditedBill() {
+    for (let _i = 0; _i < editCartItems.length; _i++) { if (!editStockAllows(_i, parseFloat(editCartItems[_i].qty) || 0)) return; }
     let billNo = document.getElementById('editBillNo').value;
     let dateKey = document.getElementById('editDateKey').value;
     let displayLabel = document.getElementById('editDisplayLabel').value;
