@@ -753,6 +753,30 @@ body { width: 100%; }
             <span id="grand-total" style="font-size: 24px; font-weight: 900; color: #00C7C7; text-align:right; margin-left:auto; white-space:nowrap;">0.000 <small style="font-size: 12px;" class="cur-code">OMR</small></span>
         </div>
 
+<div id="orderPayRow" style="display:none; gap:8px; margin-bottom:16px;">
+<input type="hidden" id="orderSelMethod" value="">
+            <div onclick="setOrderMethod('')" id="ordLbl-p" style="flex:1; cursor:pointer; padding:10px 2px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+                <span style="font-size:16px;">⏳</span><br>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">PENDING</span>
+            </div>
+            <div onclick="setOrderMethod('Transfer')" id="ordLbl-t" style="flex:1; cursor:pointer; padding:10px 2px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+                <span style="font-size:16px;">🏦</span><br>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">TRANSFER</span>
+            </div>
+            <div onclick="setOrderMethod('ATM')" id="ordLbl-a" style="flex:1; cursor:pointer; padding:10px 2px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+                <span style="font-size:16px;">💳</span><br>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">ATM CARD</span>
+            </div>
+            <div onclick="setOrderMethod('Cash')" id="ordLbl-c" style="flex:1; cursor:pointer; padding:10px 2px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+                <span style="font-size:16px;">💵</span><br>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">CASH</span>
+            </div>
+            <div onclick="setOrderMethod('M-Pesa Lipa')" id="ordLbl-m" style="flex:1; cursor:pointer; padding:10px 2px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+                <span style="font-size:16px;">📱</span><br>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">M-PESA</span>
+            </div>
+        </div>
+
         <div style="display: flex; gap: 12px;">
             <button onclick="executePrint()" style="flex: 2; background: #00C7C7; color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 10px 20px -5px rgba(0,199,199,0.3);">PRINT RECEIPT</button>
             <button onclick="clearCart()" style="flex: 1; background: #f1f5f9; color: #1e293b; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; cursor: pointer;">RESET</button>
@@ -2567,7 +2591,8 @@ ${bdEditScript()}
     }
     // Ticket ko RED (pending) mark karein - items punched/previewed, abhi actual print (smartPrint) nahi hua
     window.lastPrintTicket = currentTicket || null;
-    if (currentTicket) markTicketPending(currentTicket);
+    if (currentTicket) { const _om = (typeof orderMethodValue === 'function') ? orderMethodValue() : ''; if (_om) settleTicket(parseInt(currentTicket)); else markTicketPending(currentTicket); }
+    if (typeof setOrderMethod === 'function') setOrderMethod('');
     currentTicket = null;
     clearCart(); closeM();
     document.getElementById('ticketBadge').innerText = '🎫 --';
@@ -4583,7 +4608,7 @@ function logSale(total, bNo) {
         date: dateKey,
         time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit',second: '2-digit', hour12: true }),
         amount: parseFloat(total), 
-        method: '', // payment method ab Bill Details se assign hoga
+        method: (typeof orderMethodValue === 'function' ? orderMethodValue() : ''), // Order Bill me select hua ho to wahi, warna Bill Details se assign hoga
         items: JSON.parse(JSON.stringify(cart)),
         // YEH DO LINES ADD KI HAIN DATA SAVE KARNE KE LIYE
         discountAmt: currentDiscount,
@@ -5071,6 +5096,13 @@ function deleteBill(billNo, dateKey, displayLabel){
             <div class="mo-txt"><div class="mo-title">🎫 Show Ticket No on Bill</div><div class="mo-hint">80mm + A4 bill par ticket number</div></div>
             <label class="mo-sw">
                 <input type="checkbox" id="ticketOnBillToggle" onchange="toggleDashItem('asb_show_ticket_bill', this)">
+                <span class="tr"></span><span class="kn"></span>
+            </label>
+        </div>
+        <div class="mo-row" style="--c:#14b8a6;">
+            <div class="mo-txt"><div class="mo-title">💳 Show Payment Method in Order Bill</div><div class="mo-hint">Order Bill par payment method select karein</div></div>
+            <label class="mo-sw">
+                <input type="checkbox" id="orderPayToggle" onchange="toggleDashItem('asb_show_order_pay', this)">
                 <span class="tr"></span><span class="kn"></span>
             </label>
         </div>
@@ -5746,7 +5778,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_acc2','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency'];
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_acc2','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency','asb_show_order_pay','asb_cat_photos'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false, lastLocalWrite = {};
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -5777,6 +5809,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 if (tp && tp.style.display !== 'none' && typeof renderTicketGrid === 'function') renderTicketGrid();
             }
             if (changed.indexOf('asb_acc2') !== -1) { if (window.authRevalidate) authRevalidate(); try { refreshPwManagerUI(); } catch(e){} }
+            if (changed.indexOf('asb_cat_photos') !== -1 && typeof window.catPhotosIn === 'function') window.catPhotosIn();
             if (changed.indexOf('asb_zero_stock_block') !== -1 && typeof syncZeroStockToggleUI === 'function') syncZeroStockToggleUI();
             if (changed.some(function(k){ return /asb_show_/.test(k); }) && typeof applyDashVisibility === 'function') applyDashVisibility();
             if (changed.indexOf('asb_currency') !== -1 && typeof applyCurrencyUI === 'function') applyCurrencyUI();
@@ -7393,3 +7426,91 @@ html body #settingsM .st-title small{display:none !important;}
 html body #settingsM .st-x{width:42px !important;height:42px !important;border-radius:12px !important;background:rgba(255,255,255,.24) !important;border:1px solid rgba(255,255,255,.45) !important;color:#fff !important;font-size:28px !important;box-shadow:none !important;}
 html body #settingsM .st-footer{display:none !important;}
 </style>
+
+<script id="order-pay-catphoto-v22">
+/* ---- Order Bill: payment method (toggle se on/off) ---- */
+function orderPayOn(){ try { return localStorage.getItem('asb_show_order_pay') === '1'; } catch(e){ return false; } }
+function orderMethodValue(){ if (!orderPayOn()) return ''; var el = document.getElementById('orderSelMethod'); return el ? el.value : ''; }
+function setOrderMethod(method){
+  var el = document.getElementById('orderSelMethod'); if (el) el.value = method || '';
+  var map = { '': 'ordLbl-p', 'Transfer': 'ordLbl-t', 'ATM': 'ordLbl-a', 'Cash': 'ordLbl-c', 'M-Pesa Lipa': 'ordLbl-m' };
+  Object.keys(map).forEach(function(k){
+    var d = document.getElementById(map[k]); if (!d) return;
+    var on = (k === (method || ''));
+    d.style.border = on ? '1.5px solid #00C7C7' : '1.5px solid #f1f5f9';
+    d.style.background = on ? '#f0fdfa' : '#fff';
+    var t = d.querySelector('span:last-child'); if (t) t.style.color = on ? '#0f172a' : '#64748b';
+  });
+}
+(function(){
+  var oApply = window.applyDashVisibility;
+  window.applyDashVisibility = function(){
+    if (oApply) oApply.apply(this, arguments);
+    var on = orderPayOn();
+    var row = document.getElementById('orderPayRow'); if (row) row.style.display = on ? 'flex' : 'none';
+    var tg = document.getElementById('orderPayToggle'); if (tg) tg.checked = on;
+    if (!on) setOrderMethod('');
+  };
+  var oClear = window.clearCart;
+  window.clearCart = function(){ if (oClear) oClear.apply(this, arguments); setOrderMethod(''); };
+  setOrderMethod('');
+  try { window.applyDashVisibility(); } catch(e){}
+})();
+
+/* ---- Category photo: sab devices par sync (Firebase via asb_cat_photos) ---- */
+window.catPhotosOut = function(){
+  try {
+    var m = {}; try { m = JSON.parse(localStorage.getItem('asb_cat_photos') || '{}') || {}; } catch(e){ m = {}; }
+    var touched = window._catPhotoTouch || []; window._catPhotoTouch = [];
+    cats.forEach(function(c){ if (c.photo) m[c.n] = c.photo; });
+    touched.forEach(function(n){ var c = cats.find(function(x){ return x.n === n; }); if (!c || !c.photo) m[n] = ''; });
+    var str = JSON.stringify(m);
+    if (localStorage.getItem('asb_cat_photos') !== str) localStorage.setItem('asb_cat_photos', str);
+  } catch(e){}
+};
+window.catPhotosIn = function(){
+  try {
+    var m = JSON.parse(localStorage.getItem('asb_cat_photos') || '{}') || {}, ch = false;
+    cats.forEach(function(c){
+      if (Object.prototype.hasOwnProperty.call(m, c.n)) {
+        var v = m[c.n] || null;
+        if ((c.photo || null) !== v) { c.photo = v; ch = true; }
+      }
+    });
+    if (ch) { try { localStorage.setItem('asb_c', JSON.stringify(cats)); } catch(e){} if (typeof render === 'function') render(); }
+  } catch(e){}
+};
+(function(){
+  var oSave = window.saveCat;
+  if (typeof oSave === 'function') window.saveCat = function(){
+    var nm = (document.getElementById('cn') || {}).value;
+    window._catPhotoTouch = [editCatName, nm && nm.trim()].filter(Boolean);
+    var r = oSave.apply(this, arguments);
+    window.catPhotosOut();
+    return r;
+  };
+  window.catPhotosOut(); window.catPhotosIn();
+})();
+/* Photo chhoti (160px) karke save: Firebase sync halka rahe */
+(function(){
+  var oPrev = window.previewCatPhoto;
+  window.previewCatPhoto = function(input){
+    if (!input.files || !input.files[0]) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      var im = new Image();
+      im.onload = function(){
+        var S = 160, w = im.width, h = im.height, r = Math.min(S / w, S / h, 1);
+        var cv = document.createElement('canvas'); cv.width = Math.round(w * r); cv.height = Math.round(h * r);
+        cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+        var img = document.getElementById('catPhotoImg');
+        img.src = cv.toDataURL('image/jpeg', 0.78); img.style.display = 'block';
+        document.getElementById('catPhotoPlaceholder').style.display = 'none';
+        document.getElementById('catRemoveBtn').style.display = 'block';
+      };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(input.files[0]);
+  };
+})();
+</script>
