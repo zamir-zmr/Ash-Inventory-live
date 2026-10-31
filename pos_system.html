@@ -2516,16 +2516,29 @@ ${bdEditScript()}
     
     const todayLocal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const lastSavedDate = _ls('asb_last_date', '') || '';
+    // Ticket select na kiya ho to sabse chhota khali ticket auto-assign karo (Bill no = Ticket no, colour bhi sahi badlega)
+    if (!currentTicket) {
+        try {
+            loadTicketState();
+            const _sales0 = _ls('asb_sales_logs', []) || [];
+            for (let t = 1; t <= 200; t++) {
+                if (ticketsUsed.includes(t) || ticketsPending.includes(t) || ticketsSettled.includes(t)) continue;
+                if (_sales0.some(x => x.date === todayLocal && String(x.billNo) === String(t))) continue;
+                currentTicket = t; break;
+            }
+            if (currentTicket) { const _tb = document.getElementById('ticketBadge'); if (_tb) _tb.innerText = '🎫 #' + currentTicket; }
+        } catch(e) {}
+    }
     let pendingBill = getPendingBillForTicket(currentTicket);
     let billCount;
     if (pendingBill) {
         billCount = pendingBill.billNo;
     } else if (currentTicket) {
         billCount = parseInt(currentTicket);   // Bill no = Ticket no
-    } else if (lastSavedDate !== todayLocal) {
-        billCount = 1;
     } else {
-        billCount = (parseInt(_ls('asb_bill_count', 0)) || 0) + 1;
+        // Fallback (koi ticket free nahi): aaj ke sabse bade bill no ke baad ka number (22 jaisa purana counter use nahi hoga)
+        const _todayNos = (_ls('asb_sales_logs', []) || []).filter(x => x.date === todayLocal).map(x => parseInt(x.billNo) || 0);
+        billCount = (_todayNos.length ? Math.max.apply(null, _todayNos) : 0) + 1;
     }
     // NOTE: bill counter / ticket ko yahan commit NAHI karte - bill successfully generate + record hone ke baad hi aage badhega.
 
