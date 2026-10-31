@@ -7826,33 +7826,33 @@ window.catPhotosIn = function(){
   html body:has(#cart-panel.open) .mw{margin-right:var(--cpw) !important;width:calc(100% - var(--cpw)) !important;margin-left:0 !important;max-width:none !important}
   html body .pg{margin-right:0 !important}
   /* green bar ki jagah chhota floating cart button */
-  html body .cart-bar{display:none !important;left:auto !important;right:16px !important;bottom:14px !important;width:auto !important;max-width:none !important;padding:9px 18px !important;border-radius:999px !important;gap:14px !important;font-size:13px !important}
-  html body.cart-has:not(:has(#cart-panel.open)) .cart-bar{display:flex !important}
+  html body .cart-bar{display:none !important}
   html body #cart-panel > div:first-child button{width:30px !important;height:30px !important;border-radius:10px !important;font-size:17px !important;display:flex !important;align-items:center;justify-content:center;padding:0 !important}
 }
 @media (min-width:900px){ :root{--cpw:460px} }
 @media (orientation:landscape) and (max-height:540px){
   :root{--cpw:min(380px,45vw)}
-  html body .h{padding:4px 10px 6px !important;display:flex !important;flex-wrap:wrap !important;align-items:center !important;gap:6px 8px !important;overflow:visible !important;height:auto !important;min-height:0 !important}
-  html body .h .pos-main-header{flex:1 1 100% !important;display:flex !important;flex-wrap:nowrap !important;align-items:center !important;justify-content:space-between !important;gap:8px !important;width:100% !important}
-  html body .h .logo-box{flex:1 1 auto !important;width:auto !important;gap:8px !important;min-width:0 !important;flex-direction:row !important}
+  html body .h{padding:4px 10px 6px !important;display:flex !important;flex-wrap:wrap !important;align-items:center !important;gap:6px 8px !important;overflow:visible !important;height:auto !important;min-height:0 !important;position:relative !important}
+  html body .h .pos-main-header{flex:1 1 100% !important;display:flex !important;flex-wrap:nowrap !important;align-items:center !important;justify-content:flex-start !important;gap:12px !important;width:100% !important}
+  html body .h .logo-box{flex:0 0 auto !important;width:auto !important;gap:8px !important;min-width:0 !important;flex-direction:row !important}
   html body .h .logo-circle{width:42px !important;height:42px !important;min-width:42px !important;flex:0 0 42px !important}
   html body .h #shopNameHdr{font-size:15px !important;line-height:1.1 !important;white-space:nowrap !important}
   html body .h #loginBadge{font-size:8px !important;margin-bottom:1px !important;white-space:nowrap !important}
   html body .h .logo-box > div{min-width:0}
-  /* normal mobile jaise 4 rangeen tiles, chhote size me */
-  html body .h .header-actions{display:grid !important;grid-template-columns:repeat(4,56px) !important;width:auto !important;flex:0 0 auto !important;gap:5px !important}
-  html body .h .header-actions > *{width:100% !important;height:46px !important;min-height:46px !important;min-width:0 !important;padding:2px !important;border-radius:12px !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:1px !important}
-  html body .h .header-actions .hb-ic{width:20px !important;height:20px !important;min-width:20px !important;font-size:11px !important}
-  html body .h .header-actions .hb-tx{font-size:9.5px !important;line-height:1 !important}
+  /* 4 rangeen tiles - hamesha logo/naam ke turant baad, same jagah */
+  html body .h .header-actions{display:grid !important;grid-template-columns:repeat(4,56px) !important;width:auto !important;flex:0 0 auto !important;gap:5px !important;margin:0 !important}
+  html body .h .header-actions .hb-btn,html body .h .header-actions .ticket-badge{width:56px !important;min-width:0 !important;max-width:56px !important;height:48px !important;min-height:48px !important;padding:2px !important;border-radius:12px !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:2px !important;position:relative !important;overflow:hidden !important}
+  html body .h .header-actions .hb-ic{width:20px !important;height:20px !important;min-width:20px !important;font-size:11px !important;position:static !important;margin:0 !important}
+  html body .h .header-actions .hb-tx{font-size:9.5px !important;line-height:1 !important;margin:0 !important;white-space:nowrap !important;position:static !important}
   html body .h .header-actions .ticket-badge .tb-ic{display:none !important}
   html body .h .header-actions .ticket-badge .tb-txt{display:flex !important;flex-direction:column !important;align-items:center !important;gap:1px !important}
-  html body .h .header-actions .ticket-badge .tb-lb{font-size:8.5px !important}
+  html body .h .header-actions .ticket-badge .tb-lb{font-size:8.5px !important;white-space:nowrap !important}
   html body .h .header-actions .ticket-badge .tb-no{font-size:15px !important;line-height:1 !important}
-  html body .h #posNavSwitch{flex:1 1 42% !important;margin-top:0 !important;gap:6px !important}
-  html body .h #posNavSwitch button{padding:7px 4px !important;font-size:12px !important;border-radius:10px !important}
-  html body .h #s{flex:1 1 50% !important;width:auto !important;margin-top:0 !important;min-height:34px !important;height:34px !important;padding:4px 12px !important;font-size:13px !important;border-radius:12px !important}
-  html body #hb.hb-home{height:36px !important;min-width:36px !important;padding:0 8px !important;border-radius:12px !important}
+  html body .h #posNavSwitch{flex:0 0 250px !important;width:250px !important;margin-top:0 !important;gap:6px !important}
+  html body .h #posNavSwitch button{padding:7px 4px !important;font-size:12px !important;border-radius:10px !important;white-space:nowrap !important}
+  html body .h #s{flex:1 1 120px !important;min-width:0 !important;width:auto !important;margin-top:0 !important;min-height:34px !important;height:34px !important;padding:4px 12px !important;font-size:13px !important;border-radius:12px !important}
+  html body .h:has(#hb[style*="flex"]) #s{margin-right:44px !important}
+  html body #hb.hb-home{position:absolute !important;right:10px !important;bottom:6px !important;margin:0 !important;height:34px !important;min-width:34px !important;padding:0 8px !important;border-radius:12px !important;z-index:5}
   html body #hb.hb-home svg{width:20px !important;height:20px !important}
   html body .mw{padding:10px 12px !important;margin-bottom:8px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch}
   .mw::-webkit-scrollbar{width:8px}
@@ -7906,6 +7906,9 @@ window.catPhotosIn = function(){
       return r;
     };
   }
+  try{ if(screen.orientation && screen.orientation.lock){ screen.orientation.lock('any').catch(function(){}); } }catch(e){}
   try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+  /* POS iframe me ho to scroll parent tak chain ho (Chrome URL bar hide ho) */
+  try{ if(window.parent!==window){ document.documentElement.style.overscrollBehaviorY='auto'; document.body.style.overscrollBehaviorY='auto'; } }catch(e){}
 })();
 </script>

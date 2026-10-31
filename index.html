@@ -7960,3 +7960,9 @@ html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
   html body .app-header #hamburgerBtn{width:40px !important;height:40px !important}
 }
 </style>
+<style id="mode-pos-scroll">
+/* POS mode: page scrollable rahe taaki Chrome ka URL bar hide/show ho (inventory jaisa) */
+body.mode-pos::after{content:"";display:block;height:calc(100dvh + 160px);pointer-events:none}
+body.mode-pos{min-height:0 !important}
+</style>
+<script>try{ if(screen.orientation && screen.orientation.lock){ screen.orientation.lock('any').catch(function(){}); } }catch(e){}</script>
