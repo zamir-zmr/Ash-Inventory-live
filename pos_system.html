@@ -2798,6 +2798,24 @@ function closeReceiptModal() {
         } else { 
             hb.style.display = "flex"; 
             let list = q ? menu.filter(i => i.name.toLowerCase().includes(q)) : menu.filter(i => i.cat === curCat); 
+            if (!q && !isMulti && !isCatMulti && cats.length) {
+                const tabs = document.createElement('div');
+                tabs.className = 'cat-tabs';
+                const pal = ['#0ea5e9,#4f46e5','#f97316,#ef4444','#10b981,#059669','#ec4899,#8b5cf6','#f59e0b,#d97706','#06b6d4,#0891b2','#8b5cf6,#6d28d9','#ef4444,#be123c'];
+                cats.forEach((ct, ix) => {
+                    const t = document.createElement('button');
+                    const on = ct.n === curCat, col = pal[ix % pal.length];
+                    t.type = 'button';
+                    t.className = 'cat-tab' + (on ? ' on' : '');
+                    t.textContent = ct.n;
+                    t.style.setProperty('--tc', col.split(',')[0]);
+                    if (on) t.style.background = 'linear-gradient(135deg,' + col + ')';
+                    t.onclick = () => { if (on) return; try { location.replace('#cat-' + encodeURIComponent(ct.n)); } catch(e) { location.hash = 'cat-' + ct.n; } };
+                    tabs.appendChild(t);
+                });
+                c.appendChild(tabs);
+                setTimeout(() => { const a = tabs.querySelector('.cat-tab.on'); if (a && a.scrollIntoView) a.scrollIntoView({ inline: 'center', block: 'nearest' }); }, 30);
+            }
             list.forEach(i => { 
                 let d = document.createElement('div'); 
                 d.className = 'pc' + (selSet.has(i.id) ? ' sel' : ''); 
@@ -6838,7 +6856,7 @@ html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
 
 <style id="hb-home-style">
 .h .logo-box { position:relative; }
-#hb.hb-home{order:99;margin-left:auto;display:none;align-items:center;justify-content:center;gap:8px;min-width:40px;height:40px;padding:0 16px;border:none;border-radius:18px;cursor:pointer;color:#fff;font-weight:800;font-size:15px;background:linear-gradient(135deg,#0ea5e9,#4f46e5);box-shadow:0 6px 16px rgba(79,70,229,.38);flex:0 0 auto;transition:transform .15s,box-shadow .15s}
+#hb.hb-home{order:99;margin-left:auto;display:none;align-items:center;justify-content:center;gap:8px;min-width:56px;height:56px;padding:0 16px;border:none;border-radius:18px;cursor:pointer;color:#fff;font-weight:800;font-size:15px;background:linear-gradient(135deg,#0ea5e9,#4f46e5);box-shadow:0 6px 16px rgba(79,70,229,.38);flex:0 0 auto;transition:transform .15s,box-shadow .15s}
 #hb.hb-home:active{transform:scale(.94)}
 #hb.hb-home .hb-home-tx{display:none}
 @media (min-width:900px){
@@ -6848,6 +6866,67 @@ html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
   #hb.hb-home:hover{box-shadow:0 10px 24px rgba(79,70,229,.5);transform:translateY(-1px)}
 }
 </style>
+
+<style id="landscape-compact-style">
+.cat-tabs{grid-column:1/-1;display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;margin:0 0 4px;position:sticky;top:-16px;z-index:6;background:var(--s,#f4f6fb);-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cat-tabs::-webkit-scrollbar{display:none}
+.cat-tab{flex:0 0 auto;border:2px solid var(--tc,#0ea5e9);background:#fff;color:var(--tc,#0ea5e9);font-weight:800;font-size:14px;padding:9px 18px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:transform .12s}
+.cat-tab:active{transform:scale(.95)}
+.cat-tab.on{color:#fff;border-color:transparent;box-shadow:0 6px 14px rgba(15,23,42,.22)}
+@media (min-width:900px){ .cat-tabs{top:-22px} }
+
+/* ===== Mobile landscape: PC jaisa compact layout ===== */
+@media (orientation:landscape) and (max-height:540px){
+  :root{--cpw:min(400px,46vw)}
+  html body .h{padding:4px 10px 6px !important;display:flex !important;flex-wrap:wrap !important;align-items:center !important;gap:6px 8px !important;overflow:visible !important}
+  html body .h .pos-main-header{flex:1 1 100% !important;display:flex !important;flex-wrap:nowrap !important;align-items:center !important;gap:8px !important;width:100% !important}
+  html body .h .logo-box{flex:1 1 auto !important;width:auto !important;gap:8px !important;min-width:0 !important}
+  html body .h .logo-circle{width:40px !important;height:40px !important;min-width:40px !important;flex:0 0 40px !important}
+  html body .h #shopNameHdr{font-size:15px !important;line-height:1.1 !important}
+  html body .h #loginBadge{font-size:8px !important;margin-bottom:1px !important}
+  html body .h .header-actions{display:flex !important;grid-template-columns:none !important;width:auto !important;flex:0 0 auto !important;flex-wrap:nowrap !important;gap:6px !important}
+  html body .h .header-actions .hb-btn{min-height:36px !important;height:36px !important;min-width:0 !important;width:auto !important;padding:0 10px !important;flex-direction:row !important;gap:6px !important;border-radius:12px !important;font-size:12px !important}
+  html body .h .header-actions .hb-btn .hb-ic{width:22px !important;height:22px !important;min-width:22px !important;font-size:12px !important}
+  html body .h .header-actions .hb-btn .hb-tx{font-size:12px !important}
+  html body .h .header-actions .ticket-badge{min-height:36px !important;height:36px !important;width:auto !important;padding:0 10px !important;font-size:12px !important;border-radius:12px !important;white-space:nowrap !important;gap:6px !important}
+  html body .h #posNavSwitch{flex:1 1 38% !important;margin-top:0 !important;gap:6px !important}
+  html body .h #posNavSwitch button{padding:6px !important;font-size:12px !important;border-radius:10px !important}
+  html body .h #s{flex:1 1 55% !important;width:auto !important;margin-top:0 !important;min-height:34px !important;height:34px !important;padding:4px 12px !important;font-size:13px !important;border-radius:12px !important}
+  #hb.hb-home{height:36px !important;min-width:36px !important;padding:0 8px !important;border-radius:12px !important}
+  #hb.hb-home svg{width:20px !important;height:20px !important}
+  .mw{margin-bottom:44px !important;padding:10px 12px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch}
+  .mw::-webkit-scrollbar{width:8px}
+  .mw::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px}
+  .pg{grid-template-columns:repeat(4,1fr) !important;gap:10px !important}
+  .pc{padding:8px 6px !important}
+  .pc img{width:44px !important;height:44px !important}
+  .cat-tabs{top:-10px}
+  .cat-tab{padding:6px 14px;font-size:13px}
+  html body .cart-bar{padding:5px 16px !important;bottom:6px !important;left:10px !important;width:calc(100% - 20px) !important;max-width:none !important;border-radius:14px !important;font-size:13px !important;min-height:0 !important;line-height:1.2 !important}
+  /* Order Bill: PC jaisa right-side panel */
+  html body #cart-panel{width:var(--cpw) !important;right:0 !important;left:auto !important;height:100dvh !important;border-radius:20px 0 0 0 !important;box-shadow:-12px 0 30px rgba(15,23,42,.2) !important;overflow-y:auto !important;grid-template-rows:auto auto auto auto !important}
+  html body:has(#cart-panel.open) .pg{margin-right:var(--cpw) !important;grid-template-columns:repeat(3,1fr) !important}
+  html body:has(#cart-panel.open) .cart-bar{width:calc(100% - var(--cpw) - 20px) !important}
+  html body:has(#cart-panel.open) .cat-tabs{margin-right:var(--cpw)}
+  #cart-panel > div:first-child{padding:8px 14px !important}
+  #cart-panel > div:first-child b{font-size:16px !important}
+  #cart-panel > div:first-child button{width:32px !important;height:32px !important;font-size:18px !important}
+  #cart-panel > div:nth-child(2){padding:0 14px 6px !important}
+  #cart-panel > div:nth-child(2) input,#cart-panel > div:nth-child(2) select{padding:6px 8px !important;font-size:12px !important}
+  #cart-panel #cart-list{flex:none !important;overflow:visible !important;min-height:60px;padding:4px 10px !important}
+  #cart-panel > div:last-child{padding:8px 14px !important}
+  #cart-panel > div:last-child > div:first-child{margin-bottom:6px !important;gap:4px !important}
+  #cart-panel > div:last-child > div:nth-child(2){margin-bottom:8px !important}
+  #cart-panel #orderPayRow{margin-bottom:8px !important}
+  #cart-panel #orderPayRow > div{padding:6px 2px !important}
+  #cart-panel > div:last-child button{padding:10px !important;font-size:14px !important}
+  #grand-total{font-size:20px !important}
+}
+</style>
+<script>
+/* Rotation: mobile/PWA me screen rotate ho sake (script se lock hata do) */
+try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+</script>
 </body>
 </html>
 
