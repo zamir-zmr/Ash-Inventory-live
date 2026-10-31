@@ -7913,38 +7913,28 @@ window.catPhotosIn = function(){
 })();
 </script>
 
-<style id="landscape-dock-v5">
-/* Landscape / PC: Order Bill hamesha right me docked; category + items sirf left half me */
-@media (min-width:900px), (orientation:landscape) and (max-height:540px){
-  html body .h{margin-right:var(--cpw) !important}
-  html body .mw{margin-right:var(--cpw) !important;width:calc(100% - var(--cpw)) !important;margin-left:0 !important;max-width:none !important}
-  html body #cart-panel > div:first-child button{display:none !important}
-}
+<style id="landscape-open-v6">
+/* Order Bill sirf item click par khulta hai. Mobile landscape: 1/2 screen, PC/bada screen: 1/3 screen (right). Left me sab fit. */
+@media (min-width:900px){ :root{--cpw:max(360px,33.333vw)} }
+@media (orientation:landscape) and (max-height:540px){ :root{--cpw:50vw} }
+/* Home icon: 40 x 40 */
+html body #hb.hb-home{width:40px !important;height:40px !important;min-width:40px !important;min-height:40px !important;padding:0 !important;display:flex;align-items:center;justify-content:center}
+html body #hb.hb-home svg{width:22px !important;height:22px !important}
 @media (orientation:landscape) and (max-height:540px){
-  /* header: logo + naam + location poora dikhe, home button usi row me (overlap nahi) */
   html body .h .logo-box{flex:1 1 auto !important;min-width:0 !important;display:flex !important;align-items:center !important}
   html body .h .logo-box > div:not(.logo-circle){min-width:0 !important;overflow:visible !important}
   html body .h #shopNameHdr,html body .h #loginBadge,html body .h #locBadge{overflow:visible !important;text-overflow:clip !important;white-space:nowrap !important}
-  html body .h #hb.hb-home{position:static !important;order:9 !important;margin:0 0 0 auto !important;width:36px !important;height:36px !important;min-width:36px !important;padding:0 !important;flex:0 0 36px !important;right:auto !important;bottom:auto !important}
+  html body .h #hb.hb-home{position:static !important;order:9 !important;margin:0 0 0 auto !important;flex:0 0 40px !important;right:auto !important;bottom:auto !important}
   html body .h:has(#hb[style*="flex"]) #s{margin-right:0 !important}
-  html body .h .pos-main-header{flex-wrap:nowrap !important}
-}
-@media (orientation:landscape) and (max-height:540px) and (max-width:900px){
   html body .h .pos-main-header{flex-wrap:wrap !important;gap:6px !important}
   html body .h .logo-box{flex:1 1 100% !important;width:100% !important}
   html body .h .header-actions{flex:1 1 100% !important;width:100% !important;grid-template-columns:repeat(4,minmax(0,1fr)) !important}
   html body .h .header-actions .hb-btn,html body .h .header-actions .ticket-badge{width:100% !important;max-width:none !important;height:44px !important;min-height:44px !important}
 }
+@media (orientation:landscape) and (max-height:540px) and (min-width:1100px){
+  html body .h .pos-main-header{flex-wrap:nowrap !important}
+  html body .h .logo-box{flex:1 1 auto !important;width:auto !important}
+  html body .h .header-actions{flex:0 0 auto !important;width:auto !important;grid-template-columns:repeat(4,56px) !important}
+  html body .h .header-actions .hb-btn,html body .h .header-actions .ticket-badge{width:56px !important;max-width:56px !important;height:48px !important;min-height:48px !important}
+}
 </style>
-<script>
-(function(){
-  var mq=window.matchMedia('(min-width:900px), (orientation:landscape) and (max-height:540px)');
-  function dock(){ try{ if(mq.matches) toggleCart(true); else if(!(window.cart && cart.length)) toggleCart(false); }catch(e){} }
-  var _u=window.updateCartUI;
-  if(typeof _u==='function'){ window.updateCartUI=function(){ var r=_u.apply(this,arguments); dock(); return r; }; }
-  try{ mq.addEventListener('change',dock); }catch(e){ try{ mq.addListener(dock); }catch(e2){} }
-  window.addEventListener('orientationchange',function(){ setTimeout(dock,150); });
-  window.addEventListener('resize',function(){ setTimeout(dock,100); });
-  dock();
-})();
-</script>
