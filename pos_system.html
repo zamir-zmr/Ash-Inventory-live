@@ -5628,7 +5628,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
 /* ===== POS <-> Inventory stock sync (runs only when opened inside index.html) ===== */
 (function(){
     if (window.parent === window) return;
-    var last = {}, lastLocal = {}, pend = {};
+    var last = {}, lastLocal = {}, pend = {}, inflight = {}, lastSyncData = null, holdTimer = null;
     try { menu.forEach(function(m){ if (m.invId != null && m.stock !== null && m.stock !== undefined) last[m.invId] = Number(m.stock); }); } catch(e){}
     function persist(){
         try { localStorage.setItem('asb_m', JSON.stringify(menu)); localStorage.setItem('asb_c', JSON.stringify(cats)); return true; }
@@ -5656,9 +5656,12 @@ input[type="checkbox"] { accent-color: #0d9488; }
             var cur = Number(m.stock), prev = last[m.invId];
             var hd = hist[m.invId];
             if (prev !== undefined && (cur !== prev || (hd !== undefined && hd !== 0))) {
-                var o = { id: m.invId, delta: cur - prev, reason: reason };
+                var dl = cur - prev;
+                if (reason === 'sale' && hd !== undefined && hd !== 0) dl = hd; // exact bill qty (never a stale-sync difference)
+                var o = { id: m.invId, delta: dl, reason: reason };
                 if (hd !== undefined) o.histDelta = hd;
                 deltas.push(o);
+                inflight[m.invId] = Date.now();
             }
             last[m.invId] = cur;
         });
@@ -5666,7 +5669,9 @@ input[type="checkbox"] { accent-color: #0d9488; }
         if (deltas.length) window.parent.postMessage({ type: 'POS_STOCK_DELTA', deltas: deltas }, '*');
     };
     function applySync(d){
+        lastSyncData = d;
         var stocks = d.stocks || {}, icats = d.categories || {}, n = 0;
+        var _held = false;
         var seen = {};
         // Backup import ke baad: purane invId Inventory me na milen to relink karo (item/photo delete na hon)
         var imp = false, impSnap = {}, needPush = {}, hasPush = false;
@@ -5703,7 +5708,12 @@ input[type="checkbox"] { accent-color: #0d9488; }
             m.price = parseFloat(s.price) || 0;
             m.cat = cname;
             m.unit = s.unit || m.unit || '';
-            m.stock = qty;
+            if (inflight[id] && (Date.now() - inflight[id] < 3500) && Number(m.stock) !== qty) {
+                _held = true;   // sale/purchase delta abhi Firebase tak ja raha hai: purani (stale) quantity se overwrite na karo
+            } else {
+                m.stock = qty;
+                last[id] = qty;
+            }
             // Photo sync: Inventory = source of truth; sirf Inventory me photo na ho to POS ki photo Inventory ko bheji jati hai
             var sImg = s.img || '';
             var holdP = photoHold[id] && (Date.now() - photoHold[id] < 4000);
@@ -5715,8 +5725,8 @@ input[type="checkbox"] { accent-color: #0d9488; }
                 }
             }
             lastImg[id] = sImg;
-            last[id] = qty;
         });
+        if (_held) { clearTimeout(holdTimer); holdTimer = setTimeout(function(){ if (lastSyncData) applySync(lastSyncData); }, 3600); }
         menu = menu.filter(function(m){ return m.invId == null || seen[m.invId]; });
         persist();
         snap();
