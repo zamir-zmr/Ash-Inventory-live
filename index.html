@@ -1922,6 +1922,37 @@ function closeMonthPicker() {
 
 // Safety net: make the ledger's Current always equal the live stock for an item.
 // Any unexplained difference is booked on today's row (decrease -> Out, increase -> In).
+// Sale cancel / stock restore: sirf "Out" ko ghataao (aaj se peeche ki dates tak) - "In" kabhi plus nahi hota
+async function reduceOutwardHistory(itemId, amount){
+    amount = parseFloat(amount) || 0;
+    if (amount <= 0) return 0;
+    let left = amount;
+    const now = new Date();
+    for (let back = 0; back < 3 && left > 0.0001; back++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - back, 1);
+        const mk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        let firstDay = null, remOut = left;
+        try {
+            await db.ref('inventory_history/' + itemId + '/' + mk).transaction(function(m){
+                if (!m) { remOut = left; firstDay = null; return m; }
+                let rem = left; firstDay = null;
+                const days = Object.keys(m).map(Number).filter(function(n){ return !isNaN(n); }).sort(function(a,b){ return b - a; });
+                for (let i = 0; i < days.length && rem > 0.0001; i++) {
+                    const row = m[days[i]]; if (!row) continue;
+                    const o = parseFloat(row.outward) || 0;
+                    if (o <= 0) continue;
+                    const take = Math.min(o, rem);
+                    row.outward = parseFloat((o - take).toFixed(3));
+                    rem -= take; firstDay = days[i];
+                }
+                remOut = rem; return m;
+            });
+        } catch(e) { break; }
+        left = Math.max(0, remOut);
+        if (firstDay !== null) { try { triggerDailyCarryover(itemId, mk, firstDay); } catch(e){} }
+    }
+    return amount - left;
+}
 async function reconcileLedgerWithStock(itemId){
     try {
         const qSnap = await db.ref('stocks/' + itemId + '/qty').once('value');
@@ -1934,10 +1965,11 @@ async function reconcileLedgerWithStock(itemId){
         const diff = parseFloat((stockQty - closing).toFixed(2));
         if (Math.abs(diff) < 0.01) return false;
         const mk = y + '-' + String(mi + 1).padStart(2, '0'), day = String(now.getDate());
+        if (diff > 0) { await reduceOutwardHistory(itemId, diff); return true; }   // "In" sirf Purchase se badhega
         await db.ref('inventory_history/' + itemId + '/' + mk + '/' + day).transaction(function(c){
             c = c || {};
             c.inward = parseFloat(c.inward) || 0; c.outward = parseFloat(c.outward) || 0; c.waste = parseFloat(c.waste) || 0;
-            if (diff < 0) c.outward += -diff; else c.inward += diff;
+            c.outward += -diff;
             return c;
         });
         try { triggerDailyCarryover(itemId, mk, parseInt(day)); } catch(e){}
@@ -7364,6 +7396,7 @@ async function runSalesExport() {
     }
     function posHistory(id, reason, hd){
         if(!hd||!isFinite(hd)) return;
+        if(reason==='sale' && hd>0){ try{ reduceOutwardHistory(id,hd); }catch(e){} return; }
         var now=new Date(), mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'), day=String(now.getDate());
         db.ref('inventory_history/'+id+'/'+mk+'/'+day).transaction(function(c){
             c=c||{};
