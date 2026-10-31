@@ -658,7 +658,7 @@ body { width: 100%; }
     <div class="h">
         <div class="pos-main-header" style="display:flex;justify-content:space-between;align-items:center">
             <div class="logo-box">
-                <button id="hb" onclick="history.back()" style="background:#f1f5f9; border:none; padding:8px; border-radius:10px; display:none">🏠</button>
+                <button id="hb" class="hb-home" onclick="history.back()" title="Home" aria-label="Home" style="display:none"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M12 3.2 2.6 11.4a1 1 0 0 0 .66 1.76H5V20a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-6.84h1.74a1 1 0 0 0 .66-1.76L12 3.2z"/></svg><span class="hb-home-tx">Home</span></button>
                 <div class="logo-circle" id="main-logo-container"><b>KP</b><span>HARDWARE</span></div>
                 <div style="display:flex;flex-direction:column;align-items:flex-start;min-width:0"><span id="loginBadge" style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:.4px;text-transform:uppercase;line-height:1;margin-bottom:3px;white-space:nowrap"></span><b id="shopNameHdr" style="color:var(--primary); text-align:left;">KP<br>HARDWARE</b></div>
 
@@ -1526,7 +1526,10 @@ function processPastedJson() {
     let currentTicket = null, ticketsUsed = [], ticketsPending = [], ticketsSettled = [], activeTicketTab = 1;
     
     function initApp() { loadSavedLogo(); fillCurSelects(); applyDashVisibility(); applyShopInfoUI(); initBillFormat(); 
-    location.hash = 'home'; render(); loadTicketState(); showTicketPage(); }
+    location.hash = 'home'; render(); loadTicketState(); showTicketPage(); showDashboardDefault(); }
+    function showDashboardDefault() {
+        try { showTicketPage(); showDashboard(); const d = document.getElementById('dashPage'); if (d) d.style.zIndex = '2700'; } catch(e) {}
+    }
 
     function todayLocalStr() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
 
@@ -1736,7 +1739,7 @@ function processPastedJson() {
         updateCartUI();
     }
     function showDashboard() { document.getElementById('dashPage').style.display = 'flex'; }
-    function closeDash() { document.getElementById('dashPage').style.display = 'none'; renderTicketGrid(); }
+    function closeDash() { const d = document.getElementById('dashPage'); d.style.display = 'none'; d.style.zIndex = ''; renderTicketGrid(); }
 
     // ============ BACK-BUTTON NAVIGATION (Dashboard sub-pages -> Dashboard) ============
     // Har sub-page (Reports, Top Selling, Manage Items, Inventory) jab khulta hai to
@@ -2793,7 +2796,7 @@ function closeReceiptModal() {
                 c.appendChild(d); 
             }); 
         } else { 
-            hb.style.display = "block"; 
+            hb.style.display = "flex"; 
             let list = q ? menu.filter(i => i.name.toLowerCase().includes(q)) : menu.filter(i => i.cat === curCat); 
             list.forEach(i => { 
                 let d = document.createElement('div'); 
@@ -6164,6 +6167,7 @@ body.role-user #spwBtn{display:none!important}
     document.getElementById('lgPass').value='';
     msg.style.color='#94a3b8'; msg.textContent='Enter your username and password';
     apply(a);
+    try{ if(typeof showDashboardDefault==='function') showDashboardDefault(); }catch(e){}
   };
   window.doLogout=function(){
     localStorage.removeItem(SES); post(null);
@@ -6831,6 +6835,19 @@ html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
 })();
 </script>
 
+
+<style id="hb-home-style">
+.h .logo-box { position:relative; }
+#hb.hb-home{order:99;margin-left:auto;display:none;align-items:center;justify-content:center;gap:8px;min-width:56px;height:56px;padding:0 16px;border:none;border-radius:18px;cursor:pointer;color:#fff;font-weight:800;font-size:15px;background:linear-gradient(135deg,#0ea5e9,#4f46e5);box-shadow:0 6px 16px rgba(79,70,229,.38);flex:0 0 auto;transition:transform .15s,box-shadow .15s}
+#hb.hb-home:active{transform:scale(.94)}
+#hb.hb-home .hb-home-tx{display:none}
+@media (min-width:900px){
+  #hb.hb-home{height:64px;min-width:64px;padding:0 24px;border-radius:20px;font-size:17px}
+  #hb.hb-home svg{width:32px;height:32px}
+  #hb.hb-home .hb-home-tx{display:inline}
+  #hb.hb-home:hover{box-shadow:0 10px 24px rgba(79,70,229,.5);transform:translateY(-1px)}
+}
+</style>
 </body>
 </html>
 
