@@ -7871,5 +7871,28 @@ html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
   },{passive:false});
 })();
 </script>
+<script id="scroll-recover-js">
+(function(){
+  var ids=['petrolPanel','unitModal','categoryModal','manageOptionsModal','branchModal','carModal','cropModal','loginModal','editModal','deleteModal','monthPickerModal','ledgerModal','editWasteModal','editPetrolModal','editDistModal','editPurchaseModal','backupPanel','excelExportPanel'];
+  function anyOpen(){
+    return ids.some(function(id){ var el=document.getElementById(id); return el && el.style.display && el.style.display!=='none'; })
+      || ['purchasedPanel','sharePanel','wastedPanel','salesExportPanel','reportPanel'].some(function(id){ var el=document.getElementById(id); return el && el.style.display && el.style.display!=='none'; });
+  }
+  function recover(){
+    if(anyOpen()) return;
+    var b=document.body, h=document.documentElement;
+    [b,h].forEach(function(el){
+      el.style.overflow=''; el.style.overflowY=''; el.style.position=''; el.style.height=''; el.style.top=''; el.style.pointerEvents=''; el.style.touchAction='';
+    });
+    if(!b.classList.contains('mode-pos')){
+      /* tiny scroll nudge re-activates the compositor scroller after fixed overlays close (Android Chrome) */
+      var y=window.pageYOffset||0;
+      window.scrollTo(0,y+1); window.scrollTo(0,y);
+    }
+  }
+  window.addEventListener('popstate',function(){ setTimeout(recover,0); setTimeout(recover,150); setTimeout(recover,500); });
+  document.addEventListener('click',function(){ setTimeout(recover,200); },true);
+})();
+</script>
 </body>
 </html>
