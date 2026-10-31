@@ -1495,8 +1495,9 @@ function processPastedJson() {
     let _ls = (k, d) => { try { let v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e) { return d; } };
     let _lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
     let menu = _ls('asb_m', []), 
-        cats = _ls('asb_c', [{n:'Cakes', i:''}, {n:'Snacks', i:''}]), 
+        cats = _ls('asb_c', []), 
         cart = [];
+    try { if (!localStorage.getItem('asb_defcat_clean')) { cats = cats.filter(c => !((c.n === 'Cakes' || c.n === 'Snacks') && !menu.some(m => m.cat === c.n))); _lsSet('asb_c', cats); localStorage.setItem('asb_defcat_clean', '1'); } } catch(e) {}
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
     let currentTicket = null, ticketsUsed = [], ticketsPending = [], ticketsSettled = [], activeTicketTab = 1;
     
@@ -3818,7 +3819,8 @@ function showDetails(type) {
     else if (type === 'year') {
         title.innerText = "YEARLY REPORTS";
         const currentYear = now.getFullYear();
-        for (let y = 2024; y <= currentYear; y++) {
+        let lastYear = currentYear; sales.forEach(s2 => { const yy = new Date(s2.date).getFullYear(); if (yy > lastYear) lastYear = yy; });
+        for (let y = 2026; y <= lastYear; y++) {
             let yTotal = sales.filter(s => new Date(s.date).getFullYear() === y).reduce((a, b) => a + b.amount, 0);
             addReportRow(list, `Year ${y}`, yTotal.toFixed(cdec()), y === currentYear, null);
         }
@@ -6337,9 +6339,13 @@ body.role-user #spwBtn{display:none!important}
         '<div style="display:flex;height:14px;border-radius:8px;overflow:hidden;background:#f1f5f9;">' + keys.map(function(k){ return '<div title="' + esc2(k) + '" style="width:' + (m[k] / t * 100).toFixed(1) + '%;background:' + mcol(k) + ';"></div>'; }).join('') + '</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:5px;">' + keys.map(function(k){ return '<span style="font-size:11px;color:#475569;font-weight:700;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + mcol(k) + ';margin-right:4px;"></span>' + esc2(k) + ' ' + (m[k] / t * 100).toFixed(0) + '% · ' + m[k].toFixed(cdec()) + '</span>'; }).join('') + '</div></div>';
     }
-    var cnt = {};
-    tz.concat(ug).forEach(function(x){ itemsOf(x).forEach(function(i){ var k = i.name || '?'; cnt[k] = (cnt[k] || 0) + (parseFloat(i.qty) || 1); }); });
-    var top = Object.keys(cnt).sort(function(a, b){ return cnt[b] - cnt[a]; }).slice(0, 3);
+    function topBox(rows){
+      var cnt = {};
+      rows.forEach(function(x){ itemsOf(x).forEach(function(i){ var k = i.name || '?'; cnt[k] = (cnt[k] || 0) + (parseFloat(i.qty) || 1); }); });
+      var top = Object.keys(cnt).sort(function(a, b){ return cnt[b] - cnt[a]; }).slice(0, 3);
+      if (!top.length) return '';
+      return '<div style="font-size:11px;font-weight:800;color:#64748b;margin:4px 0 4px;">🏆 TOP ITEMS</div>' + top.map(function(k, i){ return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#334155;font-weight:700;"><span style="min-width:0;overflow-wrap:anywhere;">' + (i + 1) + '. ' + esc2(k) + '</span><span style="flex-shrink:0;">' + cnt[k] + ' sold</span></div>'; }).join('') + '<div style="height:8px;"></div>';
+    }
     el.innerHTML = '<div style="background:#fff;border-radius:16px;border:1.5px solid #e2e8f0;padding:14px;max-width:100%;overflow:hidden;">' +
       '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
         '<div style="flex:1;min-width:0;background:#f0fdfa;border-radius:12px;padding:8px 10px;"><div style="font-size:10px;font-weight:800;color:#64748b;">TOTAL SALES</div><div style="font-size:14px;font-weight:900;color:#0f766e;overflow-wrap:anywhere;">' + money(all) + '</div></div>' +
@@ -6349,8 +6355,7 @@ body.role-user #spwBtn{display:none!important}
       '<div style="font-size:11px;font-weight:800;color:#64748b;margin-bottom:6px;">📊 BRANCH COMPARISON</div>' +
       bar('Tanzania', '#0f766e', tT, tz.length) + bar('Uganda', '#b45309', tU, ug.length) +
       '<div style="font-size:11px;font-weight:800;color:#64748b;margin:12px 0 6px;">💳 PAYMENT METHODS</div>' +
-      stack('Tanzania', tz) + stack('Uganda', ug) +
-      (top.length ? '<div style="font-size:11px;font-weight:800;color:#64748b;margin:6px 0 4px;">🏆 TOP ITEMS</div>' + top.map(function(k, i){ return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#334155;font-weight:700;"><span style="min-width:0;overflow-wrap:anywhere;">' + (i + 1) + '. ' + esc2(k) + '</span><span style="flex-shrink:0;">' + cnt[k] + ' sold</span></div>'; }).join('') : '') +
+      stack('Tanzania', tz) + topBox(tz) + stack('Uganda', ug) + topBox(ug) +
       '</div>';
   }
   window.renderBranchSales = function(){
