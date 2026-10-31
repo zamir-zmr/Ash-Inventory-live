@@ -6577,13 +6577,13 @@ html body #settingsM{
 #zcamVid{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;background:#000}
 #zcamVid.mir{transform:scaleX(-1)}
 #zcamOv .zc-shade{position:absolute;left:0;right:0;bottom:0;height:190px;background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.55));pointer-events:none}
-#zcamOv .zc-pill{position:absolute;border:0;outline:0;color:#fff;background:rgba(40,40,40,.68);padding:13px 22px;border-radius:32px;font-size:18px;font-weight:700;line-height:1;display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit}
+#zcamOv .zc-pill{border-radius:32px !important;position:absolute;border:0;outline:0;color:#fff;background:rgba(40,40,40,.68);padding:13px 22px;border-radius:32px;font-size:18px;font-weight:700;line-height:1;display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit}
 #zcamOv .zc-pill:active{opacity:.7}
 #zcClose{top:calc(env(safe-area-inset-top,0px) + 14px);left:16px}
 #zcFlip{top:calc(env(safe-area-inset-top,0px) + 14px);right:16px}
-#zcGal{bottom:calc(env(safe-area-inset-bottom,0px) + 36px);right:16px;background:rgba(255,255,255,.28);font-size:17px;padding:12px 18px}
-#zcShut{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);left:50%;margin-left:-48px;width:96px;height:96px;border-radius:50%;background:#fff;border:0;outline:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#zcShut:active{transform:scale(.92)}
+#zcGal{bottom:calc(env(safe-area-inset-bottom,0px) + 47px);right:16px;background:rgba(255,255,255,.28);font-size:17px;padding:12px 18px}
+#zcShut{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 40px);left:50%;margin-left:-30px;width:60px;height:60px;padding:0;border-radius:50% !important;background:#fff;border:0;outline:0;cursor:pointer;box-shadow:0 0 0 4px rgba(0,0,0,.4),0 0 0 6px #fff;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+#zcShut:active{transform:scale(.9)}
 </style>
 <div id="zcamOv" role="dialog" aria-label="Camera">
   <video id="zcamVid" autoplay playsinline muted></video>
@@ -6736,6 +6736,51 @@ html body #settingsM{
   window.addEventListener('pagehide', stop);
 
   window.ZCam = { open: open, pick: pick, close: close };
+})();
+</script>
+
+
+<script id="pos-nav-rect">
+(function(){
+  if(window.parent===window) return;
+  var last='';
+  function send(){
+    var n=document.getElementById('posNavSwitch');
+    if(!n||!n.offsetParent) return;
+    if((window.pageYOffset||document.documentElement.scrollTop||0)>1) return;
+    var r=n.getBoundingClientRect();
+    if(!r.width||!r.height) return;
+    var k=[r.top,r.left,r.width,r.height].map(Math.round).join(',');
+    if(k===last) return; last=k;
+    try{ parent.postMessage({type:'POS_NAV_RECT',top:r.top,left:r.left,width:r.width,height:r.height},'*'); }catch(e){}
+  }
+  setInterval(send,600);
+  window.addEventListener('resize',function(){ last=''; send(); });
+})();
+</script>
+
+<style id="no-ptr">
+html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
+</style>
+<script id="no-ptr-js">
+(function(){
+  var sy=0;
+  document.addEventListener('touchstart',function(e){ if(e.touches.length===1) sy=e.touches[0].clientY; },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(e.touches.length!==1) return;
+    if(e.touches[0].clientY-sy<=0) return;
+    var el=e.target;
+    if(el&&el.closest&&el.closest('input,select,textarea,.cropper-container')) return;
+    while(el&&el.nodeType===1&&el!==document.body&&el!==document.documentElement){
+      if(el.scrollHeight>el.clientHeight&&el.scrollTop>0){
+        var oy=getComputedStyle(el).overflowY;
+        if(oy==='auto'||oy==='scroll') return;
+      }
+      el=el.parentNode;
+    }
+    if((window.pageYOffset||document.documentElement.scrollTop||0)>0) return;
+    if(e.cancelable) e.preventDefault();
+  },{passive:false});
 })();
 </script>
 

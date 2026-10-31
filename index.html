@@ -604,8 +604,8 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:' && location.pr
       
         
 <div class="nav-switch">
-                <button type="button" id="navPos" class="nav-sw-btn active" onclick="setAppMode('pos')"><i class="fas fa-cash-register"></i> POS System</button>
-                <button type="button" id="navInv" class="nav-sw-btn" onclick="setAppMode('inv')"><i class="fas fa-boxes-stacked"></i> Inventory</button>
+                <button type="button" id="navPos" class="nav-sw-btn active" onclick="setAppMode('pos')"><i class="fas fa-receipt"></i> POS System</button>
+                <button type="button" id="navInv" class="nav-sw-btn" onclick="setAppMode('inv')"><i class="fas fa-box"></i> Inventory</button>
             </div>
         <div class="header-actions">
             
@@ -7646,13 +7646,13 @@ i.ic-on.fa-spin{color:var(--ic)!important}
 #zcamVid{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;background:#000}
 #zcamVid.mir{transform:scaleX(-1)}
 #zcamOv .zc-shade{position:absolute;left:0;right:0;bottom:0;height:190px;background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.55));pointer-events:none}
-#zcamOv .zc-pill{position:absolute;border:0;outline:0;color:#fff;background:rgba(40,40,40,.68);padding:13px 22px;border-radius:32px;font-size:18px;font-weight:700;line-height:1;display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit}
+#zcamOv .zc-pill{border-radius:32px !important;position:absolute;border:0;outline:0;color:#fff;background:rgba(40,40,40,.68);padding:13px 22px;border-radius:32px;font-size:18px;font-weight:700;line-height:1;display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit}
 #zcamOv .zc-pill:active{opacity:.7}
 #zcClose{top:calc(env(safe-area-inset-top,0px) + 14px);left:16px}
 #zcFlip{top:calc(env(safe-area-inset-top,0px) + 14px);right:16px}
-#zcGal{bottom:calc(env(safe-area-inset-bottom,0px) + 36px);right:16px;background:rgba(255,255,255,.28);font-size:17px;padding:12px 18px}
-#zcShut{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);left:50%;margin-left:-48px;width:96px;height:96px;border-radius:50%;background:#fff;border:0;outline:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#zcShut:active{transform:scale(.92)}
+#zcGal{bottom:calc(env(safe-area-inset-bottom,0px) + 47px);right:16px;background:rgba(255,255,255,.28);font-size:17px;padding:12px 18px}
+#zcShut{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 40px);left:50%;margin-left:-30px;width:60px;height:60px;padding:0;border-radius:50% !important;background:#fff;border:0;outline:0;cursor:pointer;box-shadow:0 0 0 4px rgba(0,0,0,.4),0 0 0 6px #fff;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+#zcShut:active{transform:scale(.9)}
 </style>
 <div id="zcamOv" role="dialog" aria-label="Camera">
   <video id="zcamVid" autoplay playsinline muted></video>
@@ -7808,5 +7808,69 @@ i.ic-on.fa-spin{color:var(--ic)!important}
 })();
 </script>
 
+
+<style id="nav-sync-css">
+.nav-switch{gap:8px !important;margin-top:10px}
+.nav-sw-btn{box-sizing:border-box;min-width:0;border:1px solid #0d9488 !important;background:#fff !important;color:#0d9488 !important;font-weight:800;font-size:13px !important;line-height:normal !important;padding:10px !important;border-radius:10px !important;gap:6px !important}
+.nav-sw-btn.active{background:#0d9488 !important;color:#fff !important;border:none !important}
+.nav-sw-btn.active i{color:#fff !important}
+</style>
+<script id="nav-sync-js">
+(function(){
+  var rect=null;
+  try{ rect=JSON.parse(sessionStorage.getItem('posNavRect')||'null'); }catch(e){}
+  function align(){
+    var nav=document.querySelector('.nav-switch'), hd=document.querySelector('.app-header');
+    if(!nav||!hd||!rect||document.body.classList.contains('mode-pos')) return;
+    var btns=nav.querySelectorAll('.nav-sw-btn');
+    nav.style.marginTop='0px'; nav.style.marginLeft='0px'; nav.style.marginRight='0px';
+    var n=nav.getBoundingClientRect(), vw=document.documentElement.clientWidth;
+    if(!n.width) return;
+    var mt=Math.max(0,rect.top-n.top);
+    var ml=rect.left-n.left, mr=n.right-(rect.left+rect.width);
+    nav.style.marginTop=mt+'px'; nav.style.marginLeft=ml+'px'; nav.style.marginRight=mr+'px';
+    for(var i=0;i<btns.length;i++) btns[i].style.height=rect.height+'px';
+    if(typeof adjustHeaderSpacer==='function') adjustHeaderSpacer();
+  }
+  window.addEventListener('message',function(e){
+    var d=e.data;
+    if(d&&d.type==='POS_NAV_RECT'){
+      rect={top:d.top,left:d.left,width:d.width,height:d.height};
+      try{ sessionStorage.setItem('posNavRect',JSON.stringify(rect)); }catch(x){}
+      align();
+    }
+  });
+  window.addEventListener('resize',align);
+  window.addEventListener('orientationchange',align);
+  var _set=window._setAppModeReal;
+  if(typeof _set==='function'){ window._setAppModeReal=function(m){ var r=_set.apply(this,arguments); setTimeout(align,60); setTimeout(align,400); return r; }; }
+  window.addEventListener('load',align);
+})();
+</script>
+
+<style id="no-ptr">
+html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
+</style>
+<script id="no-ptr-js">
+(function(){
+  var sy=0;
+  document.addEventListener('touchstart',function(e){ if(e.touches.length===1) sy=e.touches[0].clientY; },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(e.touches.length!==1) return;
+    if(e.touches[0].clientY-sy<=0) return;
+    var el=e.target;
+    if(el&&el.closest&&el.closest('input,select,textarea,.cropper-container')) return;
+    while(el&&el.nodeType===1&&el!==document.body&&el!==document.documentElement){
+      if(el.scrollHeight>el.clientHeight&&el.scrollTop>0){
+        var oy=getComputedStyle(el).overflowY;
+        if(oy==='auto'||oy==='scroll') return;
+      }
+      el=el.parentNode;
+    }
+    if((window.pageYOffset||document.documentElement.scrollTop||0)>0) return;
+    if(e.cancelable) e.preventDefault();
+  },{passive:false});
+})();
+</script>
 </body>
 </html>
