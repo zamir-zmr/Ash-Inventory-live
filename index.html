@@ -75,7 +75,7 @@
 
         /* --- Responsive safety net: stop overlap/clipping on any screen size --- */
         *, *::before, *::after { box-sizing: border-box; }
-        html, body { max-width: 100%; overflow-x: hidden; }
+        html, body { max-width: 100%; } html { overflow-x: clip; overflow-y: auto; } body { overflow-x: clip; }
         img, svg, video { max-width: 100%; }
         button, select, input, textarea { max-width: 100%; font-family: inherit; }
         h1, h2, h3, h4, p, span, label, b, strong { word-break: break-word; overflow-wrap: break-word; }
@@ -7867,8 +7867,7 @@ html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
       }
       el=el.parentNode;
     }
-    if((window.pageYOffset||document.documentElement.scrollTop||0)>0) return;
-    if(e.cancelable) e.preventDefault();
+    return; /* scroll fix: never block touch scrolling; overscroll-behavior handles pull-to-refresh */
   },{passive:false});
 })();
 </script>
