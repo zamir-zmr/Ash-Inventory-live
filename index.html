@@ -1965,7 +1965,24 @@ async function reconcileLedgerWithStock(itemId){
         const diff = parseFloat((stockQty - closing).toFixed(2));
         if (Math.abs(diff) < 0.01) return false;
         const mk = y + '-' + String(mi + 1).padStart(2, '0'), day = String(now.getDate());
-        if (diff > 0) { await reduceOutwardHistory(itemId, diff); return true; }   // "In" sirf Purchase se badhega
+        if (diff > 0) {   // "In" sirf Purchase se badhega
+            if (closing < 0) return false;
+            const taken = await reduceOutwardHistory(itemId, diff);
+            if (diff - taken > 0.009) {
+                // ledger me ab Out bacha nahi: inventory stock ko ledger ke Current ke barabar kar do (dono sync)
+                try { clearLedgerCache(); } catch(e){}
+                const all2 = await loadItemHistoryBatch(itemId);
+                const target = parseFloat(computeMonthClosingStockSync(all2, y, mi).toFixed(2));
+                if (target >= 0) {
+                    await db.ref('stocks/' + itemId + '/qty').transaction(function(q){
+                        if (q === null) return q;
+                        if (Math.abs((parseFloat(q) || 0) - stockQty) > 0.01) return q;
+                        return target.toFixed(2);
+                    });
+                }
+            }
+            return true;
+        }
         await db.ref('inventory_history/' + itemId + '/' + mk + '/' + day).transaction(function(c){
             c = c || {};
             c.inward = parseFloat(c.inward) || 0; c.outward = parseFloat(c.outward) || 0; c.waste = parseFloat(c.waste) || 0;
@@ -3568,48 +3585,36 @@ function showPurchaseOptions(pId) {
 // Purchase delete => us item ke us din ke IN / OUT / WASTE teeno reset, stock re-balance,
 // related logs (purchases/transfers/wastes, same item + same day) hata do, phir opening cascade.
 async function purgeItemDayLedger(itemId, timeStr, purchaseId) {
-    if (!itemId || !timeStr) {
-        if (purchaseId) await db.ref(`purchases/${purchaseId}`).remove();
-        return;
-    }
-    const dp = timeStr.split(' ')[0].split('/');
+    // SIRF selected purchase delete hoga (same naam ke baaki purchases / transfers / wastes ko touch nahi karta)
+    if (!purchaseId) return;
+    const pSnap = await db.ref(`purchases/${purchaseId}`).once("value");
+    const pData = pSnap.val();
+    if (!pData) return;
+    const qty = parseFloat(pData.qty) || 0;
+    timeStr = timeStr || pData.time; itemId = itemId || pData.itemId;
+    await db.ref(`purchases/${purchaseId}`).remove();
+    if (!itemId || !timeStr || qty <= 0) return;
+
+    const dp = String(timeStr).split(' ')[0].split('/');
     const day = parseInt(dp[0]);
     const monthKey = `${dp[2]}-${String(dp[1]).padStart(2, '0')}`;
-    const sameDay = (t) => {
-        if (!t) return false;
-        const p = String(t).split(' ')[0].split('/');
-        return parseInt(p[0]) === day && `${p[2]}-${String(p[1]).padStart(2, '0')}` === monthKey;
-    };
 
-    // 1. Ledger row: in/out/waste -> 0 (opening/manualQty untouched)
-    const hRef = db.ref(`inventory_history/${itemId}/${monthKey}/${day}`);
-    const hSnap = await hRef.once("value");
-    let delta = 0;
-    if (hSnap.exists()) {
-        const h = hSnap.val();
-        const i = parseFloat(h.inward) || 0, o = parseFloat(h.outward) || 0, w = parseFloat(h.waste) || 0;
-        delta = o + w - i; // stock change needed to match zeroed ledger
-        await hRef.update({ inward: 0, outward: 0, waste: 0 });
-    }
+    // 1. Ledger: us din ke "In" se sirf is purchase ki qty ghatao
+    await db.ref(`inventory_history/${itemId}/${monthKey}/${day}`).transaction(function(c){
+        if (!c) return c;
+        c.inward = Math.max(0, (parseFloat(c.inward) || 0) - qty);
+        return c;
+    });
 
-    // 2. Stock re-balance
-    const sSnap = await db.ref(`stocks/${itemId}`).once("value");
-    if (sSnap.exists()) {
-        const cur = parseFloat(sSnap.val().qty) || 0;
-        await db.ref(`stocks/${itemId}`).update({ qty: Math.max(0, cur + delta).toFixed(2) });
-    }
+    // 2. Stock: sirf is purchase ki qty minus
+    await db.ref(`stocks/${itemId}/qty`).transaction(function(q){
+        if (q === null) return q;
+        return Math.max(0, (parseFloat(q) || 0) - qty).toFixed(2);
+    });
 
-    // 3. Same item + same day logs remove (taaki baad me double adjust na ho)
-    for (const node of ['purchases', 'transfers', 'wastes']) {
-        const snap = await db.ref(node).orderByChild('itemId').equalTo(itemId).once("value");
-        const ups = {};
-        snap.forEach(c => { if (c.key === purchaseId || sameDay((c.val() || {}).time)) ups[c.key] = null; });
-        if (Object.keys(ups).length) await db.ref(node).update(ups);
-    }
-    if (purchaseId) await db.ref(`purchases/${purchaseId}`).remove();
-
-    // 4. Next days ka opening cascade
+    // 3. Next days ka opening cascade
     await syncDailyOpeningStock(itemId, monthKey, day);
+    try { clearLedgerCache(); } catch(e){}
 }
 
 // Delete purchase — IN column bhi update hoga — same as outward delete
