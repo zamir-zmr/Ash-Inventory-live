@@ -7812,7 +7812,6 @@ window.catPhotosIn = function(){
   };
 })();
 </script>
-
 <style id="landscape-compact-style">
 .cat-tabs{grid-column:1/-1;display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;margin:0 0 4px;position:sticky;top:-16px;z-index:6;background:var(--s,#f4f6fb);-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .cat-tabs::-webkit-scrollbar{display:none}
@@ -7820,35 +7819,42 @@ window.catPhotosIn = function(){
 .cat-tab:active{transform:scale(.95)}
 .cat-tab.on{color:#fff;border-color:transparent;box-shadow:0 6px 14px rgba(15,23,42,.22)}
 
-/* ===== PC + mobile landscape: Order Bill hamesha right side (green bar nahi) ===== */
+/* ===== PC + mobile landscape: Order Bill right-side panel (item add par khulta hai) ===== */
 @media (min-width:900px), (orientation:landscape) and (max-height:540px){
-  html body .cart-bar{display:none !important}
-  html body #cart-panel{transform:none !important;right:0 !important;left:auto !important;top:0 !important;bottom:auto !important;width:var(--cpw) !important;height:100dvh !important;border-radius:20px 0 0 0 !important;box-shadow:-12px 0 30px rgba(15,23,42,.2) !important;z-index:1200}
-  html body #cart-panel > div:first-child button{display:none !important}
-  html body .pg{margin-right:var(--cpw) !important}
-  html body .mw{margin-bottom:14px !important;overflow-y:auto !important}
+  html body #cart-panel{right:0 !important;left:auto !important;top:0 !important;bottom:auto !important;width:var(--cpw) !important;height:100dvh !important;border-radius:20px 0 0 0 !important;box-shadow:-12px 0 30px rgba(15,23,42,.2) !important;z-index:1200}
+  html body:has(#cart-panel.open) .h{margin-right:var(--cpw) !important}
+  html body:has(#cart-panel.open) .mw{margin-right:var(--cpw) !important;width:calc(100% - var(--cpw)) !important;margin-left:0 !important;max-width:none !important}
+  html body .pg{margin-right:0 !important}
+  /* green bar ki jagah chhota floating cart button */
+  html body .cart-bar{display:none !important;left:auto !important;right:16px !important;bottom:14px !important;width:auto !important;max-width:none !important;padding:9px 18px !important;border-radius:999px !important;gap:14px !important;font-size:13px !important}
+  html body.cart-has:not(:has(#cart-panel.open)) .cart-bar{display:flex !important}
+  html body #cart-panel > div:first-child button{width:30px !important;height:30px !important;border-radius:10px !important;font-size:17px !important;display:flex !important;align-items:center;justify-content:center;padding:0 !important}
 }
 @media (min-width:900px){ :root{--cpw:460px} }
 @media (orientation:landscape) and (max-height:540px){
-  :root{--cpw:min(400px,46vw)}
+  :root{--cpw:min(380px,45vw)}
   html body .h{padding:4px 10px 6px !important;display:flex !important;flex-wrap:wrap !important;align-items:center !important;gap:6px 8px !important;overflow:visible !important;height:auto !important;min-height:0 !important}
   html body .h .pos-main-header{flex:1 1 100% !important;display:flex !important;flex-wrap:nowrap !important;align-items:center !important;justify-content:space-between !important;gap:8px !important;width:100% !important}
   html body .h .logo-box{flex:1 1 auto !important;width:auto !important;gap:8px !important;min-width:0 !important;flex-direction:row !important}
-  html body .h .logo-circle{width:40px !important;height:40px !important;min-width:40px !important;flex:0 0 40px !important}
+  html body .h .logo-circle{width:42px !important;height:42px !important;min-width:42px !important;flex:0 0 42px !important}
   html body .h #shopNameHdr{font-size:15px !important;line-height:1.1 !important;white-space:nowrap !important}
   html body .h #loginBadge{font-size:8px !important;margin-bottom:1px !important;white-space:nowrap !important}
   html body .h .logo-box > div{min-width:0}
-  html body .h .header-actions{display:flex !important;grid-template-columns:none !important;width:auto !important;flex:0 0 auto !important;flex-wrap:nowrap !important;gap:6px !important}
-  html body .h .header-actions .hb-btn{min-height:36px !important;height:36px !important;min-width:0 !important;width:auto !important;padding:0 10px !important;flex-direction:row !important;gap:6px !important;border-radius:12px !important;font-size:12px !important}
-  html body .h .header-actions .hb-btn .hb-ic,html body .h .header-actions .hb-ic{width:22px !important;height:22px !important;min-width:22px !important;font-size:12px !important}
-  html body .h .header-actions .hb-btn .hb-tx,html body .h .header-actions .hb-tx{font-size:12px !important}
-  html body .h .header-actions .ticket-badge{min-height:36px !important;height:36px !important;width:auto !important;padding:0 10px !important;font-size:12px !important;border-radius:12px !important;white-space:nowrap !important;gap:6px !important}
-  html body .h #posNavSwitch{flex:1 1 38% !important;margin-top:0 !important;gap:6px !important}
-  html body .h #posNavSwitch button{padding:6px !important;font-size:12px !important;border-radius:10px !important}
-  html body .h #s{flex:1 1 55% !important;width:auto !important;margin-top:0 !important;min-height:34px !important;height:34px !important;padding:4px 12px !important;font-size:13px !important;border-radius:12px !important}
+  /* normal mobile jaise 4 rangeen tiles, chhote size me */
+  html body .h .header-actions{display:grid !important;grid-template-columns:repeat(4,56px) !important;width:auto !important;flex:0 0 auto !important;gap:5px !important}
+  html body .h .header-actions > *{width:100% !important;height:46px !important;min-height:46px !important;min-width:0 !important;padding:2px !important;border-radius:12px !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:1px !important}
+  html body .h .header-actions .hb-ic{width:20px !important;height:20px !important;min-width:20px !important;font-size:11px !important}
+  html body .h .header-actions .hb-tx{font-size:9.5px !important;line-height:1 !important}
+  html body .h .header-actions .ticket-badge .tb-ic{display:none !important}
+  html body .h .header-actions .ticket-badge .tb-txt{display:flex !important;flex-direction:column !important;align-items:center !important;gap:1px !important}
+  html body .h .header-actions .ticket-badge .tb-lb{font-size:8.5px !important}
+  html body .h .header-actions .ticket-badge .tb-no{font-size:15px !important;line-height:1 !important}
+  html body .h #posNavSwitch{flex:1 1 42% !important;margin-top:0 !important;gap:6px !important}
+  html body .h #posNavSwitch button{padding:7px 4px !important;font-size:12px !important;border-radius:10px !important}
+  html body .h #s{flex:1 1 50% !important;width:auto !important;margin-top:0 !important;min-height:34px !important;height:34px !important;padding:4px 12px !important;font-size:13px !important;border-radius:12px !important}
   html body #hb.hb-home{height:36px !important;min-width:36px !important;padding:0 8px !important;border-radius:12px !important}
   html body #hb.hb-home svg{width:20px !important;height:20px !important}
-  html body .mw{padding:10px 12px !important;-webkit-overflow-scrolling:touch}
+  html body .mw{padding:10px 12px !important;margin-bottom:8px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch}
   .mw::-webkit-scrollbar{width:8px}
   .mw::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px}
   html body .pg{grid-template-columns:repeat(3,1fr) !important;gap:10px !important}
@@ -7856,28 +7862,50 @@ window.catPhotosIn = function(){
   html body .pc img{width:44px !important;height:44px !important}
   .cat-tabs{top:-10px}
   .cat-tab{padding:6px 14px;font-size:13px}
-  /* Order Bill compact: items list scroll, totals chhote */
-  html body #cart-panel{overflow-y:auto !important;grid-template-rows:auto auto minmax(96px,1fr) auto !important}
-  #cart-panel > div:first-child{padding:6px 14px !important}
-  #cart-panel > div:first-child b{font-size:15px !important}
-  #cart-panel > div:nth-child(2){padding:0 14px 4px !important}
-  #cart-panel > div:nth-child(2) input,#cart-panel > div:nth-child(2) select{padding:5px 8px !important;font-size:12px !important}
+  /* Order Bill compact */
+  html body #cart-panel{overflow-y:auto !important;grid-template-rows:auto auto minmax(90px,1fr) auto !important}
+  #cart-panel > div:first-child{padding:5px 12px !important}
+  #cart-panel > div:first-child b{font-size:14px !important}
+  #cart-panel > div:nth-child(2){padding:0 12px 4px !important}
+  #cart-panel > div:nth-child(2) input,#cart-panel > div:nth-child(2) select{padding:4px 8px !important;font-size:12px !important}
   html body #cart-panel #cart-list{overflow-y:auto !important;min-height:0 !important;padding:2px 8px !important}
   #cart-list .cart-item{padding:4px 6px !important}
   #cart-list .cart-item b{font-size:12px !important}
   #cart-list .cart-item > div:nth-child(2){margin-top:2px !important}
-  #cart-list .cart-item input{width:42px !important;padding:1px !important;font-size:12px !important}
+  #cart-list .cart-item input{width:40px !important;padding:1px !important;font-size:12px !important}
   #cart-list .cart-item button{width:22px !important;height:22px !important;font-size:13px !important}
-  #cart-panel > div:last-child{padding:6px 14px 8px !important}
-  #cart-panel > div:last-child > div:first-child{display:grid !important;grid-template-columns:1fr 1fr !important;gap:2px 14px !important;margin-bottom:4px !important}
+  #cart-panel > div:last-child{padding:5px 12px 7px !important}
+  #cart-panel > div:last-child > div:first-child{display:grid !important;grid-template-columns:1fr 1fr !important;gap:2px 12px !important;margin-bottom:3px !important}
   #cart-panel > div:last-child > div:first-child > div{font-size:11px !important}
-  #cart-panel > div:last-child > div:first-child input{width:56px !important;padding:1px 5px !important;font-size:12px !important}
-  #cart-panel > div:last-child > div:nth-child(2){margin-bottom:4px !important;gap:4px 8px !important}
-  #grand-total{font-size:18px !important}
-  #cart-panel #orderPayRow{margin-bottom:6px !important;gap:5px !important}
-  #cart-panel #orderPayRow > div{padding:3px 2px !important;border-radius:9px !important}
-  #cart-panel #orderPayRow span:first-child{font-size:13px !important}
-  #cart-panel > div:last-child > div:last-child button{padding:8px !important;font-size:13px !important;border-radius:12px !important}
+  #cart-panel > div:last-child > div:first-child input{width:54px !important;padding:1px 5px !important;font-size:12px !important}
+  #cart-panel > div:last-child > div:nth-child(2){margin-bottom:3px !important;gap:4px 8px !important}
+  #grand-total{font-size:17px !important}
+  #cart-panel #orderPayRow{margin-bottom:5px !important;gap:5px !important}
+  #cart-panel #orderPayRow > div{padding:2px !important;border-radius:9px !important}
+  #cart-panel #orderPayRow span:first-child{font-size:12px !important}
+  #cart-panel > div:last-child > div:last-child button{padding:7px !important;font-size:13px !important;border-radius:12px !important}
 }
 </style>
-<script>try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}</script>
+<script>
+/* Landscape/PC: item click par hi Order Bill khule; ticket select par nahi */
+(function(){
+  var mq=window.matchMedia('(min-width:900px), (orientation:landscape) and (max-height:540px)');
+  var _add=window.addToCart;
+  if(typeof _add==='function'){
+    window.addToCart=function(){ var r=_add.apply(this,arguments); try{ if(mq.matches && cart && cart.length) toggleCart(true); }catch(e){} return r; };
+  }
+  var _upd=window.updateCartUI;
+  if(typeof _upd==='function'){
+    window.updateCartUI=function(){
+      var r=_upd.apply(this,arguments);
+      try{
+        var has=!!(cart && cart.length);
+        document.body.classList.toggle('cart-has',has);
+        if(!has && mq.matches) toggleCart(false);
+      }catch(e){}
+      return r;
+    };
+  }
+  try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+})();
+</script>
