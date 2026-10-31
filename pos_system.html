@@ -7913,6 +7913,13 @@ window.catPhotosIn = function(){
 })();
 </script>
 
+<style id="landscape-left-v7">
+/* Landscape / PC: left content hamesha left (mobile 1/2, PC 2/3) me; Order Bill open ho ya na ho */
+@media (min-width:900px), (orientation:landscape) and (max-height:540px){
+  html body .h{margin-right:var(--cpw) !important}
+  html body .mw{margin-right:var(--cpw) !important;width:calc(100% - var(--cpw)) !important;margin-left:0 !important;max-width:none !important}
+}
+</style>
 <style id="landscape-open-v6">
 /* Order Bill sirf item click par khulta hai. Mobile landscape: 1/2 screen, PC/bada screen: 1/3 screen (right). Left me sab fit. */
 @media (min-width:900px){ :root{--cpw:max(360px,33.333vw)} }
