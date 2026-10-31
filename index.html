@@ -7869,6 +7869,7 @@ i.ic-on.fa-spin{color:var(--ic)!important}
   function align(){
     var nav=document.querySelector('.nav-switch'), hd=document.querySelector('.app-header');
     if(!nav||!hd||!rect||document.body.classList.contains('mode-pos')) return;
+    try{ if(window.matchMedia('(orientation:landscape) and (max-height:540px)').matches){ nav.style.marginTop='0px'; nav.style.marginLeft='0px'; nav.style.marginRight='0px'; var bb=nav.querySelectorAll('.nav-sw-btn'); for(var k=0;k<bb.length;k++) bb[k].style.height=''; if(typeof adjustHeaderSpacer==='function') adjustHeaderSpacer(); return; } }catch(e){}
     var btns=nav.querySelectorAll('.nav-sw-btn');
     nav.style.marginTop='0px'; nav.style.marginLeft='0px'; nav.style.marginRight='0px';
     var n=nav.getBoundingClientRect(), vw=document.documentElement.clientWidth;
@@ -7944,3 +7945,18 @@ html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
 <script>try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}</script>
 </body>
 </html>
+
+<style id="idx-landscape-compact">
+@media (orientation:landscape) and (max-height:540px){
+  html body .app-header{padding:4px 10px !important;row-gap:4px !important;flex-wrap:nowrap !important;align-items:center !important;gap:10px !important;border-radius:0 0 14px 14px !important}
+  html body .app-header .avatar,html body .app-header .avatar.has-logo{width:44px !important;height:44px !important}
+  html body .app-header .user-profile{gap:8px !important;flex:0 1 auto !important;min-width:0}
+  html body .app-header .header-text{display:flex !important;flex-wrap:wrap !important;column-gap:10px !important;align-items:baseline !important}
+  html body .app-header .header-text span,html body .app-header .header-text strong{font-size:11px !important;margin:0 !important}
+  html body .app-header .company-name-display{font-size:14px !important;margin:0 !important}
+  html body .app-header .nav-switch{order:2 !important;flex:1 1 auto !important;max-width:460px !important;margin:0 !important}
+  html body .app-header .nav-sw-btn{padding:7px 10px !important;font-size:12px !important;height:auto !important}
+  html body .app-header .header-actions{order:3 !important;margin-left:auto !important}
+  html body .app-header #hamburgerBtn{width:36px !important;height:36px !important}
+}
+</style>
