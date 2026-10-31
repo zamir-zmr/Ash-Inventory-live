@@ -1227,7 +1227,16 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
     window.BRANCH = (function(){ try{ return localStorage.getItem('asb_branch')==='ug'?'ug':'tz'; }catch(e){ return 'tz'; } })();
     const _origRef = db.ref.bind(db); window._rootRef = _origRef;
     db.ref = function(p){
-        if(p===undefined||p===null) return _origRef();
+        if(p===undefined||p===null){
+            var _r=_origRef();
+            if(window.BRANCH!=='ug') return _r;
+            // Uganda: root multi-path update ke har key ko branchData/ug/ ke andar bhejo
+            return {
+                update:function(u){ var o={}; for(var k in (u||{})){ o[/^(accounts|branchData|\.info)(\/|$)/.test(k)?k:'branchData/ug/'+k]=u[k]; } return _r.update(o); },
+                once:_r.once.bind(_r), on:_r.on.bind(_r), off:_r.off.bind(_r),
+                child:function(c){ return db.ref(c); }
+            };
+        }
         var s=String(p);
         if(window.BRANCH==='ug' && !/^(accounts|branchData|\.info)(\/|$)/.test(s)) s='branchData/ug/'+s;
         return _origRef(s);
