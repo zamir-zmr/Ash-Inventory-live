@@ -1991,12 +1991,8 @@ async function reduceOutwardHistory(itemId, amount){
     }
     return amount - left;
 }
-var _reconLog = {};
 async function reconcileLedgerWithStock(itemId){
     try {
-        // Loop breaker: ek item par 60 sec me 4 se zyada auto-fix nahi (freeze se bachne ke liye)
-        var _nowMs = Date.now(), _rl = (_reconLog[itemId] = (_reconLog[itemId] || []).filter(function(t){ return _nowMs - t < 60000; }));
-        if (_rl.length >= 4) return false;
         const qSnap = await db.ref('stocks/' + itemId + '/qty').once('value');
         if (!qSnap.exists()) return false;
         const stockQty = parseFloat(qSnap.val()) || 0;
@@ -2006,11 +2002,23 @@ async function reconcileLedgerWithStock(itemId){
         const closing = computeMonthClosingStockSync(all, y, mi);
         const diff = parseFloat((stockQty - closing).toFixed(2));
         if (Math.abs(diff) < 0.01) return false;
-        _rl.push(Date.now());
         const mk = y + '-' + String(mi + 1).padStart(2, '0'), day = String(now.getDate());
         if (diff > 0) {   // "In" sirf Purchase se badhega
             if (closing < 0) return false;
-            await reduceOutwardHistory(itemId, diff);   // stock kabhi zabardasti kam nahi karte (data safety)
+            const taken = await reduceOutwardHistory(itemId, diff);
+            if (diff - taken > 0.009) {
+                // ledger me ab Out bacha nahi: inventory stock ko ledger ke Current ke barabar kar do (dono sync)
+                try { clearLedgerCache(); } catch(e){}
+                const all2 = await loadItemHistoryBatch(itemId);
+                const target = parseFloat(computeMonthClosingStockSync(all2, y, mi).toFixed(2));
+                if (target >= 0) {
+                    await db.ref('stocks/' + itemId + '/qty').transaction(function(q){
+                        if (q === null) return q;
+                        if (Math.abs((parseFloat(q) || 0) - stockQty) > 0.01) return q;
+                        return target.toFixed(2);
+                    });
+                }
+            }
             return true;
         }
         await db.ref('inventory_history/' + itemId + '/' + mk + '/' + day).transaction(function(c){
@@ -2034,14 +2042,12 @@ function attachLedgerLive(id, monthName, monthIdx){
     st.cb = function(){
         if (st.first) { st.first = false; return; }
         clearTimeout(st.t);
-        var _gap = Math.max(450, 1500 - (Date.now() - (st.lastRun || 0)));
         st.t = setTimeout(function(){
-            st.lastRun = Date.now();
             var m = document.getElementById('ledgerModal');
             if (!m || getComputedStyle(m).display === 'none') { detachLedgerLive(); return; }
             window._ledgerRefreshing = true;
             Promise.resolve(openLedgerOptimized(st.monthName, st.monthIdx)).catch(function(){}).then(function(){ window._ledgerRefreshing = false; });
-        }, _gap);
+        }, 450);
     };
     _ledgerLive = st;
     db.ref('inventory_history/' + id).on('value', st.cb);
@@ -5428,14 +5434,13 @@ async function saveEditPurchase() {
             return;
         }
 
-        const _timeout = (ms) => new Promise(res => setTimeout(res, ms));
         if (oldItemId && String(oldItemId) === String(newItemId)) {
             // Same item: sirf difference (new - old) apply karo (30 -> 20 = -10)
-            await Promise.race([applyPurchaseDelta(newItemId, newQty - oldQty, true), _timeout(20000)]);
+            await applyPurchaseDelta(newItemId, newQty - oldQty, true);
         } else {
             // Item badla: purane item se poori old qty hatao, naye item me new qty jodo
-            if (oldItemId) await Promise.race([applyPurchaseDelta(oldItemId, -oldQty, true), _timeout(20000)]);
-            await Promise.race([applyPurchaseDelta(newItemId, newQty, true), _timeout(20000)]);
+            if (oldItemId) await applyPurchaseDelta(oldItemId, -oldQty, true);
+            await applyPurchaseDelta(newItemId, newQty, true);
         }
         try { clearLedgerCache(); } catch(e) {}
 
