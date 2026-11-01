@@ -1702,10 +1702,15 @@ let lastLedgerMonth = null;
 // end of the recorded ledger. A next day is only left untouched when it
 // carries its own deliberate manual anchor (manualQty set, e.g. a manual
 // stock correction) — auto-carried openings are always kept in sync.
-async function syncDailyOpeningStock(itemId, monthKey, dayNum) {
+async function syncDailyOpeningStock(itemId, monthKey, dayNum, _depth) {
     try {
+        _depth = _depth || 0;
+        if (_depth > 400) return;   // safety: chain kabhi infinite na ho
         const year = monthKey.split('-')[0];
         const monthIdx = parseInt(monthKey.split('-')[1]) - 1;
+        // Aaj ke baad ke din (future) ka opening carry karne ki zaroorat nahi - yahin ruk jao
+        { const _t = new Date(); const _lim = new Date(_t.getFullYear(), _t.getMonth(), _t.getDate());
+          if (new Date(parseInt(year), monthIdx, parseInt(dayNum)) >= _lim) return; }
         
         const currentDaySnap = await db.ref(`inventory_history/${itemId}/${monthKey}/${dayNum}`).once('value');
         const currentDayData = currentDaySnap.val() || {};
@@ -1741,10 +1746,10 @@ async function syncDailyOpeningStock(itemId, monthKey, dayNum) {
             // Only keep cascading while the value actually changes — once a
             // day already matches, everything after it is already correct.
             if (didChange) {
-                await syncDailyOpeningStock(itemId, monthKey, nextDay);
+                await syncDailyOpeningStock(itemId, monthKey, nextDay, _depth + 1);
             }
         } else {
-            await syncMonthEndToNextMonth(itemId, year, monthIdx, currentStock);
+            await syncMonthEndToNextMonth(itemId, year, monthIdx, currentStock, _depth + 1);
         }
     } catch (e) {
         console.error("Daily carryover sync error:", e);
@@ -1755,7 +1760,7 @@ async function syncDailyOpeningStock(itemId, monthKey, dayNum) {
 // of day 1 of the following month, then keeps cascading from there —
 // exactly the same rule as day-to-day carryover, just across a month (and
 // year) boundary.
-async function syncMonthEndToNextMonth(itemId, year, monthIdx, closingStock) {
+async function syncMonthEndToNextMonth(itemId, year, monthIdx, closingStock, _depth) {
     try {
         let nextMonthIdx = monthIdx + 1;
         let nextYear = parseInt(year);
@@ -1786,7 +1791,7 @@ async function syncMonthEndToNextMonth(itemId, year, monthIdx, closingStock) {
         });
 
         if (didChange) {
-            await syncDailyOpeningStock(itemId, nextMonthKey, 1);
+            await syncDailyOpeningStock(itemId, nextMonthKey, 1, (_depth || 0) + 1);
         }
     } catch (e) {
         console.error("Month-end sync error:", e);
@@ -5310,6 +5315,8 @@ async function editPurchase(id) {
 
     currentEditingPurchaseId = id;
     currentEditingPurchaseOldData = oldData;
+    isSavingPurchase = false;
+    try { const _b = document.querySelector('#editPurchaseModal button[onclick="saveEditPurchase()"]'); if (_b) { _b.disabled = false; _b.style.opacity = '1'; } } catch(e) {}
 
     await populateEditPurchaseItemSelect(oldData.itemId);
 
