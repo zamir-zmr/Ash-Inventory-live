@@ -19,6 +19,30 @@
 </script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script id="desk-landscape-v12">
+/* Mobile landscape = PC big-screen layout (sem to sem): viewport ko desktop width (>=1280) par set karo */
+(function(){
+  try{
+    if (window.parent !== window) return;            // iframe (POS) parent ka viewport use karta hai
+    var mv = document.querySelector('meta[name="viewport"]'); if (!mv) return;
+    var orig = mv.getAttribute('content');
+    function apply(){
+      var a = screen.width, b = screen.height, sw = Math.max(a, b), sh = Math.min(a, b);
+      var land = (window.matchMedia && window.matchMedia('(orientation:landscape)').matches) || (window.innerWidth > window.innerHeight);
+      if (land && sh <= 540 && sw > sh) {
+        var W = Math.max(1280, Math.ceil(560 * sw / sh));   // height hamesha >540 => phone-landscape rules band, PC rules chalu
+        mv.setAttribute('content', 'width=' + W + ', user-scalable=yes');
+      } else {
+        mv.setAttribute('content', orig);
+      }
+    }
+    apply();
+    window.addEventListener('orientationchange', function(){ setTimeout(apply, 120); setTimeout(apply, 500); });
+    window.addEventListener('resize', function(){ clearTimeout(apply._t); apply._t = setTimeout(apply, 150); });
+  }catch(e){}
+})();
+</script>
+
     <title>KP HARDWARE</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
