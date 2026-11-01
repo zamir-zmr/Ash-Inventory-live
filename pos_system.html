@@ -2551,7 +2551,6 @@ ${bdEditScript()}
             const _sales0 = _ls('asb_sales_logs', []) || [];
             for (let t = 1; t <= 200; t++) {
                 if (ticketsUsed.includes(t) || ticketsPending.includes(t) || ticketsSettled.includes(t)) continue;
-                if (_sales0.some(x => x.date === todayLocal && String(x.billNo) === String(t))) continue;
                 currentTicket = t; break;
             }
             if (currentTicket) { const _tb = document.getElementById('ticketBadge'); if (_tb) _tb.innerText = '🎫 #' + currentTicket; }
@@ -2561,10 +2560,8 @@ ${bdEditScript()}
     let billCount;
     if (pendingBill) {
         billCount = pendingBill.billNo;
-    } else if (currentTicket) {
-        billCount = parseInt(currentTicket);   // Bill no = Ticket no
     } else {
-        // Fallback (koi ticket free nahi): aaj ke sabse bade bill no ke baad ka number (22 jaisa purana counter use nahi hoga)
+        // Bill no hamesha unique + sequential (aaj ke sabse bade bill no + 1); Ticket alag cheez hai
         const _todayNos = (_ls('asb_sales_logs', []) || []).filter(x => x.date === todayLocal).map(x => parseInt(x.billNo) || 0);
         billCount = (_todayNos.length ? Math.max.apply(null, _todayNos) : 0) + 1;
     }
@@ -2628,7 +2625,7 @@ ${bdEditScript()}
     // Ab bill generate + record ho chuka hai - tabhi counter commit karein
     if (!pendingBill) {
         _lsSet('asb_last_date', todayLocal);
-        if (!currentTicket) _lsSet('asb_bill_count', billCount);
+        _lsSet('asb_bill_count', billCount);
     }
     // Ticket ko RED (pending) mark karein - items punched/previewed, abhi actual print (smartPrint) nahi hua
     window.lastPrintTicket = currentTicket || null;
@@ -8075,3 +8072,9 @@ html body #hb.hb-home svg{width:22px !important;height:22px !important}
   setInterval(prep, 15000);
 })();
 </script>
+<style id="eb-left-style">
+/* Edit / Delete / Exit bar: PC + landscape me right wale Order Bill area ke neeche na jaye (left part me rahe) */
+@media (min-width:900px), (orientation:landscape) and (max-height:540px){
+  html body #eb{padding-right:calc(var(--cpw, 460px) + 16px) !important}
+}
+</style>

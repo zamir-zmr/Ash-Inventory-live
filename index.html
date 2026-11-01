@@ -5401,63 +5401,41 @@ async function saveEditPurchase() {
             editedMonth = `${year}-${monthStr}`;
         }
 
-        // STEP 1: Reverse the old item's stock
-        if (oldItemId) {
-            const oldStockSnap = await db.ref(`stocks/${oldItemId}`).once("value");
-            const oldStockQty = parseFloat((oldStockSnap.val() || {}).qty) || 0;
-            const reversedQty = Math.max(0, oldStockQty - oldQty).toFixed(2);
-            
-            await db.ref(`stocks/${oldItemId}`).update({ qty: reversedQty });
-            console.log(`Old item ${oldItemId}: qty ${oldStockQty} - ${oldQty} = ${reversedQty}`);
-
+        // Delta-based update (stock ko 0 par clamp karke qty khone se bachata hai, ledger "In" bhi sahi rehta hai)
+        async function applyPurchaseDelta(itemId, delta, withCarry) {
+            if (!itemId || !delta) return;
+            await db.ref(`stocks/${itemId}/qty`).transaction(function(q){
+                if (q === null) return q;
+                return Math.max(0, (parseFloat(q) || 0) + delta).toFixed(2);
+            });
             if (pTime && editedDay && editedMonth) {
-                const historyRef = db.ref(`inventory_history/${oldItemId}/${editedMonth}/${editedDay}`);
-                await historyRef.transaction((current) => {
-                    if (current) {
-                        current.inward = Math.max(0, (parseFloat(current.inward) || 0) - oldQty).toFixed(2);
-                    }
-                    return current;
+                await db.ref(`inventory_history/${itemId}/${editedMonth}/${editedDay}`).transaction(function(c){
+                    if (!c) c = { inward: 0, outward: 0, waste: 0 };
+                    c.inward = parseFloat(Math.max(0, (parseFloat(c.inward) || 0) + delta).toFixed(2));
+                    return c;
                 });
-                
-                const reverseQtyDelta = -oldQty;
-                await cascadeUpdateOpeningBalances(oldItemId, editedDay, editedMonth, reverseQtyDelta);
+                await cascadeUpdateOpeningBalances(itemId, editedDay, editedMonth, delta);
+                if (withCarry) triggerDailyCarryover(itemId, editedMonth, parseInt(editedDay));
             }
         }
 
-        // STEP 2: Apply the new item's stock
         const newStockSnap = await db.ref(`stocks/${newItemId}`).once("value");
-        const newStockData = newStockSnap.val();
-        
-        if (!newStockData) {
+        if (!newStockSnap.val()) {
             showToast("Error: Item stock not found!");
             isSavingPurchase = false;
-            if (saveBtn) {
-                saveBtn.disabled = false;
-                saveBtn.style.opacity = '1';
-            }
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
             return;
         }
 
-        const currentQty = parseFloat(newStockData.qty) || 0;
-        const newStockQty = (currentQty + newQty).toFixed(2);
-        
-        await db.ref(`stocks/${newItemId}`).update({ qty: newStockQty });
-        console.log(`New item ${newItemId}: qty ${currentQty} + ${newQty} = ${newStockQty}`);
-
-        if (pTime && editedDay && editedMonth) {
-            const historyRef = db.ref(`inventory_history/${newItemId}/${editedMonth}/${editedDay}`);
-            await historyRef.transaction((current) => {
-                if (!current) current = { inward: 0, outward: 0, waste: 0 };
-                current.inward = (parseFloat(current.inward) || 0) + newQty;
-                return current;
-            });
-            
-            const forwardQtyDelta = newQty;
-            await cascadeUpdateOpeningBalances(newItemId, editedDay, editedMonth, forwardQtyDelta);
-            
-            // AUTO CARRYOVER: Sync updated purchase day's closing to next day's opening
-            triggerDailyCarryover(newItemId, editedMonth, parseInt(editedDay));
+        if (oldItemId && String(oldItemId) === String(newItemId)) {
+            // Same item: sirf difference (new - old) apply karo (30 -> 20 = -10)
+            await applyPurchaseDelta(newItemId, newQty - oldQty, true);
+        } else {
+            // Item badla: purane item se poori old qty hatao, naye item me new qty jodo
+            if (oldItemId) await applyPurchaseDelta(oldItemId, -oldQty, true);
+            await applyPurchaseDelta(newItemId, newQty, true);
         }
+        try { clearLedgerCache(); } catch(e) {}
 
         // STEP 3: Save the updated purchase record
         await db.ref(`purchases/${pId}`).update({
