@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KP HARDWARE POS</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
@@ -2547,7 +2547,7 @@ ${bdEditScript()}
     // NOTE: bill counter / ticket ko yahan commit NAHI karte - bill successfully generate + record hone ke baad hi aage badhega.
 
     // Logo
-    let savedPhoto = (function(){ try { return localStorage.getItem('savedPhotoUrl'); } catch(e){ return null; } })();
+    let savedPhoto = (function(){ try { var o = localStorage.getItem('savedPhotoUrl'); return (typeof fastLogo === 'function') ? fastLogo(o) : o; } catch(e){ return null; } })();
 
     const custPhoneVal = (document.getElementById('cust-phone') && document.getElementById('cust-phone').value.trim()) || '';
 
@@ -2611,12 +2611,14 @@ ${bdEditScript()}
     if (currentTicket) { const _om = (typeof orderMethodValue === 'function') ? orderMethodValue() : ''; if (_om) settleTicket(parseInt(currentTicket)); else markTicketPending(currentTicket); }
     if (typeof setOrderMethod === 'function') setOrderMethod('');
     currentTicket = null;
-    clearCart(); closeM();
-    document.getElementById('ticketBadge').innerText = '🎫 --';
-    showTicketPage();
-    
-    // Receipt HTML frame mein load karna (sirf PREVIEW - koi auto print nahi)
+    closeM();
+    // Receipt PREVIEW sabse pehle (fast) - baaki heavy kaam uske baad
     printThermal(html, billCount, dateStr);
+    setTimeout(function(){
+      try { clearCart(); } catch(e) {}
+      try { document.getElementById('ticketBadge').innerText = '🎫 --'; } catch(e) {}
+      try { showTicketPage(); } catch(e) {}
+    }, 40);
 
     // NOTE: Pehle yahan auto-print (Electron IPC / smartPrint fallback) call hota tha,
     // jiski wajah se ticket seedha BLUE ho jata tha bina user ke modal Print button dabaye.
@@ -2631,9 +2633,9 @@ function printThermal(html, billNo, dateStr) {
     frame.onload = function () {
         try { ['contextmenu', 'selectstart', 'dragstart'].forEach(ev => frame.contentDocument.addEventListener(ev, e => e.preventDefault())); } catch (e) {}
     };
-    frame.srcdoc = String(html).replace('</head>', _noSel + '\n</head>').replace('<html', '<html translate="no"');
     document.getElementById('receiptOv').style.display = 'block';
     document.getElementById('receiptPrintM').style.display = 'flex';
+    frame.srcdoc = String(html).replace('</head>', _noSel + '\n</head>').replace('<html', '<html translate="no"');
     window.currentReceiptBillNo = billNo || '';
     window.currentReceiptDateStr = dateStr || new Date().toLocaleDateString('en-GB');
     window.currentReceiptHTML = html;
@@ -4440,7 +4442,7 @@ function reprintBill(billNo, dateKey) {
 
     if (!b) return alert("Error: Bill data not found!");
 
-    let savedPhoto = (function(){ try { return localStorage.getItem('savedPhotoUrl'); } catch(e){ return null; } })();
+    let savedPhoto = (function(){ try { var o = localStorage.getItem('savedPhotoUrl'); return (typeof fastLogo === 'function') ? fastLogo(o) : o; } catch(e){ return null; } })();
 
     // --- SHIFT DETECTION FIX (AM/PM LOGIC) ---
     let timeParts = b.time.split(' '); 
@@ -8015,3 +8017,37 @@ html body #hb.hb-home svg{width:22px !important;height:22px !important}
   html body #cart-panel > div:last-child > div:last-child button{padding:7px !important;font-size:11px !important;border-radius:10px !important}
 }
 </style>
+
+<script id="fast-receipt-v11">
+/* Logo ko chhota (max 360px) bana ke cache karo - receipt preview/print jaldi load ho */
+(function(){
+  var cache = { key: '', small: '' };
+  function keyOf(o){ return o ? (o.length + ':' + o.slice(-40)) : ''; }
+  window.fastLogo = function(o){
+    if (!o) return o;
+    if (o.length < 60000) return o;
+    return (cache.key === keyOf(o) && cache.small) ? cache.small : o;
+  };
+  function prep(){
+    try {
+      var o = localStorage.getItem('savedPhotoUrl');
+      if (!o || o.length < 60000 || cache.key === keyOf(o)) return;
+      var im = new Image();
+      im.onload = function(){
+        try {
+          var S = 360, r = Math.min(S / im.width, S / im.height, 1);
+          var cv = document.createElement('canvas'); cv.width = Math.round(im.width * r); cv.height = Math.round(im.height * r);
+          cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+          cache.small = cv.toDataURL(/^data:image\/png/.test(o) ? 'image/png' : 'image/jpeg', 0.88);
+          cache.key = keyOf(o);
+        } catch(e){}
+      };
+      im.src = o;
+    } catch(e){}
+  }
+  window.prepFastLogo = prep;
+  var idle = window.requestIdleCallback || function(f){ return setTimeout(f, 800); };
+  idle(prep);
+  setInterval(prep, 15000);
+})();
+</script>
