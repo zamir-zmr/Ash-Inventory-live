@@ -7906,7 +7906,6 @@ window.catPhotosIn = function(){
       return r;
     };
   }
-  try{ if(screen.orientation && screen.orientation.lock){ screen.orientation.lock('any').catch(function(){}); } }catch(e){}
   try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
   /* POS iframe me ho to scroll parent tak chain ho (Chrome URL bar hide ho) */
   try{ if(window.parent!==window){ document.documentElement.style.overscrollBehaviorY='auto'; document.body.style.overscrollBehaviorY='auto'; } }catch(e){}
@@ -7943,5 +7942,39 @@ html body #hb.hb-home svg{width:22px !important;height:22px !important}
   html body .h .logo-box{flex:1 1 auto !important;width:auto !important}
   html body .h .header-actions{flex:0 0 auto !important;width:auto !important;grid-template-columns:repeat(4,56px) !important}
   html body .h .header-actions .hb-btn,html body .h .header-actions .ticket-badge{width:56px !important;max-width:56px !important;height:48px !important;min-height:48px !important}
+}
+</style>
+
+<style id="compact-order-v9">
+/* Home icon: sab screens par sirf icon, 40x40 (PC par "Home" text kat raha tha) */
+html body #hb.hb-home .hb-home-tx{display:none !important}
+html body #hb.hb-home{width:40px !important;height:40px !important;min-width:40px !important;min-height:40px !important;padding:0 !important;border-radius:14px !important}
+html body #hb.hb-home svg{width:22px !important;height:22px !important}
+
+/* Order Bill compact: mobile landscape + PC + bada screen */
+@media (min-width:900px), (orientation:landscape) and (max-height:540px){
+  html body #cart-panel{overflow:hidden}
+  html body #cart-panel > div:nth-child(1){padding:8px 14px !important}
+  html body #cart-panel > div:nth-child(1) b{font-size:16px !important}
+  html body #cart-panel > div:nth-child(1) button{width:30px !important;height:30px !important;border-radius:10px !important;font-size:17px !important}
+  html body #cart-panel > div:nth-child(2){padding:0 14px 6px !important;gap:6px !important}
+  html body #cart-panel > div:nth-child(2) input,html body #cart-panel > div:nth-child(2) select{padding:6px 8px !important;font-size:12px !important;border-radius:10px !important}
+  html body #cart-panel > div:nth-child(2) select{width:136px !important}
+  html body #cart-panel #cart-list{padding:4px 12px !important;min-height:0 !important}
+  html body #cart-panel #cart-list > div{padding:5px 0 !important;font-size:12px !important}
+  html body #cart-panel #cart-list button{transform:scale(.85)}
+  html body #cart-panel > div:last-child{padding:6px 12px 8px !important}
+  html body #cart-panel > div:last-child > div:nth-child(1){display:grid !important;grid-template-columns:1fr 1fr !important;gap:3px 14px !important;margin-bottom:6px !important}
+  html body #cart-panel > div:last-child > div:nth-child(1) > div{font-size:11px !important;gap:6px}
+  html body #cart-panel > div:last-child > div:nth-child(1) input{width:56px !important;padding:1px 5px !important;font-size:11px !important;border-radius:5px !important}
+  html body #cart-panel > div:last-child > div:nth-child(2){margin-bottom:6px !important;gap:2px 8px !important;align-items:center !important}
+  html body #cart-panel > div:last-child > div:nth-child(2) > span:first-child{font-size:12px !important}
+  html body #cart-panel #grand-total{font-size:19px !important}
+  html body #cart-panel #orderPayRow{margin-bottom:6px !important;gap:5px !important}
+  html body #cart-panel #orderPayRow > div{padding:4px 2px !important;border-radius:9px !important}
+  html body #cart-panel #orderPayRow > div > span:first-of-type{font-size:13px !important}
+  html body #cart-panel #orderPayRow > div > span:last-of-type{font-size:8px !important}
+  html body #cart-panel > div:last-child > div:last-child{gap:8px !important}
+  html body #cart-panel > div:last-child > div:last-child button{padding:9px !important;font-size:12px !important;border-radius:12px !important}
 }
 </style>
