@@ -7978,3 +7978,40 @@ html body #hb.hb-home svg{width:22px !important;height:22px !important}
   html body #cart-panel > div:last-child > div:last-child button{padding:9px !important;font-size:12px !important;border-radius:12px !important}
 }
 </style>
+
+<style id="compact-order-v10">
+@media (min-width:900px), (orientation:landscape) and (max-height:540px){
+  /* totals: 5 chhote cells ek hi row me (label upar, value neeche) */
+  html body #cart-panel > div:last-child > div:nth-child(1){display:grid !important;grid-template-columns:repeat(5,minmax(0,1fr)) !important;gap:6px !important;margin-bottom:6px !important;padding-bottom:6px !important;border-bottom:1px dashed #e2e8f0}
+  html body #cart-panel > div:last-child > div:nth-child(1) > div{display:flex !important;flex-direction:column !important;align-items:stretch !important;justify-content:flex-start !important;gap:2px !important;font-size:9px !important;font-weight:700 !important;line-height:1.1 !important;text-align:center}
+  html body #cart-panel > div:last-child > div:nth-child(1) > div > span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  html body #cart-panel > div:last-child > div:nth-child(1) > div > span:last-child:not(:first-child){font-size:12px !important;color:#0f172a !important}
+  html body #cart-panel > div:last-child > div:nth-child(1) input{width:100% !important;box-sizing:border-box !important;text-align:center !important;padding:3px 2px !important;font-size:12px !important;border-radius:6px !important}
+  html body #cart-panel > div:last-child > div:nth-child(2){margin-bottom:6px !important;align-items:center !important;flex-wrap:nowrap !important}
+  html body #cart-panel #grand-total{font-size:20px !important}
+  /* payment methods: icon + naam ek line me, pateli */
+  html body #cart-panel #orderPayRow > div{display:flex !important;align-items:center !important;justify-content:center !important;gap:4px !important;padding:3px 2px !important;border-radius:8px !important;min-height:0 !important}
+  html body #cart-panel #orderPayRow > div br{display:none}
+  html body #cart-panel #orderPayRow > div > span:first-of-type{font-size:12px !important}
+  html body #cart-panel #orderPayRow > div > span:last-of-type{font-size:8px !important}
+  html body #cart-panel > div:last-child > div:last-child button{padding:8px !important;font-size:12px !important}
+}
+@media (orientation:landscape) and (max-height:540px){
+  /* mobile landscape: aur zyada compress */
+  html body #cart-panel > div:nth-child(1){padding:5px 12px !important}
+  html body #cart-panel > div:nth-child(1) b{font-size:14px !important}
+  html body #cart-panel > div:nth-child(1) button{width:26px !important;height:26px !important;font-size:15px !important}
+  html body #cart-panel > div:nth-child(2){padding:0 12px 4px !important}
+  html body #cart-panel > div:nth-child(2) input,html body #cart-panel > div:nth-child(2) select{padding:4px 8px !important;font-size:11px !important}
+  html body #cart-panel #cart-list > div{padding:3px 0 !important;font-size:11px !important}
+  html body #cart-panel > div:last-child{padding:4px 10px 6px !important}
+  html body #cart-panel > div:last-child > div:nth-child(1){gap:4px !important;margin-bottom:4px !important;padding-bottom:4px !important}
+  html body #cart-panel > div:last-child > div:nth-child(1) > div{font-size:8px !important}
+  html body #cart-panel > div:last-child > div:nth-child(1) > div > span:last-child:not(:first-child){font-size:11px !important}
+  html body #cart-panel > div:last-child > div:nth-child(1) input{padding:2px 1px !important;font-size:11px !important}
+  html body #cart-panel > div:last-child > div:nth-child(2){margin-bottom:4px !important}
+  html body #cart-panel #grand-total{font-size:17px !important}
+  html body #cart-panel #orderPayRow{margin-bottom:4px !important;gap:4px !important}
+  html body #cart-panel > div:last-child > div:last-child button{padding:7px !important;font-size:11px !important;border-radius:10px !important}
+}
+</style>
