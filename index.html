@@ -663,6 +663,7 @@ function _setAppModeReal(m){
     positionPosFrame();
     window.scrollTo(0,0);
     if(!pos && typeof adjustHeaderSpacer==='function') adjustHeaderSpacer();
+    if(pos && window._kpFlushPos) setTimeout(window._kpFlushPos,30);
 }
 
 window.posRole=null;
@@ -3004,26 +3005,32 @@ function askDelete(id) {
 }
 
 
-function render() {
-    // Categories logic
-    db.ref("categories").on("value", snap => {
-        let opts = '<option value="">Category</option>';
-        const cats = snap.val();
-        for(let k in cats) opts += `<option value="${k}">${cats[k].name}</option>`;
-        document.getElementById('catDropdown').innerHTML = opts;
-        document.getElementById('editCatDropdown').innerHTML = opts;
-    });
-
-    // Main Rendering Logic
-    db.ref("stocks").on("value", stockSnap => {
-        const stocks = stockSnap.val();
-        
-        // --- Get History first, then render everything ---
-        db.ref("transfers").limitToLast(10).on("value", transferSnap => {
-            const transfers = transferSnap.val();
-            
-            db.ref("categories").once("value", catSnap => {
-                const cats = catSnap.val() || {};
+var _kpR={s:undefined,t:undefined,c:undefined,tl:false,bound:false,timer:0};
+function _kpRenderSoon(){
+    if(!_kpR.bound){
+        _kpR.bound=true;
+        db.ref("categories").on("value", function(snap){
+            _kpR.c=snap.val()||{};
+            var opts='<option value="">Category</option>';
+            for(var k in _kpR.c) opts+='<option value="'+k+'">'+_kpR.c[k].name+'</option>';
+            var a=document.getElementById('catDropdown'), b=document.getElementById('editCatDropdown');
+            if(a) a.innerHTML=opts; if(b) b.innerHTML=opts;
+            _kpRenderSoon();
+        });
+        db.ref("stocks").on("value", function(s){ _kpR.s=s.val(); _kpRenderSoon(); });
+        db.ref("transfers").limitToLast(10).on("value", function(s){ _kpR.t=s.val(); _kpR.tl=true; _kpRenderSoon(); });
+        return;
+    }
+    if(_kpR.c===undefined || _kpR.s===undefined || !_kpR.tl) return;
+    clearTimeout(_kpR.timer);
+    _kpR.timer=setTimeout(function(){ _kpRenderCore(_kpR.s, _kpR.t, _kpR.c); }, 50);
+}
+function render() { _kpRenderSoon(); }
+function _kpRenderCore(stocks, transfers, cats) {
+    {
+        {
+            {
+                cats = cats || {};
                 let html = "";
                 let lowStockItemsHtml = "";
 
@@ -3092,13 +3099,13 @@ function render() {
 
                 let dashboardHtml = lowStockItemsHtml ? `<div style="margin-bottom:0px;"><h3 style="font-size:11px; color:#e11d48; margin-bottom:0px; padding-left:10px; font-weight:800;">LOW STOCK ALERT</h3><div style="display:flex; gap:10px; overflow-x:auto; padding:5px 10px; scrollbar-width:none;">${lowStockItemsHtml}</div></div>` : "";
                 
-                document.getElementById('contentAreaTop').innerHTML = dashboardHtml;
-                document.getElementById('contentAreaBottom').innerHTML = html;
+                if(window._kpLastTop !== dashboardHtml){ document.getElementById('contentAreaTop').innerHTML = dashboardHtml; window._kpLastTop = dashboardHtml; }
+                if(window._kpLastBottom !== html){ document.getElementById('contentAreaBottom').innerHTML = html; window._kpLastBottom = html; }
                 
                 if(document.getElementById('search').value !== "") filter();
-            });
-        });
-    });
+            }
+        }
+    }
 }
 
 
@@ -7370,7 +7377,13 @@ async function runSalesExport() {
 (function(){
     var frame=document.getElementById('posFrame');
     var stocksCache=null, catsCache={};
+    var _sendT=0, _sendDirty=false;
     function send(){
+        if(frame && frame.style.display==='none'){ _sendDirty=true; return; }   // Inventory mode: POS hidden, abhi mat bhejo
+        clearTimeout(_sendT); _sendT=setTimeout(_sendNow,200);
+    }
+    window._kpFlushPos=function(){ if(_sendDirty){ _sendDirty=false; _sendNow(); } };
+    function _sendNow(){
         if(!stocksCache||!frame||!frame.contentWindow) return;
         try{ frame.contentWindow.postMessage({type:'INV_SYNC',stocks:stocksCache,categories:catsCache},'*'); }catch(e){}
     }
@@ -7952,6 +7965,350 @@ html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
 })();
 </script>
 <script>try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}</script>
+<script id="kp-fast-v16">
+/* ===== KP FAST LAYER v16 =====
+   Inventory delete/edit (Distribution / Purchase / Wastage): 1 read round-trip + 1 atomic multi-path update.
+   Opening-carryover bhi memory me calculate hota hai (pehle din-par-din network calls hote the). */
+(function(){
+'use strict';
+var r2=function(x){ return Math.round((x+Number.EPSILON)*100)/100; };
+var pad=function(n){ return String(n).padStart(2,'0'); };
+var num=function(v){ var n=parseFloat(v); return isNaN(n)?0:n; };
+
+function parseT(t){
+    if(!t) return null;
+    var dp=String(t).split(' ')[0].split('/');
+    if(dp.length<3) return null;
+    var day=parseInt(dp[0],10); if(isNaN(day)) return null;
+    return { day:day, mk: dp[2]+'-'+pad(dp[1]) };
+}
+function norm(v){
+    var o={}; if(!v) return o;
+    if(Array.isArray(v)){ v.forEach(function(x,i){ if(x!=null) o[i]=x; }); }
+    else { for(var k in v) o[k]=v[k]; }
+    return o;
+}
+async function readHist(id, fromMk){
+    var s=await db.ref('inventory_history/'+id).orderByKey().startAt(fromMk).once('value');
+    var raw=s.val()||{}, h={};
+    for(var mk in raw){
+        var m=norm(raw[mk]); h[mk]={};
+        for(var d in m){ h[mk][d]=Object.assign({}, m[d]); }
+    }
+    return h;
+}
+
+/* In-memory carryover: day ka Current -> agle din ka Opening (sirf aaj se pehle ke din), manualQty anchor ko chhodta hai */
+function carry(hist, mk, day, upd){
+    var t=new Date(), lim=new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    for(var guard=0; guard<1100; guard++){
+        var y=parseInt(mk.split('-')[0],10), mi=parseInt(mk.split('-')[1],10)-1;
+        if(new Date(y,mi,day) >= lim) return;
+        var m=hist[mk]||(hist[mk]={});
+        var row=m[day]||{};
+        var cur=r2(num(row.opening)+num(row.inward)-num(row.outward)-num(row.waste));
+        var dim=new Date(y,mi+1,0).getDate(), nmk, nday;
+        if(day<dim){ nmk=mk; nday=day+1; }
+        else { var ny=y, nm=mi+1; if(nm>11){ nm=0; ny++; } nmk=ny+'-'+pad(nm+1); nday=1; }
+        var nmo=hist[nmk]||(hist[nmk]={});
+        var nrow=nmo[nday]||(nmo[nday]={});
+        var changed=false, base=nmk+'/'+nday+'/';
+        if(nrow.manualQty===undefined || nrow.manualQty===null){
+            var prevO=(nrow.opening===undefined||nrow.opening===null)?null:parseFloat(nrow.opening);
+            if(prevO!==cur){ nrow.opening=cur; upd[base+'opening']=cur; changed=true; }
+        }
+        ['inward','outward','waste'].forEach(function(f){
+            if(nrow[f]===undefined||nrow[f]===null){ nrow[f]=0; upd[base+f]=0; }
+        });
+        if(!changed) return;
+        mk=nmk; day=nday;
+    }
+}
+
+/* Purane syncDailyOpeningStock ki jagah: 1 read + 1 write */
+window.syncDailyOpeningStock=async function(itemId, monthKey, dayNum){
+    try{
+        var h=await readHist(itemId, monthKey), upd={};
+        carry(h, monthKey, parseInt(dayNum,10), upd);
+        if(Object.keys(upd).length) await db.ref('inventory_history/'+itemId).update(upd);
+    }catch(e){ console.error('Fast carryover error:', e); }
+};
+
+/* Core engine: stock + ledger + record sab ek atomic update me */
+async function engine(spec){
+    var stockD={}, ids={}, minMk={};
+    (spec.stock||[]).forEach(function(s){ if(!s||!s.id) return; stockD[s.id]=(stockD[s.id]||0)+s.delta; ids[s.id]=1; });
+    var ops=(spec.hist||[]).map(function(h){
+        var t=parseT(h.time); if(!t||!h.id) return null;
+        return {id:h.id, mk:t.mk, day:t.day, dIn:h.dIn||0, dOut:h.dOut||0, dW:h.dW||0};
+    }).filter(Boolean);
+    ops.forEach(function(o){ ids[o.id]=1; if(!minMk[o.id]||o.mk<minMk[o.id]) minMk[o.id]=o.mk; });
+    var idList=Object.keys(ids);
+    var reads=await Promise.all(idList.map(async function(id){
+        var rr=await Promise.all([
+            db.ref('stocks/'+id+'/qty').once('value'),
+            minMk[id]?readHist(id,minMk[id]):Promise.resolve({})
+        ]);
+        return {id:id, exists:rr[0].exists(), qty:num(rr[0].val()), hist:rr[1]};
+    }));
+    var ctx={}; reads.forEach(function(r){ ctx[r.id]=r; });
+    if(spec.check){ var err=spec.check(ctx); if(err) return {error:err}; }
+    var upd={};
+    idList.forEach(function(id){
+        var r=ctx[id];
+        if(stockD[id]!==undefined && r.exists) upd['stocks/'+id+'/qty']=Math.max(0, r.qty+stockD[id]).toFixed(2);
+    });
+    var hupd={};
+    ops.forEach(function(o){
+        var h=ctx[o.id].hist, m=h[o.mk]||(h[o.mk]={}), row=m[o.day];
+        if(!row){ if(o.dIn<=0&&o.dOut<=0&&o.dW<=0) return; row=m[o.day]={}; }
+        row.inward=Math.max(0, r2(num(row.inward)+o.dIn));
+        row.outward=Math.max(0, r2(num(row.outward)+o.dOut));
+        row.waste=Math.max(0, r2(num(row.waste)+o.dW));
+        var u=(hupd[o.id]=hupd[o.id]||{}), b=o.mk+'/'+o.day+'/';
+        u[b+'inward']=row.inward; u[b+'outward']=row.outward; u[b+'waste']=row.waste;
+    });
+    ops.forEach(function(o){ carry(ctx[o.id].hist, o.mk, o.day, hupd[o.id]||(hupd[o.id]={})); });
+    for(var id in hupd) for(var p in hupd[id]) upd['inventory_history/'+id+'/'+p]=hupd[id][p];
+    for(var p2 in (spec.extra||{})) upd[p2]=spec.extra[p2];
+    try{ clearLedgerCache(); }catch(e){}
+    var done=db.ref().update(upd);
+    done.catch(function(e){ console.error('Fast update failed:', e); try{ showToast('Sync error! Check internet ❌'); }catch(x){} });
+    return {ok:true, done:done};
+}
+window._kpEngine=engine;
+
+var _busy={};
+function lock(k){ if(_busy[k]) return false; _busy[k]=1; setTimeout(function(){ _busy[k]=0; },4000); return true; }
+function unlock(k){ _busy[k]=0; }
+function errSwal(err, target){
+    var e=(typeof err==='string')?{title:'Error',text:err}:err;
+    Swal.fire({title:e.title||'Error', text:e.text||'', icon:'error', target:target||undefined});
+}
+function quickOk(title, target){
+    Swal.fire({title:title, icon:'success', timer:800, showConfirmButton:false, target:target||undefined});
+}
+
+/* ---------- LISTENER DEDUPE: panel khulne par purane .on() hatao ---------- */
+var _L={};
+function liveOn(key, ref, cb){
+    if(_L[key]){ try{ _L[key][0].off('value',_L[key][1]); }catch(e){} }
+    _L[key]=[ref,cb]; ref.on('value',cb);
+}
+window.loadPurchaseHistory=function(){
+    liveOn('purchases', db.ref('purchases').limitToLast(20), function(snap){
+        var data=snap.val();
+        if(!data){ renderPurchaseCards(null, []); return; }
+        renderPurchaseCards(data, Object.keys(data).reverse());
+    });
+};
+window.loadWasteHistory=function(){
+    liveOn('wastes', db.ref('wastes').limitToLast(20), function(snap){
+        var data=snap.val();
+        if(data) renderWasteCards(data, Object.keys(data).reverse());
+        else document.getElementById('wasteHistory').innerHTML="<p style='text-align:center; color:var(--text-dim); padding:20px;'>No records found.</p>";
+    });
+};
+window.loadTransferHistory=function(){
+    startLivePriceSync(); loadBranchList();
+    liveOn('transfers', db.ref('transfers').limitToLast(15), function(snap){ lastTransfersSnap=snap; renderTransferHistory(snap); });
+};
+
+/* ---------- PURCHASE: DELETE ---------- */
+async function fastDeletePurchase(pId, pData, target){
+    var qty=num(pData.qty);
+    var res=await engine({
+        stock: pData.itemId?[{id:pData.itemId, delta:-qty}]:[],
+        hist:  (pData.itemId&&pData.time&&qty>0)?[{id:pData.itemId, time:pData.time, dIn:-qty}]:[],
+        extra: (function(){ var o={}; o['purchases/'+pId]=null; return o; })()
+    });
+    if(res.error){ errSwal(res.error,target); return false; }
+    return true;
+}
+window.purgeItemDayLedger=async function(itemId, timeStr, purchaseId, preData){
+    if(!purchaseId) return;
+    var p=preData;
+    if(!p){ var s=await db.ref('purchases/'+purchaseId).once('value'); p=s.val(); }
+    if(!p) return;
+    if(!p.itemId) p.itemId=itemId; if(!p.time) p.time=timeStr;
+    await fastDeletePurchase(purchaseId, p);
+};
+window.askDeletePurchase=async function(pId, refPath){
+    if(refPath!=='purchases') return;
+    var target=document.getElementById('purchasedPanel');
+    var r=await Swal.fire({ title:'Delete Purchase?', text:"Us item ke us din ke IN / OUT / WASTE reset ho jayenge aur stock balance hoga!", icon:'warning', showCancelButton:true, confirmButtonColor:'#e11d48', confirmButtonText:'Yes, Delete!', target:target });
+    if(!r.isConfirmed) return;
+    if(!lock('dp'+pId)) return;
+    try{
+        var s=await db.ref('purchases/'+pId).once('value'), p=s.val(); if(!p) return;
+        if(await fastDeletePurchase(pId,p,target)) quickOk('Deleted!',target);
+    }catch(e){ console.error(e); showToast('Database error! ❌'); }
+    finally{ unlock('dp'+pId); }
+};
+window.deletePurchase=async function(id){
+    var r=await Swal.fire({ title:'Delete Purchase Record?', text:'This action cannot be undone!', icon:'warning', showCancelButton:true, confirmButtonText:'Yes, Delete', confirmButtonColor:'#e11d48' });
+    if(!r.isConfirmed) return;
+    if(!lock('dp'+id)) return;
+    try{
+        var s=await db.ref('purchases/'+id).once('value'), p=s.val(); if(!p) return;
+        if(await fastDeletePurchase(id,p)) showToast('Deleted! ✓');
+    }catch(e){ console.error(e); showToast('Error deleting ❌'); }
+    finally{ unlock('dp'+id); }
+};
+
+/* ---------- PURCHASE: EDIT ---------- */
+window.saveEditPurchase=async function(){
+    if(isSavingPurchase) return;
+    var target=document.getElementById('editPurchaseModal');
+    var pId=currentEditingPurchaseId, old=currentEditingPurchaseOldData;
+    if(!pId||!old){ Swal.fire({title:'Error',text:'No purchase data found!',icon:'error',target:target}); return; }
+    var sel=document.getElementById('editPurchaseItemSelect'), newId=sel.value, opt=sel.options[sel.selectedIndex];
+    var newName=opt?opt.text:'', newUnit=opt?opt.getAttribute('data-unit'):'';
+    var newQty=parseFloat(document.getElementById('editPurchaseQty').value);
+    var comment=document.getElementById('editPurchaseComment').value.trim();
+    if(!newId||isNaN(newQty)||newQty<=0){ Swal.fire({title:'Error',text:'Please fill all fields correctly!',icon:'error',target:target}); return; }
+    isSavingPurchase=true;
+    var btn=document.querySelector('#editPurchaseModal button[onclick="saveEditPurchase()"]');
+    if(btn){ btn.disabled=true; btn.style.opacity='0.6'; }
+    try{
+        var oldId=old.itemId, oldQty=num(old.qty), time=old.time, stock=[], hist=[];
+        if(oldId && String(oldId)===String(newId)){
+            var d=newQty-oldQty;
+            stock.push({id:newId,delta:d}); hist.push({id:newId,time:time,dIn:d});
+        }else{
+            if(oldId){ stock.push({id:oldId,delta:-oldQty}); hist.push({id:oldId,time:time,dIn:-oldQty}); }
+            stock.push({id:newId,delta:newQty}); hist.push({id:newId,time:time,dIn:newQty});
+        }
+        var extra={};
+        extra['purchases/'+pId+'/itemId']=newId; extra['purchases/'+pId+'/itemName']=newName;
+        extra['purchases/'+pId+'/unit']=newUnit; extra['purchases/'+pId+'/qty']=newQty.toFixed(2);
+        extra['purchases/'+pId+'/comment']=comment;
+        var res=await engine({ stock:stock, hist:hist, extra:extra,
+            check:function(c){ if(!c[newId]||!c[newId].exists) return 'Item stock not found!'; } });
+        if(res.error){ errSwal(res.error); return; }
+        closeEditModal('editPurchaseModal');
+        showToast('Purchase updated ✓');
+    }catch(e){ console.error(e); showToast('Error updating purchase!'); }
+    finally{ isSavingPurchase=false; if(btn){ btn.disabled=false; btn.style.opacity='1'; } }
+};
+
+/* ---------- WASTAGE: EDIT ---------- */
+window.saveEditWaste=async function(){
+    var id=currentEditingWasteId; if(!id) return;
+    var target=document.getElementById('editWasteModal');
+    var newQty=parseFloat(document.getElementById('editWasteQty').value);
+    var comment=document.getElementById('editWasteComment').value.trim();
+    if(isNaN(newQty)||newQty<=0){ showToast('Invalid quantity ❌'); return; }
+    if(!lock('ew'+id)) return;
+    try{
+        var s=await db.ref('wastes/'+id).once('value'), old=s.val(); if(!old) return;
+        var itemId=old.itemId, oldQty=num(old.qty);
+        var extra={}; extra['wastes/'+id+'/qty']=newQty; extra['wastes/'+id+'/comment']=comment;
+        var res=await engine({
+            stock: itemId?[{id:itemId, delta:oldQty-newQty}]:[],
+            hist:  (itemId&&old.time)?[{id:itemId,time:old.time,dW:newQty-oldQty}]:[],
+            extra: extra,
+            check: function(c){
+                if(!itemId||!c[itemId]) return null;
+                var avail=c[itemId].qty+oldQty;
+                if(newQty>avail+1e-9) return {title:"We don't have in stock", text:'Only '+r2(avail)+' available'};
+            }
+        });
+        if(res.error){ errSwal(res.error,target); return; }
+        closeEditModal('editWasteModal');
+        showToast('Waste record updated ✓');
+    }catch(e){ console.error(e); showToast('Error updating ❌'); }
+    finally{ unlock('ew'+id); }
+};
+
+/* ---------- WASTAGE: DELETE ---------- */
+async function fastDeleteWaste(wId, target){
+    if(!lock('dw'+wId)) return false;
+    try{
+        var s=await db.ref('wastes/'+wId).once('value'), w=s.val(); if(!w) return false;
+        var q=num(w.qty), extra={}; extra['wastes/'+wId]=null;
+        var res=await engine({
+            stock: w.itemId?[{id:w.itemId,delta:q}]:[],
+            hist:  (w.itemId&&w.time)?[{id:w.itemId,time:w.time,dW:-q}]:[],
+            extra: extra
+        });
+        if(res.error){ errSwal(res.error,target); return false; }
+        return true;
+    }catch(e){ console.error(e); showToast('Error deleting ❌'); return false; }
+    finally{ unlock('dw'+wId); }
+}
+window.askDeleteWaste=async function(wId){
+    var target=document.getElementById('wastedPanel');
+    if(await fastDeleteWaste(wId,target)) quickOk('Deleted!',target);
+};
+window.deleteWaste=async function(id){
+    var r=await Swal.fire({ title:'Delete Waste Record?', text:'Stock will be returned and the Waste column adjusted!', icon:'warning', showCancelButton:true, confirmButtonText:'Yes, Delete', confirmButtonColor:'#e11d48' });
+    if(!r.isConfirmed) return;
+    if(await fastDeleteWaste(id)) showToast('Deleted! ✓');
+};
+
+/* ---------- DISTRIBUTION: DELETE ---------- */
+window.deleteTransfer=async function(tId){
+    var target=document.getElementById('sharePanel');
+    var r=await Swal.fire({ title:'Delete History?', text:'Stock and Outward table will be adjusted!', icon:'warning', showCancelButton:true, confirmButtonColor:'#e11d48', confirmButtonText:'Yes, Delete', target:target });
+    if(!r.isConfirmed) return;
+    if(!lock('dt'+tId)) return;
+    try{
+        var s=await db.ref('transfers/'+tId).once('value'), t=s.val(); if(!t) return;
+        var q=num(t.qty), extra={}; extra['transfers/'+tId]=null;
+        var res=await engine({
+            stock: t.itemId?[{id:t.itemId,delta:q}]:[],
+            hist:  (t.itemId&&t.time)?[{id:t.itemId,time:t.time,dOut:-q}]:[],
+            extra: extra
+        });
+        if(res.error){ errSwal(res.error,target); return; }
+        quickOk('Deleted!',target);
+    }catch(e){ console.error(e); Swal.fire({title:'Error',text:'Something went wrong!',icon:'error',target:target}); }
+    finally{ unlock('dt'+tId); }
+};
+
+/* ---------- DISTRIBUTION: EDIT ---------- */
+window.saveEditDist=async function(){
+    var target=document.getElementById('editDistModal');
+    var tId=currentEditingDistId, old=currentEditingDistOldData;
+    if(!tId||!old) return;
+    var sel=document.getElementById('editDistItemSelect'), newId=sel.value;
+    var newName=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].text:'';
+    var bv=document.getElementById('editDistBranch').value, isNew=(bv==='__new__');
+    var newBranch=isNew?document.getElementById('editDistNewName').value.trim():bv;
+    var phone=isNew?document.getElementById('editDistNewPhone').value.trim():(customerPhoneMap[bv]||'');
+    var newQty=parseFloat(document.getElementById('editDistQty').value);
+    var comment=document.getElementById('editDistComment').value.trim();
+    var price=parseFloat(document.getElementById('editDistPrice').value)||0;
+    var disc=parseFloat(document.getElementById('editDistDiscount').value)||0;
+    var total=Math.max(0, price*(newQty||0)-disc);
+    if(!newId||!newBranch||isNaN(newQty)||newQty<=0){ Swal.fire({title:'Error',text:'Please fill all fields correctly!',icon:'error',target:target}); return; }
+    if(!lock('ed'+tId)) return;
+    try{
+        var oldId=old.itemId, oldQty=num(old.qty), time=old.time, stock=[], hist=[];
+        if(oldId){ stock.push({id:oldId,delta:oldQty}); hist.push({id:oldId,time:time,dOut:-oldQty}); }
+        stock.push({id:newId,delta:-newQty}); hist.push({id:newId,time:time,dOut:newQty});
+        var extra={}, b='transfers/'+tId+'/';
+        extra[b+'itemId']=newId; extra[b+'itemName']=newName; extra[b+'branch']=newBranch;
+        extra[b+'customerPhone']=phone||null; extra[b+'qty']=newQty; extra[b+'price']=price;
+        extra[b+'discount']=disc; extra[b+'total']=total; extra[b+'comment']=comment;
+        var res=await engine({ stock:stock, hist:hist, extra:extra,
+            check:function(c){
+                var n=c[newId]; if(!n||!n.exists) return 'Item stock not found!';
+                var avail=n.qty+((oldId&&String(oldId)===String(newId))?oldQty:0);
+                if(newQty>avail+1e-9) return {title:"We don't have in stock", text:'Only '+r2(avail)+' available'};
+            } });
+        if(res.error){ errSwal(res.error,target); return; }
+        closeEditModal('editDistModal');
+        showToast('Distribution updated ✓');
+        if(isNew){ try{ ensureCustomerSaved(newBranch, phone); }catch(e){} }
+        setTimeout(function(){ try{ if(typeof populateShareDropdown==='function') populateShareDropdown(); }catch(e){} },400);
+    }catch(e){ console.error(e); Swal.fire({title:'Error',text:'Something went wrong!',icon:'error',target:target}); }
+    finally{ unlock('ed'+tId); }
+};
+})();
+
+</script>
 </body>
 </html>
 <style id="idx-landscape-compact">
