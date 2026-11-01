@@ -5372,7 +5372,7 @@ function deleteBill(billNo, dateKey, displayLabel){
 <div id="alertModal" class="modal" style="z-index: 6100; text-align: center; border-top: 5px solid #3b82f6;">
     <div id="alertIcon" style="font-size: 40px; margin-bottom: 10px;">ℹ️</div>
     <h3 id="alertTitle" style="margin: 0 0 10px 0; color: #1e293b;">Notification</h3>
-    <p id="alertMessage" style="color: #64748b; font-size: 14px; margin-bottom: 25px; line-height: 1.5;"></p>
+    <p id="alertMessage2" style="color: #64748b; font-size: 14px; margin-bottom: 25px; line-height: 1.5;"></p>
     <button class="btn" style="width: 100%; background: #3b82f6;" onclick="closeAlertModal()">UNDERSTOOD</button>
 </div>
 
@@ -8078,3 +8078,9 @@ html body #hb.hb-home svg{width:22px !important;height:22px !important}
   html body #eb{padding-right:calc(var(--cpw, 460px) + 16px) !important}
 }
 </style>
+<script>
+/* missing helper: UNDERSTOOD button (alertModal) band karne ke liye */
+if (typeof window.closeAlertModal !== 'function') {
+  window.closeAlertModal = function(){ try{ var m=document.getElementById('alertModal'), o=document.getElementById('alertModalOverlay'); if(m) m.style.display='none'; if(o) o.style.display='none'; }catch(e){} };
+}
+</script>
