@@ -834,7 +834,7 @@ body { width: 100%; }
                 <button id="catRemoveBtn" onclick="clearCatPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;">✕</button>
             </div>
             <input type="file" id="catPhotoInput" accept="image/*" style="display:none" onchange="previewCatPhoto(this)">
-            <button onclick="ZCam.pick(document.getElementById('catPhotoInput'))" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">📷 TAKE PHOTO</button>
+            <div style="display:flex; gap:8px;"><button onclick="ZCam.pick(document.getElementById('catPhotoInput'))" style="flex:1; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">📷 TAKE PHOTO</button><button onclick="openIconPicker('cat')" style="flex:1; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">🎨 SELECT ICON</button></div>
         </div>
 
         <div class="flex-btn">
@@ -856,7 +856,7 @@ body { width: 100%; }
                 <button id="itemRemoveBtn" onclick="clearItemPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;">✕</button>
             </div>
             <input type="file" id="itemPhotoInput" accept="image/*" style="display:none" onchange="previewItemPhoto(this)">
-            <button onclick="ZCam.pick(document.getElementById('itemPhotoInput'))" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">📷 TAKE PHOTO</button>
+            <div style="display:flex; gap:8px;"><button onclick="ZCam.pick(document.getElementById('itemPhotoInput'))" style="flex:1; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">📷 TAKE PHOTO</button><button onclick="openIconPicker('item')" style="flex:1; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">🎨 SELECT ICON</button></div>
         </div>
 
         <input type="text" id="nn" placeholder="Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;">
@@ -5870,7 +5870,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_acc2','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency','asb_show_order_pay','asb_cat_photos'];
+    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_acc2','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency','asb_show_order_pay','asb_cat_photos','asb_icon_lib'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false, lastLocalWrite = {};
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -6890,6 +6890,149 @@ html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
   #hb.hb-home:hover{box-shadow:0 10px 24px rgba(79,70,229,.5);transform:translateY(-1px)}
 }
 </style>
+
+<!-- ===== KP ICON PICKER (Select Icon) ===== -->
+<style id="kp-icon-css">
+#iconM{display:none;position:fixed;inset:0;z-index:2147483000;background:#f1f5f9;flex-direction:column;font-family:inherit;}
+#iconM .ih{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#fff;border-bottom:1px solid #e2e8f0;}
+#iconM .ih b{flex:1;font-size:17px;color:#0f172a;}
+#iconM .ih button{border:none;border-radius:10px;padding:9px 12px;font-weight:700;font-size:13px;cursor:pointer;}
+#iconM .mg{background:#e0e7ff;color:#4338ca;} #iconM .mg.on{background:#16a34a;color:#fff;}
+#iconM .cx{background:#fee2e2;color:#dc2626;font-size:16px!important;}
+#iconM .ib{flex:1;overflow-y:auto;padding:12px 14px 30px;-webkit-overflow-scrolling:touch;}
+#iconM h4{margin:14px 0 8px;font-size:14px;color:#334155;letter-spacing:.4px;}
+#iconM .gr{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px;}
+#iconM .it{position:relative;aspect-ratio:1/1;background:#fff;border:2px solid #e2e8f0;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:34px;cursor:pointer;overflow:hidden;}
+#iconM .it img{width:100%;height:100%;object-fit:cover;}
+#iconM .it.arm{border-color:#dc2626;background:#fef2f2;}
+#iconM .it .d,#iconM .it .e{position:absolute;top:2px;width:22px;height:22px;border-radius:50%;color:#fff;font-size:12px;line-height:22px;text-align:center;font-style:normal;font-weight:700;}
+#iconM .it .d{right:2px;background:#ef4444;} #iconM .it .e{left:2px;background:#3b82f6;}
+#iconM .ar{display:none;gap:6px;margin:8px 0 2px;align-items:center;}
+#iconM.mgm .ar{display:flex;}
+#iconM .ar input{flex:1;min-width:0;padding:9px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px;}
+#iconM .ar button{border:none;border-radius:10px;padding:9px 11px;font-weight:700;font-size:12px;background:#0d9488;color:#fff;cursor:pointer;}
+#iconM .ar button.ph{background:#6366f1;}
+</style>
+<div id="iconM">
+  <div class="ih"><b>🎨 Select Icon</b><button class="mg" id="icMgBtn" onclick="KPIcons.toggle()">✏️ Manage</button><button class="cx" onclick="KPIcons.close()">✕</button></div>
+  <div class="ib" id="icBody"></div>
+  <input type="file" id="icFile" accept="image/*" style="display:none">
+</div>
+<script id="kp-icons">
+(function(){
+'use strict';
+var KEY='asb_icon_lib';
+var DEF_CAT=['🧱','🔩','🔨','🪛','🔧','🎨','💡','🚰','🪚','🧰','📦','🪣','🔌','🧴','⚙️','🪜'];
+var DEF_ITEM=['🧱','🪨','🔩','⚙️','🔨','🪛','🔧','🪚','📏','🧲','🔌','💡','🔦','🚰','🚿','🪣','🧴','🎨','🖌️','🧤','🪜','⛓️','🪝','🔗','🛢️','🧯','🔒','🔑','📦','🪟','🚪','🧰'];
+var tgt='item', manage=false, lib=null, edit=null, fileMode=null, armed=null, armT=0;
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function mk(e){ return {id:uid(),t:'e',v:e}; }
+function load(){
+    try{ var o=JSON.parse(localStorage.getItem(KEY)); if(o&&Array.isArray(o.cats)&&Array.isArray(o.items)) return o; }catch(e){}
+    var d={cats:DEF_CAT.map(mk),items:DEF_ITEM.map(mk)};
+    try{ localStorage.setItem(KEY,JSON.stringify(d)); }catch(e){}
+    return d;
+}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(lib)); }catch(e){ alert('Storage full! Icon not saved.'); } }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function tile(s,x){
+    var inner=(x.t==='i')?'<img src="'+esc(x.v)+'">':esc(x.v);
+    return '<div class="it'+(armed===s+x.id?' arm':'')+'" data-s="'+s+'" data-id="'+x.id+'">'+inner+
+        (manage?'<i class="e" data-a="edit">✎</i><i class="d" data-a="del">✕</i>':'')+'</div>';
+}
+function sec(title,s){
+    var h='<h4>'+title+'</h4><div class="gr">'+lib[s].map(function(x){ return tile(s,x); }).join('')+'</div>'+
+      '<div class="ar" data-s="'+s+'"><input id="icIn_'+s+'" placeholder="Type emoji…" maxlength="8"><button data-a="addE">'+(edit&&edit.s===s&&edit.t==='e'?'Update':'＋ Add')+'</button><button class="ph" data-a="addI">📁 Photo</button></div>';
+    return h;
+}
+function render(){
+    var el=document.getElementById('icBody'); if(!el) return;
+    el.innerHTML=sec('CATEGORY ICONS','cats')+sec('ITEM ICONS','items');
+    var m=document.getElementById('iconM'); m.classList.toggle('mgm',manage);
+    var b=document.getElementById('icMgBtn'); b.classList.toggle('on',manage); b.textContent=manage?'✔ Done':'✏️ Manage';
+    if(edit&&edit.t==='e'){ var inp=document.getElementById('icIn_'+edit.s); if(inp) inp.value=edit.v||''; }
+}
+function emojiToSrc(e){
+    var c=document.createElement('canvas'); c.width=c.height=192; var g=c.getContext('2d');
+    g.fillStyle='#ffffff'; g.fillRect(0,0,192,192);
+    g.textAlign='center'; g.textBaseline='middle'; g.font='130px "Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif';
+    g.fillText(e,96,106); return c.toDataURL('image/png');
+}
+function applyTo(src){
+    var p=(tgt==='cat')?'cat':'item';
+    var img=document.getElementById(p+'PhotoImg'); if(!img) return;
+    img.src=src; img.style.display='block';
+    var ph=document.getElementById(p+'PhotoPlaceholder'); if(ph) ph.style.display='none';
+    var rb=document.getElementById(p+'RemoveBtn'); if(rb) rb.style.display='block';
+    var fi=document.getElementById(p+'PhotoInput'); if(fi) fi.value='';
+}
+function shrink(file,cb){
+    var r=new FileReader();
+    r.onloadend=function(){
+        var raw=r.result, im=new Image();
+        im.onload=function(){
+            try{ var sc=Math.min(1,192/Math.max(im.width,im.height)), c=document.createElement('canvas');
+                c.width=Math.round(im.width*sc); c.height=Math.round(im.height*sc);
+                c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+                cb(c.toDataURL(file.type==='image/png'?'image/png':'image/jpeg',0.85)); }catch(e){ cb(raw); }
+        };
+        im.onerror=function(){ cb(raw); }; im.src=raw;
+    };
+    r.readAsDataURL(file);
+}
+function find(s,id){ for(var i=0;i<lib[s].length;i++) if(lib[s][i].id===id) return lib[s][i]; return null; }
+function pickFile(){ var f=document.getElementById('icFile'); f.value=''; if(window.ZCam&&ZCam.pick) ZCam.pick(f); else f.click(); }
+
+document.addEventListener('click',function(ev){
+    var root=document.getElementById('iconM'); if(!root||!root.contains(ev.target)) return;
+    var a=ev.target.closest('[data-a]'), t=ev.target.closest('.it'), row=ev.target.closest('.ar');
+    if(a){
+        var act=a.getAttribute('data-a');
+        if(act==='addE'||act==='addI'){
+            var s=row.getAttribute('data-s');
+            if(act==='addI'){ fileMode={s:s,id:null}; pickFile(); return; }
+            var v=document.getElementById('icIn_'+s).value.trim(); if(!v) return;
+            if(edit&&edit.s===s&&edit.t==='e'){ var x=find(s,edit.id); if(x){ x.v=v; } edit=null; }
+            else lib[s].push(mk(v));
+            save(); render(); return;
+        }
+        var s2=t.getAttribute('data-s'), id=t.getAttribute('data-id'), it=find(s2,id);
+        if(act==='edit'&&it){
+            if(it.t==='e'){ edit={s:s2,id:id,t:'e',v:it.v}; render(); var inp=document.getElementById('icIn_'+s2); if(inp) inp.focus(); }
+            else { fileMode={s:s2,id:id}; pickFile(); }
+            return;
+        }
+        if(act==='del'){
+            var k=s2+id;
+            if(armed===k){ lib[s2]=lib[s2].filter(function(x){ return x.id!==id; }); armed=null; save(); }
+            else { armed=k; clearTimeout(armT); armT=setTimeout(function(){ armed=null; render(); },2500); }
+            render(); return;
+        }
+        return;
+    }
+    if(t&&!manage){
+        var it2=find(t.getAttribute('data-s'),t.getAttribute('data-id')); if(!it2) return;
+        applyTo(it2.t==='i'?it2.v:emojiToSrc(it2.v)); KPIcons.close();
+    }
+});
+document.addEventListener('change',function(ev){
+    if(ev.target.id!=='icFile'||!fileMode) return;
+    var f=ev.target.files&&ev.target.files[0]; if(!f) return;
+    var fm=fileMode; fileMode=null;
+    shrink(f,function(src){
+        if(fm.id){ var x=find(fm.s,fm.id); if(x){ x.t='i'; x.v=src; } }
+        else lib[fm.s].push({id:uid(),t:'i',v:src});
+        save(); render();
+    });
+});
+window.KPIcons={
+    open:function(target){ tgt=target; manage=false; edit=null; armed=null; lib=load(); render(); document.getElementById('iconM').style.display='flex'; },
+    close:function(){ document.getElementById('iconM').style.display='none'; manage=false; edit=null; },
+    toggle:function(){ manage=!manage; edit=null; armed=null; render(); }
+};
+window.openIconPicker=function(t){ KPIcons.open(t); };
+})();
+</script>
 
 </body>
 </html>
