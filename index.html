@@ -8053,6 +8053,13 @@ async function engine(spec){
     }));
     var ctx={}; reads.forEach(function(r){ ctx[r.id]=r; });
     if(spec.check){ var err=spec.check(ctx); if(err) return {error:err}; }
+    /* Integrity: stock negative nahi jana chahiye (purchase delete/edit jab stock pehle hi Out/Waste ho chuka ho) */
+    for(var nid in stockD){
+        var nr=ctx[nid];
+        if(nr && nr.exists && nr.qty+stockD[nid] < -0.0049){
+            return {error:{title:'Cannot do this', text:'Is stock ka Out/Waste pehle hi ho chuka hai (current stock '+r2(nr.qty)+', change ke baad '+r2(nr.qty+stockD[nid])+' ho jata). Pehle related Waste / Distribution record delete ya edit karein.'}};
+        }
+    }
     var upd={};
     idList.forEach(function(id){
         var r=ctx[id];
