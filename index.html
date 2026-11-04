@@ -8112,7 +8112,7 @@ async function usageReport(id, since, shortage, curQty){
         safe(db.ref('pos_sync/asb_waste_log').once('value'))
     ]);
     var st=res[0]||{}, name=String(st.name||'').trim().toLowerCase(), unitPrice=num(st.price);
-    var money=function(q,p){ return p>0?(' × '+r2(p).toFixed(2)+' = <b>'+r2(q*p).toFixed(2)+'</b>'):''; };
+    var money=function(){ return ''; };
     var inRange=function(iso){ return !since || !iso || iso>=since; };
     var secs=[];
     function section(title, where, rows){
