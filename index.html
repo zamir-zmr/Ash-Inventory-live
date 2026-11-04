@@ -8053,6 +8053,12 @@ async function engine(spec){
     }));
     var ctx={}; reads.forEach(function(r){ ctx[r.id]=r; });
     if(spec.check){ var err=spec.check(ctx); if(err) return {error:err}; }
+    /* Per-purchase guard: is purchase ka apna sale / waste delete hone ke baad hi purchase delete/kam hoga */
+    if(spec.purchaseGuard){
+        var grd=null;
+        try{ grd=await purchaseGuardReport(spec.purchaseGuard); }catch(e){ console.error(e); }
+        if(grd) return {error:{title:'Cannot do this', html:grd, text:'This purchase already has sales / waste from it. Delete those records first.'}};
+    }
     /* Integrity: stock negative nahi jana chahiye (purchase delete/edit jab stock pehle hi use ho chuka ho) */
     for(var nid in stockD){
         var nr=ctx[nid];
@@ -8101,64 +8107,96 @@ function errSwal(err, target){
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 function isoOfTime(t){ var p=parseT(t); return p?(p.mk+'-'+pad(p.day)):''; }
 function showDate(iso){ var p=String(iso||'').split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):String(iso||''); }
-/* Kaun se records is stock ko use kar rahe hain: POS bills / Waste / Distribution (purchase date ke baad ke) */
-async function usageReport(id, since, shortage, curQty){
+/* ===== Per-purchase usage: har purchase ka apna sale / waste (us purchase ke time se agle purchase ke time tak) ===== */
+function tsOf(dateStr, timeStr){
+    var d=String(dateStr||'').trim(), y,mo,da;
+    var m=d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(m){ da=+m[1]; mo=+m[2]; y=+m[3]; }
+    else { m=d.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if(!m) return 0; y=+m[1]; mo=+m[2]; da=+m[3]; }
+    var tm=String(timeStr!=null?timeStr:(d.split(/\s+/).slice(1).join(' '))||'').match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+    var h=0,mi=0,se=0;
+    if(tm){ h=+tm[1]; mi=+tm[2]; se=tm[3]?+tm[3]:0; if(tm[4]){ var ap=tm[4].toUpperCase(); if(ap==='PM'&&h<12) h+=12; if(ap==='AM'&&h===12) h=0; } }
+    return new Date(y,mo-1,da,h,mi,se).getTime();
+}
+async function collectEvents(id){
     var safe=function(p){ return p.then(function(s){ return s.val(); }).catch(function(){ return null; }); };
     var res=await Promise.all([
         safe(db.ref('stocks/'+id).once('value')),
         safe(db.ref('wastes').orderByChild('itemId').equalTo(id).once('value')),
         safe(db.ref('transfers').orderByChild('itemId').equalTo(id).once('value')),
         safe(db.ref('pos_sync/asb_sales_logs').once('value')),
-        safe(db.ref('pos_sync/asb_waste_log').once('value'))
+        safe(db.ref('pos_sync/asb_waste_log').once('value')),
+        safe(db.ref('purchases').orderByChild('itemId').equalTo(id).once('value'))
     ]);
-    var st=res[0]||{}, name=String(st.name||'').trim().toLowerCase(), unitPrice=num(st.price);
-    var money=function(){ return ''; };
-    var inRange=function(iso){ return !since || !iso || iso>=since; };
-    var secs=[];
-    function section(title, where, rows){
-        if(!rows.length) return;
-        rows.sort(function(a,b){ return a.iso<b.iso?1:(a.iso>b.iso?-1:0); });
-        var tot=0; rows.forEach(function(r){ tot+=r.q; });
-        var h='<div style="margin-top:10px;"><div style="font-weight:800;color:#e11d48;">'+title+' — total '+r2(tot)+'</div>'+
+    var st=res[0]||{}, name=String(st.name||'').trim().toLowerCase(), ev={bills:[],ws:[],pws:[],ds:[]};
+    var sales=res[3]; try{ if(typeof sales==='string') sales=JSON.parse(sales); }catch(e){ sales=null; }
+    (Array.isArray(sales)?sales:[]).forEach(function(s){
+        if(!s||!name) return; var q=0;
+        (s.items||[]).forEach(function(it){ if(String(it&&it.name||'').trim().toLowerCase()===name) q+=num(it.qty); });
+        if(q>0) ev.bills.push({ts:tsOf(s.date,s.time), iso:s.date||'', q:q, html:'Bill No. <b>'+esc(s.billNo)+'</b> • '+esc(showDate(s.date))+' '+esc(s.time||'')+' • Qty <b>'+r2(q)+'</b>'});
+    });
+    var wv=res[1]||{};
+    for(var k in wv){ var w=wv[k], q1=num(w.qty);
+        ev.ws.push({ts:tsOf(w.time), iso:isoOfTime(w.time), q:q1, html:esc(w.time||'')+' • Qty <b>'+r2(q1)+'</b> '+esc(w.unit||'')+(w.comment?' • '+esc(w.comment):'')}); }
+    var pw=res[4]; try{ if(typeof pw==='string') pw=JSON.parse(pw); }catch(e){ pw=null; }
+    (Array.isArray(pw)?pw:[]).forEach(function(w){
+        if(!w||!name||String(w.itemName||'').trim().toLowerCase()!==name) return; var q2=num(w.qty);
+        ev.pws.push({ts:tsOf(w.date,w.time), iso:w.date||'', q:q2, html:esc(showDate(w.date))+' '+esc(w.time||'')+' • Qty <b>'+r2(q2)+'</b>'});
+    });
+    var tv=res[2]||{};
+    for(var j in tv){ var t=tv[j], q3=num(t.qty);
+        ev.ds.push({ts:tsOf(t.time), iso:isoOfTime(t.time), q:q3, html:esc(t.time||'')+' • '+esc(t.branch||'')+' • Qty <b>'+r2(q3)+'</b>'}); }
+    var pl=[], pv=res[5]||{};
+    for(var p in pv) pl.push({id:p, ts:tsOf(pv[p].time)});
+    pl.sort(function(a,b){ return a.ts-b.ts || (a.id<b.id?-1:1); });
+    return {ev:ev, purchases:pl};
+}
+function buildSections(ev, filt){
+    var secs=[], tot={sold:0,waste:0,dist:0};
+    function section(title, where, rows, key){
+        rows=rows.filter(filt); if(!rows.length) return;
+        rows.sort(function(a,b){ return b.ts-a.ts; });
+        var t=0; rows.forEach(function(r){ t+=r.q; }); tot[key]+=t;
+        var h='<div style="margin-top:10px;"><div style="font-weight:800;color:#e11d48;">'+title+' — total '+r2(t)+'</div>'+
               '<div style="font-size:12px;opacity:.75;margin:2px 0 4px;">Where: '+where+'</div>';
-        rows.slice(0,10).forEach(function(r){ h+='<div style="padding:4px 0;border-top:1px dashed #cbd5e1;">'+r.html+'</div>'; });
-        if(rows.length>10) h+='<div style="font-size:12px;opacity:.75;">+ '+(rows.length-10)+' more older record(s)</div>';
+        rows.slice(0,15).forEach(function(r){ h+='<div style="padding:4px 0;border-top:1px dashed #cbd5e1;">'+r.html+'</div>'; });
+        if(rows.length>15) h+='<div style="font-size:12px;opacity:.75;">+ '+(rows.length-15)+' more older record(s)</div>';
         secs.push(h+'</div>');
     }
-    /* POS bills */
-    var bills=[], sales=res[3];
-    try{ if(typeof sales==='string') sales=JSON.parse(sales); }catch(e){ sales=null; }
-    (Array.isArray(sales)?sales:[]).forEach(function(s){
-        if(!s||!inRange(s.date)) return;
-        var q=0, pr=0;
-        (s.items||[]).forEach(function(it){ if(String(it&&it.name||'').trim().toLowerCase()===name && name){ q+=num(it.qty); pr=num(it.price)||pr; } });
-        if(q>0) bills.push({iso:s.date||'', q:q, html:'Bill No. <b>'+esc(s.billNo)+'</b> • '+esc(showDate(s.date))+' '+esc(s.time||'')+' • Qty <b>'+r2(q)+'</b>'+money(q,pr)});
-    });
-    section('POS Bills (sold)','POS System → Bills / Sales History → delete or cancel the bill', bills);
-    /* Inventory Waste */
-    var ws=[], wv=res[1]||{};
-    for(var k in wv){ var w=wv[k]; var iso=isoOfTime(w.time); if(!inRange(iso)) continue; var q=num(w.qty);
-        ws.push({iso:iso,q:q,html:esc(w.time||showDate(iso))+' • Qty <b>'+r2(q)+'</b> '+esc(w.unit||'')+money(q,unitPrice)+(w.comment?' • '+esc(w.comment):'')}); }
-    section('Wastage','Inventory menu → WASTAGE → long-press the record → Delete', ws);
-    /* POS waste log */
-    var pw=res[4]; try{ if(typeof pw==='string') pw=JSON.parse(pw); }catch(e){ pw=null; }
-    var pws=[];
-    (Array.isArray(pw)?pw:[]).forEach(function(w){
-        if(!w||String(w.itemName||'').trim().toLowerCase()!==name||!name||!inRange(w.date)) return;
-        var q=num(w.qty); pws.push({iso:w.date||'',q:q,html:esc(showDate(w.date))+' '+esc(w.time||'')+' • Qty <b>'+r2(q)+'</b>'+money(q,unitPrice)});
-    });
-    section('POS Wastage','POS System → Inventory → Waste history', pws);
-    /* Distribution */
-    var ds=[], tv=res[2]||{};
-    for(var j in tv){ var t=tv[j]; var iso2=isoOfTime(t.time); if(!inRange(iso2)) continue; var q2=num(t.qty);
-        ds.push({iso:iso2,q:q2,html:esc(t.time||showDate(iso2))+' • '+esc(t.branch||'')+' • Qty <b>'+r2(q2)+'</b>'+money(q2,num(t.price)||unitPrice)}); }
-    section('Distribution','Inventory menu → DISTRIBUTION → long-press the record → Delete', ds);
-    var head='<div style="text-align:left;font-size:14px;max-height:52vh;overflow:auto;">'+
-        '<div>This stock has already been used. Current stock is <b>'+r2(curQty)+'</b>, so this change is short by <b>'+r2(shortage)+'</b>.'+
-        ' Delete or edit these records first'+(since?' (since '+esc(showDate(since))+')':'')+':</div>';
-    if(!secs.length) head+='<div style="margin-top:10px;">No matching bill / waste / distribution record was found for this item. Please check your stock manually.</div>';
-    return head+secs.join('')+'</div>';
+    section('POS Bills (sold)','POS System → Bills / Sales History → delete or cancel the bill', ev.bills,'sold');
+    section('Wastage','Inventory menu → WASTAGE → long-press the record → Delete', ev.ws,'waste');
+    section('POS Wastage','POS System → Inventory → Waste history', ev.pws,'waste');
+    section('Distribution','Inventory menu → DISTRIBUTION → long-press the record → Delete', ev.ds,'dist');
+    return {html:secs.join(''), total:tot.sold+tot.waste+tot.dist, secs:secs.length};
 }
+var WRAP=function(inner){ return '<div style="text-align:left;font-size:14px;max-height:52vh;overflow:auto;">'+inner+'</div>'; };
+
+/* Is purchase ka apna use: purchase time se agle purchase time tak ke bills / waste / distribution */
+async function purchaseUsage(g){
+    var c=await collectEvents(g.itemId), from=-Infinity, to=Infinity, idx=-1;
+    for(var i=0;i<c.purchases.length;i++){ if(c.purchases[i].id===g.id){ idx=i; break; } }
+    if(idx>=0){ from=(idx===0)?-Infinity:c.purchases[idx].ts; to=(idx<c.purchases.length-1)?c.purchases[idx+1].ts:Infinity; }
+    else { from=g.ts||-Infinity; }
+    var r=buildSections(c.ev, function(e){ return e.ts>=from && e.ts<to; });
+    return r;
+}
+async function purchaseGuardReport(g){
+    var r=await purchaseUsage(g);
+    if(r.total <= g.minQty+0.0049) return null;
+    var head='<div><b>This purchase</b> ('+r2(g.qty)+' '+esc(g.unit||'')+' • '+esc(g.time||'')+') already has <b>'+r2(r.total)+'</b> used from it. '+
+        (g.mode==='edit'?'You cannot reduce it to '+r2(g.minQty)+' while these records exist.':'Delete these records first, then you can delete this purchase.')+'</div>';
+    return WRAP(head+r.html);
+}
+
+/* Fallback: stock negative ho raha hai (doosre purchases ka use) -> poori list */
+async function usageReport(id, since, shortage, curQty){
+    var c=await collectEvents(id);
+    var r=buildSections(c.ev, function(e){ return !since || !e.iso || e.iso>=since; });
+    var head='<div>This stock has already been used by later sales / waste. Current stock is <b>'+r2(curQty)+'</b>, so this change is short by <b>'+r2(shortage)+'</b>. Delete or edit these records first'+(since?' (since '+esc(showDate(since))+')':'')+':</div>';
+    if(!r.secs) head+='<div style="margin-top:10px;">No matching bill / waste / distribution record was found for this item. Please check your stock manually.</div>';
+    return WRAP(head+r.html);
+}
+
 function quickOk(title, target){
     Swal.fire({title:title, icon:'success', timer:800, showConfirmButton:false, target:target||undefined});
 }
@@ -8192,6 +8230,7 @@ window.loadTransferHistory=function(){
 async function fastDeletePurchase(pId, pData, target){
     var qty=num(pData.qty);
     var res=await engine({
+        purchaseGuard: pData.itemId?{id:pId, itemId:pData.itemId, time:pData.time, ts:tsOf(pData.time), qty:qty, unit:pData.unit, minQty:0, mode:'delete'}:null,
         stock: pData.itemId?[{id:pData.itemId, delta:-qty}]:[],
         hist:  (pData.itemId&&pData.time&&qty>0)?[{id:pData.itemId, time:pData.time, dIn:-qty}]:[],
         extra: (function(){ var o={}; o['purchases/'+pId]=null; return o; })()
@@ -8257,7 +8296,9 @@ window.saveEditPurchase=async function(){
         extra['purchases/'+pId+'/itemId']=newId; extra['purchases/'+pId+'/itemName']=newName;
         extra['purchases/'+pId+'/unit']=newUnit; extra['purchases/'+pId+'/qty']=newQty.toFixed(2);
         extra['purchases/'+pId+'/comment']=comment;
-        var res=await engine({ stock:stock, hist:hist, extra:extra,
+        var same=(oldId && String(oldId)===String(newId));
+        var guard=(oldId && (!same || newQty<oldQty-0.0049)) ? {id:pId, itemId:oldId, time:time, ts:tsOf(time), qty:oldQty, unit:old.unit, minQty:(same?newQty:0), mode:(same?'edit':'edit')} : null;
+        var res=await engine({ purchaseGuard:guard, stock:stock, hist:hist, extra:extra,
             check:function(c){ if(!c[newId]||!c[newId].exists) return 'Item stock not found!'; } });
         if(res.error){ errSwal(res.error,target); return; }
         closeEditModal('editPurchaseModal');
