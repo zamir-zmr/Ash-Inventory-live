@@ -8119,7 +8119,7 @@ async function usageReport(id, since, shortage, curQty){
         if(!rows.length) return;
         rows.sort(function(a,b){ return a.iso<b.iso?1:(a.iso>b.iso?-1:0); });
         var tot=0; rows.forEach(function(r){ tot+=r.q; });
-        var h='<div style="margin-top:10px;"><div style="font-weight:800;color:#e11d48;">'+title+' — total '+r2(tot)+' ('+rows.length+')</div>'+
+        var h='<div style="margin-top:10px;"><div style="font-weight:800;color:#e11d48;">'+title+' — total '+r2(tot)+'</div>'+
               '<div style="font-size:12px;opacity:.75;margin:2px 0 4px;">Where: '+where+'</div>';
         rows.slice(0,10).forEach(function(r){ h+='<div style="padding:4px 0;border-top:1px dashed #cbd5e1;">'+r.html+'</div>'; });
         if(rows.length>10) h+='<div style="font-size:12px;opacity:.75;">+ '+(rows.length-10)+' more older record(s)</div>';
@@ -8138,7 +8138,7 @@ async function usageReport(id, since, shortage, curQty){
     /* Inventory Waste */
     var ws=[], wv=res[1]||{};
     for(var k in wv){ var w=wv[k]; var iso=isoOfTime(w.time); if(!inRange(iso)) continue; var q=num(w.qty);
-        ws.push({iso:iso,q:q,html:esc(showDate(iso))+' • Qty <b>'+r2(q)+'</b> '+esc(w.unit||'')+money(q,unitPrice)+(w.comment?' • '+esc(w.comment):'')}); }
+        ws.push({iso:iso,q:q,html:esc(w.time||showDate(iso))+' • Qty <b>'+r2(q)+'</b> '+esc(w.unit||'')+money(q,unitPrice)+(w.comment?' • '+esc(w.comment):'')}); }
     section('Wastage','Inventory menu → WASTAGE → long-press the record → Delete', ws);
     /* POS waste log */
     var pw=res[4]; try{ if(typeof pw==='string') pw=JSON.parse(pw); }catch(e){ pw=null; }
@@ -8151,7 +8151,7 @@ async function usageReport(id, since, shortage, curQty){
     /* Distribution */
     var ds=[], tv=res[2]||{};
     for(var j in tv){ var t=tv[j]; var iso2=isoOfTime(t.time); if(!inRange(iso2)) continue; var q2=num(t.qty);
-        ds.push({iso:iso2,q:q2,html:esc(showDate(iso2))+' • '+esc(t.branch||'')+' • Qty <b>'+r2(q2)+'</b>'+money(q2,num(t.price)||unitPrice)}); }
+        ds.push({iso:iso2,q:q2,html:esc(t.time||showDate(iso2))+' • '+esc(t.branch||'')+' • Qty <b>'+r2(q2)+'</b>'+money(q2,num(t.price)||unitPrice)}); }
     section('Distribution','Inventory menu → DISTRIBUTION → long-press the record → Delete', ds);
     var head='<div style="text-align:left;font-size:14px;max-height:52vh;overflow:auto;">'+
         '<div>This stock has already been used. Current stock is <b>'+r2(curQty)+'</b>, so this change is short by <b>'+r2(shortage)+'</b>.'+
