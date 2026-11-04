@@ -8057,7 +8057,7 @@ async function engine(spec){
     for(var nid in stockD){
         var nr=ctx[nid];
         if(nr && nr.exists && nr.qty+stockD[nid] < -0.0049){
-            return {error:{title:'Cannot do this', text:'Is stock ka Out/Waste pehle hi ho chuka hai (current stock '+r2(nr.qty)+', change ke baad '+r2(nr.qty+stockD[nid])+' ho jata). Pehle related Waste / Distribution record delete ya edit karein.'}};
+            return {error:{title:'Cannot do this', text:'This stock has already been used (sold or wasted). Current stock is '+r2(nr.qty)+', and after this change it would become '+r2(nr.qty+stockD[nid])+'. Please delete or edit the related Waste / Distribution records first.'}};
         }
     }
     var upd={};
@@ -8143,7 +8143,7 @@ window.purgeItemDayLedger=async function(itemId, timeStr, purchaseId, preData){
 window.askDeletePurchase=async function(pId, refPath){
     if(refPath!=='purchases') return;
     var target=document.getElementById('purchasedPanel');
-    var r=await Swal.fire({ title:'Delete Purchase?', text:"Us item ke us din ke IN / OUT / WASTE reset ho jayenge aur stock balance hoga!", icon:'warning', showCancelButton:true, confirmButtonColor:'#e11d48', confirmButtonText:'Yes, Delete!', target:target });
+    var r=await Swal.fire({ title:'Delete Purchase?', text:"This purchase will be removed, and the stock and the In column will be adjusted.", icon:'warning', showCancelButton:true, confirmButtonColor:'#e11d48', confirmButtonText:'Yes, Delete!', target:target });
     if(!r.isConfirmed) return;
     if(!lock('dp'+pId)) return;
     try{
@@ -8192,7 +8192,7 @@ window.saveEditPurchase=async function(){
         extra['purchases/'+pId+'/comment']=comment;
         var res=await engine({ stock:stock, hist:hist, extra:extra,
             check:function(c){ if(!c[newId]||!c[newId].exists) return 'Item stock not found!'; } });
-        if(res.error){ errSwal(res.error); return; }
+        if(res.error){ errSwal(res.error,target); return; }
         closeEditModal('editPurchaseModal');
         showToast('Purchase updated ✓');
     }catch(e){ console.error(e); showToast('Error updating purchase!'); }
