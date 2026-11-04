@@ -8057,7 +8057,7 @@ async function engine(spec){
     for(var nid in stockD){
         var nr=ctx[nid];
         if(nr && nr.exists && nr.qty+stockD[nid] < -0.0049){
-            return {error:{title:'Cannot do this', text:'This stock has already been used (sold or wasted). Current stock is '+r2(nr.qty)+', and after this change it would become '+r2(nr.qty+stockD[nid])+'. Please delete or edit the related Waste / Distribution records first.'}};
+            return {error:{title:'Cannot do this', text:'This stock has already been used (sold or wasted). Current stock is '+r2(nr.qty)+', and after this change it would become '+r2(nr.qty+stockD[nid])+'. Please delete or edit the related Waste records or POS bills first.'}};
         }
     }
     var upd={};
