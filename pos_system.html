@@ -1672,6 +1672,7 @@ function processPastedJson() {
 
     function showTicketPage() {
         renderTicketGrid();
+        document.getElementById('ticketPage').style.zIndex = '';
         document.getElementById('ticketPage').style.display = 'flex';
     }
 
@@ -1763,7 +1764,7 @@ function processPastedJson() {
         updateCartUI();
     }
     function showDashboard() { document.getElementById('dashPage').style.display = 'flex'; }
-    function closeDash() { const d = document.getElementById('dashPage'); d.style.display = 'none'; d.style.zIndex = ''; renderTicketGrid(); }
+    function closeDash() { const d = document.getElementById('dashPage'); d.style.display = 'none'; d.style.zIndex = ''; const _tp = document.getElementById('ticketPage'); if (_tp) _tp.style.zIndex = ''; renderTicketGrid(); }
 
     // ============ BACK-BUTTON NAVIGATION (Dashboard sub-pages -> Dashboard) ============
     // Har sub-page (Reports, Top Selling, Manage Items, Inventory) jab khulta hai to
@@ -1775,7 +1776,7 @@ function processPastedJson() {
     let _subPageOpen = null; // 'reports' | 'topSelling' | 'itemManage' | 'inventory' | null
     function pushSubPageState(name) {
         _subPageOpen = name;
-        try { var _dp = document.getElementById('dashPage'); if (_dp) _dp.style.zIndex = ''; } catch(e) {}
+        try { var _dp = document.getElementById('dashPage'); if (_dp) _dp.style.zIndex = ''; var _tp = document.getElementById('ticketPage'); if (_tp) _tp.style.zIndex = '1500'; } catch(e) {}
         history.pushState({ subPage: name }, '', '#' + name);
     }
     function backFromSubPage() {
@@ -2811,8 +2812,10 @@ function closeReceiptModal() {
                 d.className = 'pc' + (selSet.has(cat.n) ? ' sel' : ''); 
                 // Photo or emoji
                 let mediaHtml = '';
-                if (cat.photo) {
-                    mediaHtml = `<img src="${cat.photo}" style="width:60px;height:60px;object-fit:cover;border-radius:12px;margin-bottom:4px;">`;
+                let _cph = cat.photo;
+                if (!_cph) { try { _cph = (JSON.parse(localStorage.getItem('asb_cat_photos') || '{}') || {})[cat.n] || ''; } catch(e) { _cph = ''; } }
+                if (_cph) {
+                    mediaHtml = `<img src="${_cph}" style="width:60px;height:60px;object-fit:cover;border-radius:12px;margin-bottom:4px;">`;
                 } else {
                     mediaHtml = `<span style="font-size:36px;">${cat.i || '📁'}</span>`;
                 }
@@ -5928,6 +5931,16 @@ input[type="checkbox"] { accent-color: #0d9488; }
             var rv = (data[k] === undefined) ? null : data[k];
             var lv = null; try { lv = localStorage.getItem(k); } catch(e){}
             if (rv === lv) return;
+            if (first && k === 'asb_cat_photos' && rv !== null && lv) {
+                try {
+                    var _a = JSON.parse(lv) || {}, _b = JSON.parse(rv) || {}, _m = Object.assign({}, _a, _b);
+                    for (var _n in _a) { if (_a[_n] && !_b[_n]) _m[_n] = _a[_n]; }
+                    var _ms = JSON.stringify(_m);
+                    if (_ms !== rv) toPush.push(k);
+                    rv = _ms;
+                    if (rv === lv) return;
+                } catch(e) {}
+            }
             // Abhi-abhi local change hua hai (e.g. ticket RED) -> purana remote snapshot usse overwrite na kare
             if (!first && lastLocalWrite[k] && (Date.now() - lastLocalWrite[k]) < 5000) { schedule(k); return; }
             if (rv === null) { if (lv !== null) toPush.push(k); return; }   // remote empty: seed from this device
@@ -5946,6 +5959,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
         if (changed.length) refreshAfterRemote(changed);
         try { if (window.authEnsureSeed) authEnsureSeed(); } catch(e){}
         toPush.forEach(function(k){ if (first && ARRAY_KEYS[k] || true) pushKey(k); });
+        if (first) { try { if (typeof window.catPhotosOut === 'function') window.catPhotosOut(); } catch(e) {} }
     }
     function applyLogo(logo){
         try {
