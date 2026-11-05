@@ -1775,6 +1775,7 @@ function processPastedJson() {
     let _subPageOpen = null; // 'reports' | 'topSelling' | 'itemManage' | 'inventory' | null
     function pushSubPageState(name) {
         _subPageOpen = name;
+        try { var _dp = document.getElementById('dashPage'); if (_dp) _dp.style.zIndex = ''; } catch(e) {}
         history.pushState({ subPage: name }, '', '#' + name);
     }
     function backFromSubPage() {
@@ -2813,7 +2814,7 @@ function closeReceiptModal() {
                 if (cat.photo) {
                     mediaHtml = `<img src="${cat.photo}" style="width:60px;height:60px;object-fit:cover;border-radius:12px;margin-bottom:4px;">`;
                 } else {
-                    mediaHtml = `<span style="font-size:36px;">${cat.i || ''}</span>`;
+                    mediaHtml = `<span style="font-size:36px;">${cat.i || '📁'}</span>`;
                 }
                 d.innerHTML = `${mediaHtml}<br><b style="font-size:13px;">${cat.n}</b><br><small style="font-size:10px;color:#94a3b8;font-weight:600;">Category</small>`; 
                 d.onclick = () => { if(isCatMulti){ selSet.has(cat.n) ? selSet.delete(cat.n) : selSet.add(cat.n); updateBar(); render(); } else location.hash = 'cat-' + cat.n; }; 
@@ -5824,6 +5825,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
             persist();
             try { localStorage.removeItem('asb_import_relink'); } catch(e){}
         }
+        try { if (typeof window.catPhotosIn === 'function') window.catPhotosIn(); } catch(e) {}
         if (typeof render === 'function') render();
         if ((imp || hasPush) && typeof window._invStructOut === 'function') window._invStructOut();
     }
@@ -7034,6 +7036,7 @@ window.openIconPicker=function(t){ KPIcons.open(t); };
 })();
 </script>
 
+<style id="kp-cat-icon-fix">.pc>img,.pc>span{display:inline-block;visibility:visible;opacity:1;max-width:100%}@media (min-width:900px){.pc>img{width:60px;height:60px;object-fit:cover}.pc>span{line-height:1.2}}</style>
 </body>
 </html>
 
