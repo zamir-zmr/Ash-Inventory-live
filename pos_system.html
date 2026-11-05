@@ -1021,7 +1021,7 @@ body { width: 100%; }
 
         
         <div id="dashTileInventory" class="dash-tile bg-reports" onclick="showInventoryDash()"><span>📦</span>Inventory</div>
-        <div class="dash-tile bg-pos" onclick="closeDash()"><span>🖥️</span>POS</div>
+        <div class="dash-tile bg-pos" onclick="goPosHome()"><span>🖥️</span>POS</div>
         <div class="dash-tile bg-logout" onclick="doLogout()"><span>⬅️</span>Logout</div>
         
         
@@ -1761,6 +1761,24 @@ function processPastedJson() {
         location.hash = 'home';
         curCat = null;
         render();
+        updateCartUI();
+    }
+    function goPosHome() {
+        closeDash();
+        try {
+            loadTicketState();
+            if (!currentTicket) {
+                for (let t = 1; t <= 200; t++) {
+                    if (ticketsUsed.includes(t) || ticketsPending.includes(t) || ticketsSettled.includes(t)) continue;
+                    currentTicket = t; break;
+                }
+            }
+            const _tb = document.getElementById('ticketBadge'); if (_tb && currentTicket) _tb.innerText = '🎫 #' + currentTicket;
+        } catch(e) {}
+        const _tp = document.getElementById('ticketPage'); if (_tp) { _tp.style.display = 'none'; _tp.style.zIndex = ''; }
+        toggleCart(false);
+        curCat = null;
+        if (location.hash !== '#home') location.hash = 'home'; else render();
         updateCartUI();
     }
     function showDashboard() { document.getElementById('dashPage').style.display = 'flex'; }
@@ -6963,7 +6981,7 @@ function sec(title,s){
 }
 function render(){
     var el=document.getElementById('icBody'); if(!el) return;
-    el.innerHTML=sec('CATEGORY ICONS','cats')+sec('ITEM ICONS','items');
+    el.innerHTML=sec('Icon 1','cats')+sec('Icon 2','items');
     var m=document.getElementById('iconM'); m.classList.toggle('mgm',manage);
     var b=document.getElementById('icMgBtn'); b.classList.toggle('on',manage); b.textContent=manage?'✔ Done':'✏️ Manage';
     if(edit&&edit.t==='e'){ var inp=document.getElementById('icIn_'+edit.s); if(inp) inp.value=edit.v||''; }
