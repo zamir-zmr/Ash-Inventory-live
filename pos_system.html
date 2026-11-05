@@ -7205,8 +7205,8 @@ window.openIconPicker=function(t){ KPIcons.open(t); };
 </div>
 
 <!-- Opening petty cash -->
-<div id="expOpenOv" onclick="EXP.overlayOpen()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:200100;backdrop-filter:blur(4px);"></div>
-<div id="expOpenBox" style="display:none;position:fixed;z-index:200101;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;max-height:92vh;">
+<div id="expOpenOv" onclick="EXP.overlayOpen()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.78);z-index:299000;backdrop-filter:blur(4px);"></div>
+<div id="expOpenBox" style="display:none;position:fixed;z-index:299001;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;max-height:92vh;">
     <div class="xp-head"><div class="xp-chip amber">🏦</div><div><h3 id="expOpenTitle" class="xp-ttl">Opening Cash</h3><span class="xp-sub" id="expOpenSub">Petty cash in hand at start of day</span></div></div>
     <div class="xp-body">
         <div class="xp-field"><label class="xp-lbl" for="expoDate">Date</label><input type="date" id="expoDate" class="xp-in" onchange="EXP.openDateChanged()"></div>
@@ -7433,6 +7433,7 @@ window.EXP = (function(){
   function openOpening(day, prompt){
     openDay = day || dkey(new Date()); openPrompt = !!prompt;
     $('expoDate').value = openDay; $('expoCur').innerText = cur();
+    $('expoDate').disabled = !!prompt; $('expoDate').style.opacity = prompt ? '.75' : '';
     $('expOpenTitle').innerText = prompt ? 'Start of Day' : 'Opening Cash';
     $('expOpenSub').innerText = prompt ? 'Enter petty cash in hand to begin today' : 'Petty cash in hand at start of day';
     $('expoSkip').style.display = prompt ? 'none' : '';
@@ -7446,7 +7447,7 @@ window.EXP = (function(){
     var hint = $('expoHint');
     if (cb > 0) { $('expoHintTxt').innerText = 'Previous day closing cash: ' + fmt(cb) + ' ' + cur(); hint.style.display = 'flex'; hint.setAttribute('data-c', cb); }
     else { hint.style.display = 'none'; hint.removeAttribute('data-c'); }
-    $('expoClear').style.display = (man && !openPrompt) ? '' : 'none';
+    $('expoClear').style.display = (man && !openPrompt && d !== dkey(new Date())) ? '' : 'none';
   }
   function openDateChanged(){ fillOpen(); }
   function useCarry(){ var c = $('expoHint').getAttribute('data-c'); if (c !== null) $('expoAmt').value = c; }
@@ -7470,7 +7471,7 @@ window.EXP = (function(){
     try {
       var t = dkey(new Date());
       if (Object.prototype.hasOwnProperty.call(openMap(), t)) return;
-      if (localStorage.getItem(SKIPKEY) === t) return;
+      var bx = $('expOpenBox'); if (bx && bx.style.display === 'block') return;
       openOpening(t, true);
     } catch(x){}
   }
@@ -7490,6 +7491,11 @@ function showExpenses(){
   EXP.render();
   setTimeout(function(){ EXP.maybePrompt(); }, 250);
 }
+(function(){
+  function chk(){ try { if (window.EXP) EXP.maybePrompt(); } catch(e){} }
+  setTimeout(chk, 1200); setInterval(chk, 15000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) chk(); });
+})();
 function closeExpenses(){
   document.getElementById('expensesPage').style.display = 'none';
   backFromSubPage();
