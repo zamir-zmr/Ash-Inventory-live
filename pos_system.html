@@ -7168,6 +7168,7 @@ window.openIconPicker=function(t){ KPIcons.open(t); };
         </div>
         <div style="display:flex; gap:8px; margin-bottom:10px;">
             <select id="expCatFilter" onchange="EXP.render()" style="flex:1; min-width:0; padding:11px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; font-weight:700; background:#fff; color:#334155;"></select>
+            <button onclick="EXP.openOpeningBtn()" style="flex:none; padding:0 11px; border-radius:12px; border:none; background:#fef3c7; color:#b45309; font-weight:800; font-size:12px; cursor:pointer;">🏦 Opening</button>
             <button onclick="EXP.openCats()" style="flex:none; padding:0 13px; border-radius:12px; border:none; background:#e0e7ff; color:#4338ca; font-weight:800; font-size:12px; cursor:pointer;">⚙️ Manage</button>
             <button onclick="EXP.openForm()" style="flex:none; padding:0 13px; border-radius:12px; border:none; background:#0d9488; color:#fff; font-weight:800; font-size:12px; cursor:pointer;">➕ Add</button>
         </div>
@@ -7204,7 +7205,7 @@ window.openIconPicker=function(t){ KPIcons.open(t); };
 </div>
 
 <!-- Opening petty cash -->
-<div id="expOpenOv" onclick="EXP.closeOpen()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:200100;backdrop-filter:blur(4px);"></div>
+<div id="expOpenOv" onclick="EXP.overlayOpen()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:200100;backdrop-filter:blur(4px);"></div>
 <div id="expOpenBox" style="display:none;position:fixed;z-index:200101;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;max-height:92vh;">
     <div class="xp-head"><div class="xp-chip amber">🏦</div><div><h3 id="expOpenTitle" class="xp-ttl">Opening Cash</h3><span class="xp-sub" id="expOpenSub">Petty cash in hand at start of day</span></div></div>
     <div class="xp-body">
@@ -7213,7 +7214,7 @@ window.openIconPicker=function(t){ KPIcons.open(t); };
         <div class="xp-hint" id="expoHint" style="display:none;"><span id="expoHintTxt"></span><button type="button" onclick="EXP.useCarry()">Use</button></div>
     </div>
     <div class="xp-foot" style="padding-bottom:10px;"><button type="button" class="xp-btn-p" style="flex:1;" onclick="EXP.saveOpen()">✅ Save Opening Cash</button></div>
-    <div class="xp-foot" style="padding-top:0;"><button type="button" class="xp-btn-s" id="expoSkip" onclick="EXP.skipOpen()">Skip today</button><button type="button" class="xp-btn-d" id="expoClear" onclick="EXP.clearOpen()">Clear</button></div>
+    <div class="xp-foot" style="padding-top:0;"><button type="button" class="xp-btn-s" id="expoSkip" onclick="EXP.closeOpen()">Cancel</button><button type="button" class="xp-btn-d" id="expoClear" onclick="EXP.clearOpen()">Clear</button></div>
 </div>
 
 <script>
@@ -7255,24 +7256,27 @@ window.EXP = (function(){
   function openMap(){ try { var o = JSON.parse(localStorage.getItem(OKEY) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch(x){ return {}; } }
   function saveOpenMap(o){ try { localStorage.setItem(OKEY, JSON.stringify(o)); } catch(x){ alert('Storage full! Opening cash not saved.'); } }
   function salesLogs(){ try { return JSON.parse(localStorage.getItem('asb_sales_logs') || '[]') || []; } catch(x){ return []; } }
-  /* Running cash ledger: opening(day) = manual opening if set, else previous day's closing; closing = opening + sales - expenses */
+  /* Cash ledger: opening(day) = manual opening if set, else YESTERDAY's closing only (no multi-day accumulation); closing = opening + sales - expenses */
+  function prevKey(d){ var y = new Date(d + 'T00:00:00'); y.setDate(y.getDate() - 1); return dkey(y); }
   function ledger(endKey){
-    var sales = {}, exps = {}, opens = openMap(), dates = {}, rows = {}, carry = 0;
+    var sales = {}, exps = {}, opens = openMap(), dates = {}, rows = {};
     salesLogs().forEach(function(r){ if (r && r.date && r.date <= endKey) { sales[r.date] = (sales[r.date] || 0) + (parseFloat(r.amount) || 0); dates[r.date] = 1; } });
     list().forEach(function(r){ if (r && r.date && r.date <= endKey) { exps[r.date] = (exps[r.date] || 0) + (Number(r.amount) || 0); dates[r.date] = 1; } });
     Object.keys(opens).forEach(function(k){ if (k <= endKey) dates[k] = 1; });
-    var ds = Object.keys(dates).sort();
-    ds.forEach(function(d){
+    function prevClose(d){
+      var y = prevKey(d), mo = Object.prototype.hasOwnProperty.call(opens, y) ? (Number(opens[y]) || 0) : 0;
+      return mo + (sales[y] || 0) - (exps[y] || 0);
+    }
+    Object.keys(dates).sort().forEach(function(d){
       var man = Object.prototype.hasOwnProperty.call(opens, d);
-      var op = man ? (Number(opens[d]) || 0) : carry, s1 = sales[d] || 0, e1 = exps[d] || 0, cl = op + s1 - e1;
-      rows[d] = { open: op, sales: s1, exp: e1, close: cl, manual: man };
-      carry = cl;
+      var op = man ? (Number(opens[d]) || 0) : prevClose(d), s1 = sales[d] || 0, e1 = exps[d] || 0;
+      rows[d] = { open: op, sales: s1, exp: e1, close: op + s1 - e1, manual: man };
     });
-    return { rows: rows, dates: ds, carry: carry };
+    return { rows: rows, dates: Object.keys(dates).sort() };
   }
   function carryBefore(day){
-    var y = new Date(day + 'T00:00:00'); y.setDate(y.getDate() - 1);
-    return ledger(dkey(y)).carry;
+    var y = prevKey(day), L = ledger(y);
+    return L.rows[y] ? L.rows[y].close : 0;
   }
   function totalForRange(s, en){ var t = 0, m = expByDay(s, en); for (var k in m) t += m[k]; return t; }
   function allCatNames(){
@@ -7295,9 +7299,8 @@ window.EXP = (function(){
     for (k in sd) sTot += sd[k];
     for (k in ed) eTot += ed[k];
     var net = sTot - eTot;
-    var L = ledger(r.e), opens = openMap(), firstD = null;
-    for (var q = 0; q < L.dates.length; q++) { if (L.dates[q] >= r.s) { firstD = L.dates[q]; break; } }
-    var openR = firstD ? L.rows[firstD].open : L.carry, closeR = L.carry;
+    var L = ledger(r.e), opens = openMap();
+    var openR = L.rows[r.s] ? L.rows[r.s].open : carryBefore(r.s), closeR = openR + sTot - eTot;
     var single = (r.s === r.e), od = single ? r.s : dkey(new Date());
     var manual = Object.prototype.hasOwnProperty.call(opens, od);
     var sub = manual ? 'Set manually' : (openR > 0 ? 'Carried forward from previous day' : 'Not set \u2014 tap to add petty cash');
@@ -7432,7 +7435,7 @@ window.EXP = (function(){
     $('expoDate').value = openDay; $('expoCur').innerText = cur();
     $('expOpenTitle').innerText = prompt ? 'Start of Day' : 'Opening Cash';
     $('expOpenSub').innerText = prompt ? 'Enter petty cash in hand to begin today' : 'Petty cash in hand at start of day';
-    $('expoSkip').style.display = prompt ? '' : 'none';
+    $('expoSkip').style.display = prompt ? 'none' : '';
     fillOpen();
     $('expOpenOv').style.display = 'block'; $('expOpenBox').style.display = 'block';
     setTimeout(function(){ try { $('expoAmt').focus(); } catch(x){} }, 120);
@@ -7443,24 +7446,26 @@ window.EXP = (function(){
     var hint = $('expoHint');
     if (cb > 0) { $('expoHintTxt').innerText = 'Previous day closing cash: ' + fmt(cb) + ' ' + cur(); hint.style.display = 'flex'; hint.setAttribute('data-c', cb); }
     else { hint.style.display = 'none'; hint.removeAttribute('data-c'); }
-    $('expoClear').style.display = man ? '' : 'none';
+    $('expoClear').style.display = (man && !openPrompt) ? '' : 'none';
   }
   function openDateChanged(){ fillOpen(); }
   function useCarry(){ var c = $('expoHint').getAttribute('data-c'); if (c !== null) $('expoAmt').value = c; }
-  function closeOpen(){ $('expOpenOv').style.display = 'none'; $('expOpenBox').style.display = 'none'; }
+  function closeOpen(){ $('expOpenOv').style.display = 'none'; $('expOpenBox').style.display = 'none'; openPrompt = false; }
   function saveOpen(){
     var d = $('expoDate').value, a = parseFloat($('expoAmt').value);
     var al = function(m){ if (typeof showAppAlert === 'function') showAppAlert('⚠️ Required', m); else alert(m); };
     if (!d) { al('Date select karein'); return; }
     if (isNaN(a) || a < 0) { al('Valid opening amount daalein'); return; }
-    var o = openMap(); o[d] = a; saveOpenMap(o); closeOpen(); render();
+    var o = openMap(); o[d] = a; saveOpenMap(o); try { localStorage.setItem(SKIPKEY, dkey(new Date())); } catch(x){} openPrompt = false; closeOpen(); render();
   }
   function clearOpen(){
     var d = $('expoDate').value, o = openMap();
     if (d && Object.prototype.hasOwnProperty.call(o, d)) { delete o[d]; saveOpenMap(o); }
+    try { localStorage.setItem(SKIPKEY, dkey(new Date())); } catch(x){}
     closeOpen(); render();
   }
-  function skipOpen(){ try { localStorage.setItem(SKIPKEY, dkey(new Date())); } catch(x){} closeOpen(); }
+  function overlayOpen(){ if (!openPrompt) closeOpen(); }
+  function openOpeningBtn(){ var r = range(); openOpening(r.s === r.e ? r.s : dkey(new Date()), false); }
   function maybePrompt(){
     try {
       var t = dkey(new Date());
@@ -7477,7 +7482,7 @@ window.EXP = (function(){
   }
   return { render: render, setFilter: setFilter, toggleCustom: toggleCustom, applyCustom: applyCustom, openForm: openForm, closeForm: closeForm,
            saveForm: saveForm, openCats: openCats, closeCats: closeCats, saveCat: saveCat, totalForRange: totalForRange, onRemote: onRemote,
-           openOpening: openOpening, openDateChanged: openDateChanged, useCarry: useCarry, closeOpen: closeOpen, saveOpen: saveOpen, clearOpen: clearOpen, skipOpen: skipOpen, maybePrompt: maybePrompt };
+           openOpening: openOpening, openDateChanged: openDateChanged, useCarry: useCarry, closeOpen: closeOpen, saveOpen: saveOpen, clearOpen: clearOpen, overlayOpen: overlayOpen, openOpeningBtn: openOpeningBtn, maybePrompt: maybePrompt };
 })();
 function showExpenses(){
   document.getElementById('expensesPage').style.display = 'flex';
