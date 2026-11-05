@@ -1017,6 +1017,7 @@ body { width: 100%; }
         <div class="dash-tile bg-reports" onclick="showReports()"><span>📊</span>Reports</div>
         <div class="dash-tile bg-reports" onclick="showTopSelling()"><span>🏆</span>Top Selling</div>
         <div class="dash-tile bg-reports" onclick="showItemManage()"><span>📋</span>Manage</div>
+        <div class="dash-tile bg-reports" onclick="showExpenses()"><span>💸</span>Expenses</div>
 
 
         
@@ -1076,6 +1077,7 @@ body { width: 100%; }
         <div style="background:linear-gradient(135deg,#1e293b,#334155); color:#fff; padding:16px; border-radius:14px; text-align:center;">
             <small style="opacity:0.8; font-weight:bold; font-size:10px; letter-spacing:1px;" id="repPeriodLabel">TODAY</small>
             <div style="font-size:24px; font-weight:900;" id="repTotalRevenue">0.000 <span style="font-size:12px; opacity:0.7;" class="cur-code">OMR</span></div>
+            <div id="repNetLine" style="margin-top:8px; font-size:12px; font-weight:800; opacity:.95;"></div>
         </div>
 
         <!-- Orders & AOV Stats -->
@@ -1810,6 +1812,7 @@ function processPastedJson() {
         document.getElementById('topSellingPage').style.display = 'none';
         document.getElementById('itemManagePage').style.display = 'none';
         document.getElementById('invDashPage').style.display = 'none';
+        var _ep = document.getElementById('expensesPage'); if (_ep) _ep.style.display = 'none';
         showDashboard();
     }
     window.addEventListener('popstate', function (e) {
@@ -3793,6 +3796,13 @@ function renderSalesDashboardRange(start, end, label){
     document.getElementById('repCashCash').innerText = totalCash.toFixed(cdec());
     document.getElementById('repCashMpesa').innerText = totalMpesa.toFixed(cdec());
     document.getElementById('repCashPending').innerText = totalPending.toFixed(cdec());
+    try {
+        var _nl = document.getElementById('repNetLine');
+        if (_nl && window.EXP) {
+            var _ex = EXP.totalForRange(startKey, endKey), _net = totalRevenue - _ex;
+            _nl.innerHTML = '💸 Expenses: ' + _ex.toFixed(cdec()) + ' &nbsp;·&nbsp; Net: <span style="color:' + (_net < 0 ? '#fca5a5' : '#86efac') + '">' + _net.toFixed(cdec()) + '</span>';
+        }
+    } catch (e) {}
 }
 
 // Shared helper: aggregate item quantity/revenue for a date range (used by Top Selling screen)
@@ -4772,7 +4782,9 @@ function exportFullBackup(kind) {
             _type: 'sales', _branch: br, _version: 2,
             sales: JSON.parse(localStorage.getItem('asb_sales_logs')) || [],
             billCount: parseInt(_ls('asb_bill_count', 0)) || 0,
-            lastDate: (function(){ try { return localStorage.getItem('asb_last_date') || ""; } catch(e){ return ""; } })()
+            lastDate: (function(){ try { return localStorage.getItem('asb_last_date') || ""; } catch(e){ return ""; } })(),
+            expenses: JSON.parse(localStorage.getItem('asb_expenses') || '[]'),
+            expenseCats: JSON.parse(localStorage.getItem('asb_expense_cats') || 'null')
         };
     }
     const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
@@ -4811,6 +4823,8 @@ function importFullBackup(event) {
                 alert("Product data restored!");
             } else {
                 _lsSet('asb_sales_logs', data.sales || []);
+                if (data.expenses) { try { localStorage.setItem('asb_expenses', JSON.stringify(data.expenses)); } catch(e) {} }
+                if (data.expenseCats) { try { localStorage.setItem('asb_expense_cats', JSON.stringify(data.expenseCats)); } catch(e) {} }
                 try { localStorage.setItem('asb_bill_count', data.billCount || 0); } catch(e) {}
                 try { localStorage.setItem('asb_last_date', data.lastDate || ""); } catch(e) {}
                 alert("Sales data restored! Next bill number: " + ((data.billCount || 0) + 1));
@@ -5893,7 +5907,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     };
 
     /* ---- POS activity sync (sales, tickets, bill count, logs) via Firebase ---- */
-    var SYNC_KEYS = ['asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_acc2','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency','asb_show_order_pay','asb_cat_photos','asb_icon_lib'];
+    var SYNC_KEYS = ['asb_expenses','asb_expense_cats','asb_sales_logs','asb_bill_count','asb_last_date','asb_tickets_used','asb_tickets_pending','asb_tickets_settled','asb_ticket_date','asb_ticket_carts','asb_stock_add_log','asb_waste_log','asb_delete_password','asb_acc2','asb_zero_stock_block','asb_show_dash_inventory','asb_show_dash_danger','asb_show_reports_backup','asb_show_ticket_bill','asb_shop_info','asb_bill_design','asb_currency','asb_show_order_pay','asb_cat_photos','asb_icon_lib'];
     var ARRAY_KEYS = { asb_sales_logs:1, asb_stock_add_log:1, asb_waste_log:1 };
     var applyingRemote = false, timers = {}, remoteSeen = false, lastLocalWrite = {};
     var _origSet = Storage.prototype.setItem, _origRemove = Storage.prototype.removeItem;
@@ -5916,6 +5930,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
         if (!applyingRemote && this === window.localStorage && isSync(k)) { lastLocalWrite[k] = Date.now(); schedule(k); }
     };
     function refreshAfterRemote(changed){
+        try { if (window.EXP) EXP.onRemote(changed); } catch(e) {}
         try {
             var t = changed.some(function(k){ return /ticket/.test(k); });
             if (t && typeof loadTicketState === 'function') {
@@ -7069,6 +7084,265 @@ window.openIconPicker=function(t){ KPIcons.open(t); };
 </script>
 
 <style id="kp-cat-icon-fix">.pc>img,.pc>span{display:inline-block;visibility:visible;opacity:1;max-width:100%}@media (min-width:900px){.pc>img{width:60px;height:60px;object-fit:cover}.pc>span{line-height:1.2}}</style>
+
+<!-- ===== EXPENSES ===== -->
+<style id="exp-css">
+.exp-filter-btn { white-space:nowrap; padding:9px 16px; border-radius:18px; border:1.5px solid #e6e9f0; background:#f8fafc; color:#334155; font-weight:700; font-size:12px; cursor:pointer; transition:.15s; }
+.exp-filter-btn.active { background:linear-gradient(120deg,#0f766e,#0d9488); border-color:#0d9488; color:#fff; box-shadow:0 8px 18px rgba(13,148,136,.28); }
+#expensesPage .exp-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 8px; text-align:center; min-width:0; }
+#expensesPage .exp-card small { display:block; font-size:9px; font-weight:800; color:#64748b; letter-spacing:.4px; }
+#expensesPage .exp-card b { display:block; font-size:14px; margin-top:3px; word-break:break-all; }
+#expensesPage .exp-row { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+#expensesPage .exp-btn { border:none; width:34px; height:34px; border-radius:10px; font-size:14px; cursor:pointer; flex:none; }
+#expensesPage .exp-inp { width:100%; box-sizing:border-box; padding:13px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:15px; background:#fff; }
+</style>
+<div id="expensesPage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
+    <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
+        <b style="font-size:17px; color:#1e293b;">💸 Expenses</b>
+        <button onclick="closeExpenses()" aria-label="Close Expenses" title="Close" class="layout-corner-close">×</button>
+    </div>
+    <div style="padding:12px 12px 0; flex-shrink:0;">
+        <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:10px;">
+            <button class="exp-filter-btn active" data-f="today" onclick="EXP.setFilter('today')">Today</button>
+            <button class="exp-filter-btn" data-f="yesterday" onclick="EXP.setFilter('yesterday')">Yesterday</button>
+            <button class="exp-filter-btn" data-f="month" onclick="EXP.setFilter('month')">This Month</button>
+            <button class="exp-filter-btn" data-f="manual" onclick="EXP.toggleCustom()">Custom 📅</button>
+        </div>
+        <div id="expCustomPicker" style="display:none; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:6px;">
+            <input type="date" id="expFrom" style="flex:none; width:128px; height:32px; padding:0 6px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px;">
+            <input type="date" id="expTo" style="flex:none; width:128px; height:32px; padding:0 6px; border-radius:8px; border:1px solid #e2e8f0; font-size:11.5px;">
+            <button onclick="EXP.applyCustom()" style="flex:none; height:32px; padding:0 12px; border-radius:8px; border:none; background:#00C7C7; color:#fff; font-weight:700; font-size:11.5px; cursor:pointer;">Apply</button>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <select id="expCatFilter" onchange="EXP.render()" style="flex:1; min-width:0; padding:11px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; font-weight:700; background:#fff; color:#334155;"></select>
+            <button onclick="EXP.openCats()" style="flex:none; padding:0 13px; border-radius:12px; border:none; background:#e0e7ff; color:#4338ca; font-weight:800; font-size:12px; cursor:pointer;">⚙️ Manage</button>
+            <button onclick="EXP.openForm()" style="flex:none; padding:0 13px; border-radius:12px; border:none; background:#0d9488; color:#fff; font-weight:800; font-size:12px; cursor:pointer;">➕ Add</button>
+        </div>
+    </div>
+    <div id="expBody" style="flex:1; overflow-y:auto; padding:0 12px 12px; -webkit-overflow-scrolling:touch;"></div>
+    <div style="flex-shrink:0; background:#fff; border-top:1px solid #e2e8f0; padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px)); display:flex; align-items:center; justify-content:space-between; box-shadow:0 -4px 14px rgba(15,23,42,.06);">
+        <div><small id="expFootLabel" style="color:#64748b; font-weight:800; font-size:10px; letter-spacing:.5px;">TOTAL EXPENSES</small></div>
+        <b id="expFootTotal" style="font-size:20px; color:#dc2626;">0.000</b>
+    </div>
+</div>
+
+<!-- Add / Edit expense -->
+<div id="expFormOv" onclick="EXP.closeForm()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:200100;backdrop-filter:blur(4px);"></div>
+<div id="expFormBox" style="display:none;position:fixed;z-index:200101;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:360px;background:#fff;border-radius:22px;padding:22px 20px;box-shadow:0 20px 50px rgba(0,0,0,0.28);max-height:90vh;overflow-y:auto;">
+    <h3 id="expFormTitle" style="margin:0 0 14px;text-align:center;font-size:19px;color:#0f172a;font-weight:800;">➕ Add Expense</h3>
+    <label style="font-size:11px;font-weight:800;color:#64748b;">DATE</label>
+    <input type="date" id="expfDate" class="exp-inp" style="margin:4px 0 10px;">
+    <label style="font-size:11px;font-weight:800;color:#64748b;">CATEGORY</label>
+    <select id="expfCat" class="exp-inp" style="margin:4px 0 10px;"></select>
+    <label style="font-size:11px;font-weight:800;color:#64748b;">AMOUNT</label>
+    <input type="number" id="expfAmt" class="exp-inp" inputmode="decimal" step="any" min="0" placeholder="0.000" style="margin:4px 0 10px;">
+    <label style="font-size:11px;font-weight:800;color:#64748b;">NOTE (optional)</label>
+    <input type="text" id="expfNote" class="exp-inp" placeholder="Details" style="margin:4px 0 16px;">
+    <button onclick="EXP.saveForm()" style="width:100%;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;padding:14px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:8px;">✅ Save</button>
+    <button onclick="EXP.closeForm()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:12px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+</div>
+
+<!-- Manage expense categories -->
+<div id="expCatOv" onclick="EXP.closeCats()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:200100;backdrop-filter:blur(4px);"></div>
+<div id="expCatBox" style="display:none;position:fixed;z-index:200101;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:360px;background:#fff;border-radius:22px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,0.28);max-height:85vh;overflow-y:auto;">
+    <h3 style="margin:0 0 12px;text-align:center;font-size:19px;color:#0f172a;font-weight:800;">⚙️ Expense Categories</h3>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input type="text" id="expCatInput" class="exp-inp" placeholder="Category name" style="flex:1;min-width:0;" onkeydown="if(event.key==='Enter'){EXP.saveCat();}">
+        <button id="expCatBtn" onclick="EXP.saveCat()" style="flex:none;padding:0 14px;border:none;border-radius:12px;background:#0d9488;color:#fff;font-weight:800;font-size:13px;cursor:pointer;">➕ Add</button>
+    </div>
+    <div id="expCatList"></div>
+    <button onclick="EXP.closeCats()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:12px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;">✔ Done</button>
+</div>
+
+<script>
+/* ===== Expenses: sales se linked net balance (Sales - Expenses), Firebase sync via asb_expenses ===== */
+window.EXP = (function(){
+  var KEY = 'asb_expenses', CKEY = 'asb_expense_cats';
+  var DEFC = ['Rent', 'Salary', 'Electricity', 'Transport', 'Purchase', 'Other'];
+  var filter = 'today', cFrom = '', cTo = '', editId = null, editCat = null, armed = null, armT = 0;
+  function $(id){ return document.getElementById(id); }
+  function e(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function list(){ try { var a = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(a) ? a : []; } catch(x){ return []; } }
+  function saveList(a){ try { localStorage.setItem(KEY, JSON.stringify(a)); } catch(x){ alert('Storage full! Expense not saved.'); } }
+  function cats(){ try { var a = JSON.parse(localStorage.getItem(CKEY)); if (Array.isArray(a)) return a; } catch(x){} return DEFC.slice(); }
+  function saveCats(a){ try { localStorage.setItem(CKEY, JSON.stringify(a)); } catch(x){} }
+  function dec(){ return (typeof cdec === 'function') ? cdec() : 3; }
+  function cur(){ return (typeof curCode === 'function') ? curCode() : ''; }
+  function fmt(n){ return (Number(n) || 0).toFixed(dec()); }
+  function dkey(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function nice(k){ var p = k.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  function range(){
+    var now = new Date(), t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (filter === 'yesterday') { var y = new Date(t.getFullYear(), t.getMonth(), t.getDate() - 1); return { s: dkey(y), e: dkey(y), label: 'YESTERDAY' }; }
+    if (filter === 'month') return { s: dkey(new Date(t.getFullYear(), t.getMonth(), 1)), e: dkey(t), label: 'THIS MONTH' };
+    if (filter === 'manual' && cFrom && cTo) return { s: cFrom <= cTo ? cFrom : cTo, e: cFrom <= cTo ? cTo : cFrom, label: 'CUSTOM' };
+    return { s: dkey(t), e: dkey(t), label: 'TODAY' };
+  }
+  function salesByDay(s, en){
+    var m = {}, a = [];
+    try { a = JSON.parse(localStorage.getItem('asb_sales_logs') || '[]') || []; } catch(x){}
+    a.forEach(function(r){ if (r && r.date >= s && r.date <= en) m[r.date] = (m[r.date] || 0) + (parseFloat(r.amount) || 0); });
+    return m;
+  }
+  function expByDay(s, en){
+    var m = {};
+    list().forEach(function(r){ if (r.date >= s && r.date <= en) m[r.date] = (m[r.date] || 0) + (Number(r.amount) || 0); });
+    return m;
+  }
+  function totalForRange(s, en){ var t = 0, m = expByDay(s, en); for (var k in m) t += m[k]; return t; }
+  function allCatNames(){
+    var c = cats().slice();
+    list().forEach(function(r){ if (r.cat && c.indexOf(r.cat) === -1) c.push(r.cat); });
+    return c;
+  }
+  function fillCatFilter(){
+    var sel = $('expCatFilter'); if (!sel) return;
+    var v = sel.value || '__all', c = allCatNames();
+    sel.innerHTML = '<option value="__all">All Categories</option>' + c.map(function(n){ return '<option value="' + e(n) + '">' + e(n) + '</option>'; }).join('');
+    sel.value = (v === '__all' || c.indexOf(v) !== -1) ? v : '__all';
+  }
+  function render(){
+    var pg = $('expensesPage'); if (!pg) return;
+    fillCatFilter();
+    var r = range(), catSel = $('expCatFilter').value || '__all';
+    var sd = salesByDay(r.s, r.e), ed = expByDay(r.s, r.e);
+    var sTot = 0, eTot = 0, k;
+    for (k in sd) sTot += sd[k];
+    for (k in ed) eTot += ed[k];
+    var net = sTot - eTot;
+    var days = {}; for (k in sd) days[k] = 1; for (k in ed) days[k] = 1;
+    if (r.s === r.e) days[r.s] = 1;
+    var dayKeys = Object.keys(days).sort().reverse();
+    var netCol = function(n){ return n < 0 ? '#dc2626' : '#059669'; };
+    var h = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">' +
+      '<div class="exp-card" style="border-left:4px solid #10b981;"><small>💰 SALES</small><b style="color:#065f46;">' + fmt(sTot) + '</b></div>' +
+      '<div class="exp-card" style="border-left:4px solid #ef4444;"><small>💸 EXPENSES</small><b style="color:#b91c1c;">' + fmt(eTot) + '</b></div>' +
+      '<div class="exp-card" style="border-left:4px solid ' + netCol(net) + ';"><small>' + (net < 0 ? '📉' : '📈') + ' NET BALANCE</small><b style="color:' + netCol(net) + ';">' + fmt(net) + '</b></div></div>';
+    h += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-bottom:12px;">' +
+      '<div style="font-size:10px;font-weight:800;color:#64748b;margin-bottom:6px;">📅 DAILY NET (Sales − Expenses)</div>' +
+      '<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:4px;font-size:9px;font-weight:800;color:#94a3b8;padding:0 2px 4px;border-bottom:1px solid #f1f5f9;"><span>DATE</span><span style="text-align:right;">SALES</span><span style="text-align:right;">EXPENSES</span><span style="text-align:right;">NET</span></div>';
+    h += dayKeys.map(function(d){
+      var s1 = sd[d] || 0, e1 = ed[d] || 0, n1 = s1 - e1;
+      return '<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:4px;font-size:11.5px;padding:7px 2px;border-bottom:1px solid #f8fafc;">' +
+        '<span style="font-weight:700;color:#334155;">' + nice(d) + '</span><span style="text-align:right;color:#065f46;">' + fmt(s1) + '</span>' +
+        '<span style="text-align:right;color:#b91c1c;">' + fmt(e1) + '</span><span style="text-align:right;font-weight:800;color:' + netCol(n1) + ';">' + fmt(n1) + '</span></div>';
+    }).join('') + '</div>';
+    var rows = list().filter(function(x){ return x.date >= r.s && x.date <= r.e && (catSel === '__all' || x.cat === catSel); })
+      .sort(function(a, b){ return a.date < b.date ? 1 : a.date > b.date ? -1 : (b.ts || 0) - (a.ts || 0); });
+    var fTot = 0; rows.forEach(function(x){ fTot += Number(x.amount) || 0; });
+    h += '<div style="font-size:10px;font-weight:800;color:#64748b;margin:2px 2px 8px;">🧾 EXPENSE LIST (' + rows.length + ')</div>';
+    h += rows.length ? rows.map(function(x){
+      return '<div class="exp-row"><div style="flex:1;min-width:0;">' +
+        '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><span style="background:#eef2ff;color:#4338ca;font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;">' + e(x.cat || 'Other') + '</span><span style="font-size:10px;color:#94a3b8;">' + nice(x.date) + '</span></div>' +
+        (x.note ? '<div style="font-size:12px;color:#475569;margin-top:4px;word-break:break-word;">' + e(x.note) + '</div>' : '') + '</div>' +
+        '<b style="color:#dc2626;font-size:14px;flex:none;">' + fmt(x.amount) + '</b>' +
+        '<button class="exp-btn" data-a="edit" data-id="' + e(x.id) + '" style="background:#eff6ff;color:#1d4ed8;">✏️</button>' +
+        '<button class="exp-btn" data-a="del" data-id="' + e(x.id) + '" style="background:' + (armed === x.id ? '#dc2626' : '#fef2f2') + ';color:' + (armed === x.id ? '#fff' : '#b91c1c') + ';">' + (armed === x.id ? '✔' : '🗑️') + '</button></div>';
+    }).join('') : '<div style="text-align:center;color:#94a3b8;padding:26px 0;font-size:13px;">No expenses in this period</div>';
+    $('expBody').innerHTML = h;
+    $('expBody').onclick = function(ev){
+      var b = ev.target.closest ? ev.target.closest('button[data-a]') : null; if (!b) return;
+      var id = b.getAttribute('data-id');
+      if (b.getAttribute('data-a') === 'edit') openForm(id); else delExp(id);
+    };
+    $('expFootLabel').innerText = 'TOTAL EXPENSES · ' + r.label + (catSel !== '__all' ? ' · ' + catSel.toUpperCase() : '');
+    $('expFootTotal').innerText = fmt(fTot) + ' ' + cur();
+  }
+  function setFilter(f){
+    filter = f;
+    document.querySelectorAll('#expensesPage .exp-filter-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-f') === f); });
+    $('expCustomPicker').style.display = 'none';
+    render();
+  }
+  function toggleCustom(){
+    var p = $('expCustomPicker'), open = (p.style.display === 'none' || !p.style.display);
+    p.style.display = open ? 'flex' : 'none';
+    document.querySelectorAll('#expensesPage .exp-filter-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-f') === 'manual'); });
+    if (open && !$('expFrom').value) { var t = dkey(new Date()); $('expFrom').value = t; $('expTo').value = t; }
+  }
+  function applyCustom(){
+    var a = $('expFrom').value, b = $('expTo').value;
+    if (!a || !b) { if (typeof showAppAlert === 'function') showAppAlert('⚠️ Required', 'Please choose both dates'); else alert('Please choose both dates'); return; }
+    cFrom = a; cTo = b; filter = 'manual'; render();
+  }
+  function delExp(id){
+    if (armed === id) { saveList(list().filter(function(x){ return x.id !== id; })); armed = null; render(); return; }
+    armed = id; clearTimeout(armT); armT = setTimeout(function(){ armed = null; render(); }, 2500); render();
+  }
+  /* ---- add / edit form ---- */
+  function openForm(id){
+    editId = id || null;
+    var x = id ? list().filter(function(r){ return r.id === id; })[0] : null;
+    var c = allCatNames(), sel = $('expfCat');
+    sel.innerHTML = c.map(function(n){ return '<option value="' + e(n) + '">' + e(n) + '</option>'; }).join('');
+    $('expFormTitle').innerText = x ? '✏️ Edit Expense' : '➕ Add Expense';
+    $('expfDate').value = x ? x.date : dkey(new Date());
+    var cf = $('expCatFilter').value;
+    sel.value = x ? (x.cat || '') : ((cf && cf !== '__all' && c.indexOf(cf) !== -1) ? cf : (c[0] || ''));
+    $('expfAmt').value = x ? x.amount : '';
+    $('expfNote').value = x ? (x.note || '') : '';
+    $('expFormOv').style.display = 'block'; $('expFormBox').style.display = 'block';
+  }
+  function closeForm(){ $('expFormOv').style.display = 'none'; $('expFormBox').style.display = 'none'; }
+  function saveForm(){
+    var d = $('expfDate').value, c = $('expfCat').value, a = parseFloat($('expfAmt').value), n = ($('expfNote').value || '').trim();
+    var al = function(m){ if (typeof showAppAlert === 'function') showAppAlert('⚠️ Required', m); else alert(m); };
+    if (!d) { al('Date select karein'); return; }
+    if (!c) { al('Pehle ek Category add karein (⚙️ Manage)'); return; }
+    if (!(a > 0)) { al('Valid amount daalein'); return; }
+    var arr = list();
+    if (editId) { var t = arr.filter(function(r){ return r.id === editId; })[0]; if (t) { t.date = d; t.cat = c; t.amount = a; t.note = n; } }
+    else arr.push({ id: 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date: d, cat: c, amount: a, note: n, ts: Date.now() });
+    saveList(arr); closeForm(); render();
+  }
+  /* ---- categories ---- */
+  function openCats(){ editCat = null; $('expCatInput').value = ''; $('expCatBtn').innerText = '➕ Add'; renderCats(); $('expCatOv').style.display = 'block'; $('expCatBox').style.display = 'block'; }
+  function closeCats(){ $('expCatOv').style.display = 'none'; $('expCatBox').style.display = 'none'; editCat = null; armed = null; render(); }
+  function renderCats(){
+    var c = cats();
+    $('expCatList').innerHTML = c.length ? c.map(function(n, i){
+      return '<div class="exp-row" style="margin-bottom:6px;"><div style="flex:1;min-width:0;font-weight:700;color:#0f172a;word-break:break-word;">' + e(n) + '</div>' +
+        '<button class="exp-btn" data-a="ce" data-i="' + i + '" style="background:#eff6ff;color:#1d4ed8;">✏️</button>' +
+        '<button class="exp-btn" data-a="cd" data-i="' + i + '" style="background:' + (armed === 'c' + i ? '#dc2626' : '#fef2f2') + ';color:' + (armed === 'c' + i ? '#fff' : '#b91c1c') + ';">' + (armed === 'c' + i ? '✔' : '🗑️') + '</button></div>';
+    }).join('') : '<p style="color:#94a3b8;text-align:center;font-size:13px;">No categories</p>';
+    $('expCatList').onclick = function(ev){
+      var b = ev.target.closest ? ev.target.closest('button[data-a]') : null; if (!b) return;
+      var i = parseInt(b.getAttribute('data-i'), 10), arr = cats();
+      if (b.getAttribute('data-a') === 'ce') { editCat = i; $('expCatInput').value = arr[i]; $('expCatBtn').innerText = '✔ Update'; $('expCatInput').focus(); return; }
+      if (armed === 'c' + i) { arr.splice(i, 1); saveCats(arr); armed = null; if (editCat !== null) { editCat = null; $('expCatInput').value = ''; $('expCatBtn').innerText = '➕ Add'; } renderCats(); return; }
+      armed = 'c' + i; clearTimeout(armT); armT = setTimeout(function(){ armed = null; renderCats(); }, 2500); renderCats();
+    };
+  }
+  function saveCat(){
+    var v = ($('expCatInput').value || '').trim(); if (!v) return;
+    var arr = cats();
+    if (arr.some(function(n, i){ return n.toLowerCase() === v.toLowerCase() && i !== editCat; })) { if (typeof showAppAlert === 'function') showAppAlert('⚠️ Duplicate', 'Yeh category pehle se maujood hai'); return; }
+    if (editCat !== null) {
+      var old = arr[editCat]; arr[editCat] = v;
+      if (old !== v) { var ex = list(); ex.forEach(function(r){ if (r.cat === old) r.cat = v; }); saveList(ex); }
+      editCat = null; $('expCatBtn').innerText = '➕ Add';
+    } else arr.push(v);
+    saveCats(arr); $('expCatInput').value = ''; renderCats();
+  }
+  function onRemote(changed){
+    try {
+      if (!changed || !changed.some(function(k){ return k === KEY || k === CKEY || k === 'asb_sales_logs'; })) return;
+      var pg = $('expensesPage'); if (pg && pg.style.display !== 'none') render();
+    } catch(x){}
+  }
+  return { render: render, setFilter: setFilter, toggleCustom: toggleCustom, applyCustom: applyCustom, openForm: openForm, closeForm: closeForm,
+           saveForm: saveForm, openCats: openCats, closeCats: closeCats, saveCat: saveCat, totalForRange: totalForRange, onRemote: onRemote };
+})();
+function showExpenses(){
+  document.getElementById('expensesPage').style.display = 'flex';
+  pushSubPageState('expenses');
+  EXP.render();
+}
+function closeExpenses(){
+  document.getElementById('expensesPage').style.display = 'none';
+  backFromSubPage();
+}
+</script>
 </body>
 </html>
 
