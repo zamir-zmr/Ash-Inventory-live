@@ -2679,37 +2679,7 @@ function printThermal(html, billNo, dateStr) {
     };
     document.getElementById('receiptOv').style.display = 'block';
     document.getElementById('receiptPrintM').style.display = 'flex';
-    frame.srcdoc = String(html).replace('</head>', _noSel + '\n
-<style id="kp-expenses-28-opening-summary">
-/* Centered opening-cash summary matching the Sales Analytics summary card. */
-#expensesPage .xp-open {
-  display:flex !important; flex-direction:column !important; align-items:center !important;
-  justify-content:center !important; width:100% !important; min-height:132px !important;
-  margin:0 0 12px !important; padding:22px 16px !important; box-sizing:border-box !important;
-  border-radius:18px !important; background:linear-gradient(140deg,#1e293b,#334155) !important;
-  color:#fff !important; text-align:center !important; box-shadow:0 8px 20px rgba(15,23,42,.12) !important;
-  cursor:pointer !important;
-}
-#expensesPage .xp-open-t {
-  display:flex !important; flex-direction:column !important; align-items:center !important;
-  justify-content:center !important; width:100% !important; min-width:0 !important; text-align:center !important;
-}
-#expensesPage .xp-open-t small {
-  display:block !important; margin-bottom:7px !important; color:#cbd5e1 !important;
-  font-size:12px !important; font-weight:800 !important; letter-spacing:1px !important;
-}
-#expensesPage .xp-open-t b {
-  display:block !important; color:#fff !important; font-size:32px !important;
-  line-height:1.2 !important; font-weight:900 !important;
-}
-#expensesPage .xp-open-t b i { color:#cbd5e1 !important; font-size:15px !important; }
-#expensesPage .xp-open-t span {
-  display:block !important; margin-top:8px !important; color:#cbd5e1 !important;
-  font-size:12px !important; font-weight:600 !important;
-}
-#expensesPage .xp-open:active { transform:scale(.995); }
-</style>
-</head>').replace('<html', '<html translate="no"');
+    frame.srcdoc = String(html).replace('</head>', _noSel + '\n</head>').replace('<html', '<html translate="no"');
     window.currentReceiptBillNo = billNo || '';
     window.currentReceiptDateStr = dateStr || new Date().toLocaleDateString('en-GB');
     window.currentReceiptHTML = html;
@@ -7348,7 +7318,8 @@ window.EXP = (function(){
     if (single) days[r.s] = 1;
     var dayKeys = Object.keys(days).sort().reverse();
     var netCol = function(n){ return n < 0 ? '#dc2626' : '#059669'; };
-    var h = '<div class="xp-open" data-od="' + od + '" role="button" tabindex="0" aria-label="Set or edit opening cash"><div class="xp-open-t"><small>🏦 OPENING CASH · ' + r.label + '</small><b>' + fmt(openR) + ' <i>' + e(cur()) + '</i></b><span>' + sub + '</span></div></div>';
+    var h = '<div class="xp-open"><div class="xp-open-t"><small>\ud83c\udfe6 OPENING CASH \u00b7 ' + r.label + '</small><b>' + fmt(openR) + ' <i>' + e(cur()) + '</i></b><span>' + sub + '</span></div>' +
+      '<button type="button" class="xp-open-btn" data-od="' + od + '">' + (manual ? '\u270f\ufe0f Edit' : '\u2795 Set') + '</button></div>';
     h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">' +
       '<div class="exp-card" style="border-left:4px solid #10b981;"><small>\ud83d\udcb0 SALES</small><b style="color:#065f46;">' + fmt(sTot) + '</b></div>' +
       '<div class="exp-card" style="border-left:4px solid #ef4444;"><small>\ud83d\udcb8 EXPENSES</small><b style="color:#b91c1c;">' + fmt(eTot) + '</b></div>' +
