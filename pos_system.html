@@ -4908,9 +4908,12 @@ function refreshPwManagerUI(){
   const acc = getAccounts();
   const m = acc.filter(x => x.r === 'manager').length, u = acc.length - m;
   const st = document.getElementById('pwMgrStatus');
-  if (st) st.innerText = '👑 ' + m + ' Manager' + (m===1?'':'s') + '  •  👤 ' + u + ' User' + (u===1?'':'s');
+  if (st) { st.innerText = ''; st.style.display = 'none'; }
   const box = document.getElementById('pwMgrList');
   if (!box) return;
+  box.style.display = 'none';
+  box.innerHTML = '';
+  return;
   box.innerHTML = acc.map((x, i) => `
     <div style="border:2px solid ${x.r==='manager'?'#3b82f6':'#10b981'};border-radius:16px;padding:14px 16px;margin-bottom:12px;background:${x.r==='manager'?'#eff6ff':'#ecfdf5'};display:flex;align-items:center;gap:10px;">
       <div style="flex:1;min-width:0;">
@@ -6225,7 +6228,7 @@ body.role-user #spwBtn{display:none!important}
   var KEY='asb_acc2', SES='asb_session';
   window.getAccounts=function(){ try{ var a=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } };
   window.saveAccounts=function(a){ localStorage.setItem(KEY, JSON.stringify(a)); };
-  window.authEnsureSeed=function(){ if(!getAccounts().length) saveAccounts([{u:'Zamir',p:'admin',r:'manager'},{u:'Peter',p:'admin',r:'manager'},{u:'Mariana',p:'admin',r:'user'}]); };
+  window.authEnsureSeed=function(){ if(!getAccounts().length) saveAccounts([{u:'Zamir',p:'admin',r:'manager'},{u:'Peter',p:'admin',r:'manager'},{u:'Mariana',p:'admin',r:'user'},{u:'test',p:'admin',r:'manager'}]); };
   function nz(s){ return String(s==null?'':s).replace(/[\u200B-\u200D\uFEFF\u00A0]/g,'').trim(); }
   window.nz=nz;
   function getSes(){ try{ return JSON.parse(localStorage.getItem(SES)||'null'); }catch(e){ return null; } }
@@ -7064,7 +7067,9 @@ document.addEventListener('click',function(ev){
     }
     if(t&&!manage){
         var it2=find(t.getAttribute('data-s'),t.getAttribute('data-id')); if(!it2) return;
-        applyTo(it2.t==='i'?it2.v:emojiToSrc(it2.v)); KPIcons.close();
+        if(it2.t==='i'){ applyTo(it2.v); KPIcons.close(); }
+        else if(window.emojiImgSrc){ window.emojiImgSrc(it2.v,function(src){ applyTo(src); KPIcons.close(); }); }
+        else { applyTo(emojiToSrc(it2.v)); KPIcons.close(); }
     }
 });
 document.addEventListener('change',function(ev){
@@ -7511,6 +7516,75 @@ function closeExpenses(){
   backFromSubPage();
 }
 </script>
+
+<style id="emoji-fallback-css">img.emoji{display:inline-block;height:1.15em;width:1.15em;margin:0 .06em;vertical-align:-0.2em;object-fit:contain;pointer-events:none}</style>
+<script id="emoji-fallback">
+(function(){
+  var TW_JS='https://cdn.jsdelivr.net/npm/@twemoji/api@15.0.3/dist/twemoji.min.js';
+  var TW_BASE='https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/';
+  var OPT={base:TW_BASE,folder:'svg',ext:'.svg',className:'emoji'};
+  var EMO_RE=/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;
+  function canColor(){
+    try{
+      var c=document.createElement('canvas'); c.width=c.height=36; var x=c.getContext('2d');
+      x.textBaseline='top'; x.font='26px sans-serif';
+      var t=['\u{1F600}','\u{1F9FE}','\u{1F3E6}','\u{1F4B8}'];
+      for(var k=0;k<t.length;k++){
+        x.clearRect(0,0,36,36); x.fillText(t[k],2,2);
+        var d=x.getImageData(0,0,36,36).data, col=false;
+        for(var i=0;i<d.length;i+=4){ if(d[i+3]>100&&(Math.abs(d[i]-d[i+1])>24||Math.abs(d[i+1]-d[i+2])>24)){col=true;break;} }
+        if(!col) return false;
+      }
+      return true;
+    }catch(e){ return true; }
+  }
+  /* Icon picker helper: emoji -> PNG data URL (works on every device) */
+  function canvasEmoji(e){
+    var c=document.createElement('canvas'); c.width=c.height=192; var g=c.getContext('2d');
+    g.fillStyle='#ffffff'; g.fillRect(0,0,192,192);
+    g.textAlign='center'; g.textBaseline='middle'; g.font='130px "Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif';
+    g.fillText(e,96,106); return c.toDataURL('image/png');
+  }
+  window.emojiImgSrc=function(e,cb){ cb(canvasEmoji(e)); };
+  if(canColor()) return;
+  window.__twemojiOn=true;
+  var busy=false, tm=null;
+  function strip(){
+    try{
+      var ph=document.querySelectorAll('input[placeholder],textarea[placeholder]');
+      for(var i=0;i<ph.length;i++){ var v=ph[i].getAttribute('placeholder'); if(v&&EMO_RE.test(v)){ EMO_RE.lastIndex=0; ph[i].setAttribute('placeholder',v.replace(EMO_RE,'').replace(/^\s+/,'')); } EMO_RE.lastIndex=0; }
+      var op=document.querySelectorAll('option');
+      for(var j=0;j<op.length;j++){ var t=op[j].textContent; if(t&&EMO_RE.test(t)){ EMO_RE.lastIndex=0; op[j].textContent=t.replace(EMO_RE,'').replace(/^\s+/,''); } EMO_RE.lastIndex=0; }
+    }catch(e){}
+  }
+  function run(){
+    if(busy||!window.twemoji) return; busy=true;
+    try{ mo.disconnect(); }catch(e){}
+    try{ twemoji.parse(document.body,OPT); strip(); }catch(e){}
+    busy=false; watch();
+  }
+  var mo=new MutationObserver(function(){ clearTimeout(tm); tm=setTimeout(run,160); });
+  function watch(){ try{ mo.observe(document.body,{childList:true,subtree:true,characterData:true}); }catch(e){} }
+  function load(){
+    var s=document.createElement('script'); s.src=TW_JS; s.async=true;
+    s.onload=function(){
+      window.emojiImgSrc=function(e,cb){
+        try{
+          var cp=twemoji.convert.toCodePoint(e.indexOf('\u200D')<0?e.replace(/\uFE0F/g,''):e);
+          var im=new Image(); im.crossOrigin='anonymous';
+          im.onload=function(){ try{ var c=document.createElement('canvas'); c.width=c.height=192; var g=c.getContext('2d'); g.fillStyle='#ffffff'; g.fillRect(0,0,192,192); g.drawImage(im,26,26,140,140); cb(c.toDataURL('image/png')); }catch(x){ cb(canvasEmoji(e)); } };
+          im.onerror=function(){ cb(canvasEmoji(e)); };
+          im.src=TW_BASE+'svg/'+cp+'.svg';
+        }catch(x){ cb(canvasEmoji(e)); }
+      };
+      run(); setTimeout(run,600); setTimeout(run,2000);
+    };
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',load); else load();
+})();
+</script>
+
 </body>
 </html>
 
