@@ -3800,8 +3800,8 @@ function renderSalesDashboardRange(start, end, label){
     try {
         var _nl = document.getElementById('repNetLine');
         if (_nl && window.EXP) {
-            var _ex = EXP.totalForRange(startKey, endKey), _net = totalRevenue - _ex;
-            _nl.innerHTML = '💸 Expenses: ' + _ex.toFixed(cdec()) + ' &nbsp;·&nbsp; Net: <span style="color:' + (_net < 0 ? '#fca5a5' : '#86efac') + '">' + _net.toFixed(cdec()) + '</span>';
+            var _ex = EXP.totalForRange(startKey, endKey), _net = totalRevenue - _ex, _op = EXP.openingFor(startKey);
+            _nl.innerHTML = '<div style="display:inline-block;margin-bottom:8px;padding:5px 14px;border-radius:999px;background:rgba(255,255,255,.14);font-size:12px;font-weight:800;letter-spacing:.4px;">🏦 OPENING CASH: ' + _op.toFixed(cdec()) + '</div><br>💸 Expenses: ' + _ex.toFixed(cdec()) + ' &nbsp;·&nbsp; Net: <span style="color:' + (_net < 0 ? '#fca5a5' : '#86efac') + '">' + _net.toFixed(cdec()) + '</span>';
         }
     } catch (e) {}
 }
@@ -4905,16 +4905,15 @@ let _pwEditIdx = -1;
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function refreshPwManagerUI(){
-  const acc = getAccounts();
-  const m = acc.filter(x => x.r === 'manager').length, u = acc.length - m;
+  const accAll = getAccounts();
+  const acc = accAll.map((x, i) => ({ x: x, i: i })).filter(o => String(o.x.u || '').trim().toLowerCase() !== 'test');
+  const m = acc.filter(o => o.x.r === 'manager').length, u = acc.length - m;
   const st = document.getElementById('pwMgrStatus');
-  if (st) { st.innerText = ''; st.style.display = 'none'; }
+  if (st) { st.style.display = ''; st.innerText = '👑 ' + m + ' Manager' + (m===1?'':'s') + '  •  👤 ' + u + ' User' + (u===1?'':'s'); }
   const box = document.getElementById('pwMgrList');
   if (!box) return;
-  box.style.display = 'none';
-  box.innerHTML = '';
-  return;
-  box.innerHTML = acc.map((x, i) => `
+  box.style.display = '';
+  box.innerHTML = acc.map((o) => { const x = o.x, i = o.i; return `
     <div style="border:2px solid ${x.r==='manager'?'#3b82f6':'#10b981'};border-radius:16px;padding:14px 16px;margin-bottom:12px;background:${x.r==='manager'?'#eff6ff':'#ecfdf5'};display:flex;align-items:center;gap:10px;">
       <div style="flex:1;min-width:0;">
         <div style="font-size:11px;font-weight:800;color:${x.r==='manager'?'#1d4ed8':'#047857'};letter-spacing:.6px;">${x.r==='manager'?'👑 MANAGER':'👤 USER'}</div>
@@ -4923,7 +4922,7 @@ function refreshPwManagerUI(){
       </div>
       <button onclick="startChangePw(${i})" title="Change Password" style="background:#fff;border:1.5px solid #3b82f6;color:#1d4ed8;width:40px;height:40px;border-radius:12px;font-size:16px;cursor:pointer;">🔑</button>
       <button onclick="deleteAccount(${i})" style="background:#fff;border:1.5px solid #ef4444;color:#b91c1c;width:40px;height:40px;border-radius:12px;font-size:16px;cursor:pointer;">🗑️</button>
-    </div>`).join('') || '<p style="text-align:center;color:#94a3b8;">No accounts</p>';
+    </div>`; }).join('') || '<p style="text-align:center;color:#94a3b8;">No accounts</p>';
 }
 
 let _pwMgrPageOpen = false;
@@ -7149,7 +7148,7 @@ window.openIconPicker=function(t){ KPIcons.open(t); };
 .xp-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-4px 0 14px;padding:10px 12px;border-radius:12px;background:#f0fdfa;border:1px solid #ccfbf1;font-size:12px;font-weight:600;color:#115e59}
 .xp-hint button{flex:none;border:none;background:#0d9488;color:#fff;font-weight:800;font-size:12px;padding:7px 12px;border-radius:9px;cursor:pointer}
 /* opening cash + cash-flow cards */
-.xp-open{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:14px;border-radius:16px;background:linear-gradient(135deg,#0f766e,#0d9488);color:#fff;box-shadow:0 10px 22px rgba(13,148,136,.26)}
+.xp-open{cursor:pointer;justify-content:center;text-align:center;display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:14px;border-radius:16px;background:linear-gradient(135deg,#0f766e,#0d9488);color:#fff;box-shadow:0 10px 22px rgba(13,148,136,.26)}
 .xp-open-t{flex:1;min-width:0}
 .xp-open-t small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.6px;opacity:.9}
 .xp-open-t b{display:block;margin:3px 0 2px;font-size:22px;font-weight:800;letter-spacing:-.3px;word-break:break-all}
@@ -7323,8 +7322,7 @@ window.EXP = (function(){
     if (single) days[r.s] = 1;
     var dayKeys = Object.keys(days).sort().reverse();
     var netCol = function(n){ return n < 0 ? '#dc2626' : '#059669'; };
-    var h = '<div class="xp-open"><div class="xp-open-t"><small>\ud83c\udfe6 OPENING CASH \u00b7 ' + r.label + '</small><b>' + fmt(openR) + ' <i>' + e(cur()) + '</i></b><span>' + sub + '</span></div>' +
-      '<button type="button" class="xp-open-btn" data-od="' + od + '">' + (manual ? '\u270f\ufe0f Edit' : '\u2795 Set') + '</button></div>';
+    var h = '<div class="xp-open" data-od="' + od + '"><div class="xp-open-t"><small>\ud83c\udfe6 OPENING CASH \u00b7 ' + r.label + '</small><b>' + fmt(openR) + ' <i>' + e(cur()) + '</i></b><span>' + sub + '</span></div></div>';
     h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">' +
       '<div class="exp-card" style="border-left:4px solid #10b981;"><small>\ud83d\udcb0 SALES</small><b style="color:#065f46;">' + fmt(sTot) + '</b></div>' +
       '<div class="exp-card" style="border-left:4px solid #ef4444;"><small>\ud83d\udcb8 EXPENSES</small><b style="color:#b91c1c;">' + fmt(eTot) + '</b></div>' +
@@ -7498,7 +7496,7 @@ window.EXP = (function(){
   }
   return { render: render, setFilter: setFilter, toggleCustom: toggleCustom, applyCustom: applyCustom, openForm: openForm, closeForm: closeForm,
            saveForm: saveForm, openCats: openCats, closeCats: closeCats, saveCat: saveCat, totalForRange: totalForRange, onRemote: onRemote,
-           openOpening: openOpening, openDateChanged: openDateChanged, useCarry: useCarry, closeOpen: closeOpen, saveOpen: saveOpen, clearOpen: clearOpen, overlayOpen: overlayOpen, openOpeningBtn: openOpeningBtn, maybePrompt: maybePrompt };
+           openOpening: openOpening, openDateChanged: openDateChanged, useCarry: useCarry, closeOpen: closeOpen, saveOpen: saveOpen, clearOpen: clearOpen, overlayOpen: overlayOpen, openingFor: function(day){ var L = ledger(day); return L.rows[day] ? L.rows[day].open : carryBefore(day); }, openOpeningBtn: openOpeningBtn, maybePrompt: maybePrompt };
 })();
 function showExpenses(){
   document.getElementById('expensesPage').style.display = 'flex';
@@ -7548,6 +7546,26 @@ function closeExpenses(){
   window.emojiImgSrc=function(e,cb){ cb(canvasEmoji(e)); };
   if(canColor()) return;
   window.__twemojiOn=true;
+
+  var FAX={'\u{1F4B8}':['money-bill-wave','#ef4444'],'\u{1F4CD}':['map-marker-alt','#ef4444'],'\u{1F451}':['crown','#f59e0b'],'\u{1F464}':['user','#10b981'],'\u{1F501}':['redo','#64748b'],'\u{1F4B0}':['coins','#f59e0b'],'\u{1F4B5}':['money-bill-wave','#16a34a'],'\u{1F3E6}':['university','#6366f1'],'\u{1F9FE}':['receipt','#14b8a6'],'\u{1F512}':['lock','#d97706']};
+  var FA_RE=/[\u{1F4B8}\u{1F4CD}\u{1F451}\u{1F464}\u{1F501}\u{1F4B0}\u{1F4B5}\u{1F3E6}\u{1F9FE}\u{1F512}]\uFE0F?/gu;
+  var FA_SKIP={SCRIPT:1,STYLE:1,TEXTAREA:1,OPTION:1,TITLE:1,INPUT:1,SELECT:1,NOSCRIPT:1};
+  function faPass(){
+    try{
+      var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null), list=[], n;
+      while((n=w.nextNode())){ if(n.nodeValue&&!FA_SKIP[n.parentNode.nodeName]){ FA_RE.lastIndex=0; if(FA_RE.test(n.nodeValue)) list.push(n); } }
+      list.forEach(function(t){
+        var s=t.nodeValue, frag=document.createDocumentFragment(), last=0, m; FA_RE.lastIndex=0;
+        while((m=FA_RE.exec(s))){
+          if(m.index>last) frag.appendChild(document.createTextNode(s.slice(last,m.index)));
+          var d=FAX[m[0].replace(/\uFE0F/g,'')]; var i=document.createElement('i');
+          i.className='fas fa-'+d[0]; i.style.color=d[1]; i.style.margin='0 .18em'; frag.appendChild(i); last=m.index+m[0].length;
+        }
+        if(last<s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+        t.parentNode.replaceChild(frag,t);
+      });
+    }catch(e){}
+  }
   var busy=false, tm=null;
   function strip(){
     try{
@@ -7558,14 +7576,16 @@ function closeExpenses(){
     }catch(e){}
   }
   function run(){
-    if(busy||!window.twemoji) return; busy=true;
+    if(busy) return; busy=true;
     try{ mo.disconnect(); }catch(e){}
-    try{ twemoji.parse(document.body,OPT); strip(); }catch(e){}
+    faPass();
+    try{ if(window.twemoji) twemoji.parse(document.body,OPT); strip(); }catch(e){}
     busy=false; watch();
   }
   var mo=new MutationObserver(function(){ clearTimeout(tm); tm=setTimeout(run,160); });
   function watch(){ try{ mo.observe(document.body,{childList:true,subtree:true,characterData:true}); }catch(e){} }
   function load(){
+    run(); setTimeout(run,500); setTimeout(run,1500); watch();
     var s=document.createElement('script'); s.src=TW_JS; s.async=true;
     s.onload=function(){
       window.emojiImgSrc=function(e,cb){

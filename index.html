@@ -8469,6 +8469,26 @@ window.saveEditDist=async function(){
   window.emojiImgSrc=function(e,cb){ cb(canvasEmoji(e)); };
   if(canColor()) return;
   window.__twemojiOn=true;
+
+  var FAX={'\u{1F4B8}':['money-bill-wave','#ef4444'],'\u{1F4CD}':['map-marker-alt','#ef4444'],'\u{1F451}':['crown','#f59e0b'],'\u{1F464}':['user','#10b981'],'\u{1F501}':['redo','#64748b'],'\u{1F4B0}':['coins','#f59e0b'],'\u{1F4B5}':['money-bill-wave','#16a34a'],'\u{1F3E6}':['university','#6366f1'],'\u{1F9FE}':['receipt','#14b8a6'],'\u{1F512}':['lock','#d97706']};
+  var FA_RE=/[\u{1F4B8}\u{1F4CD}\u{1F451}\u{1F464}\u{1F501}\u{1F4B0}\u{1F4B5}\u{1F3E6}\u{1F9FE}\u{1F512}]\uFE0F?/gu;
+  var FA_SKIP={SCRIPT:1,STYLE:1,TEXTAREA:1,OPTION:1,TITLE:1,INPUT:1,SELECT:1,NOSCRIPT:1};
+  function faPass(){
+    try{
+      var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null), list=[], n;
+      while((n=w.nextNode())){ if(n.nodeValue&&!FA_SKIP[n.parentNode.nodeName]){ FA_RE.lastIndex=0; if(FA_RE.test(n.nodeValue)) list.push(n); } }
+      list.forEach(function(t){
+        var s=t.nodeValue, frag=document.createDocumentFragment(), last=0, m; FA_RE.lastIndex=0;
+        while((m=FA_RE.exec(s))){
+          if(m.index>last) frag.appendChild(document.createTextNode(s.slice(last,m.index)));
+          var d=FAX[m[0].replace(/\uFE0F/g,'')]; var i=document.createElement('i');
+          i.className='fas fa-'+d[0]; i.style.color=d[1]; i.style.margin='0 .18em'; frag.appendChild(i); last=m.index+m[0].length;
+        }
+        if(last<s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+        t.parentNode.replaceChild(frag,t);
+      });
+    }catch(e){}
+  }
   var busy=false, tm=null;
   function strip(){
     try{
@@ -8479,14 +8499,16 @@ window.saveEditDist=async function(){
     }catch(e){}
   }
   function run(){
-    if(busy||!window.twemoji) return; busy=true;
+    if(busy) return; busy=true;
     try{ mo.disconnect(); }catch(e){}
-    try{ twemoji.parse(document.body,OPT); strip(); }catch(e){}
+    faPass();
+    try{ if(window.twemoji) twemoji.parse(document.body,OPT); strip(); }catch(e){}
     busy=false; watch();
   }
   var mo=new MutationObserver(function(){ clearTimeout(tm); tm=setTimeout(run,160); });
   function watch(){ try{ mo.observe(document.body,{childList:true,subtree:true,characterData:true}); }catch(e){} }
   function load(){
+    run(); setTimeout(run,500); setTimeout(run,1500); watch();
     var s=document.createElement('script'); s.src=TW_JS; s.async=true;
     s.onload=function(){
       window.emojiImgSrc=function(e,cb){
