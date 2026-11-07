@@ -1429,11 +1429,14 @@ const _origOpenSharePanel = typeof openSharePanel === 'function' ? openSharePane
                     Android.exitApp();
                 } else if (window.flutter_inappwebview) {
                     window.flutter_inappwebview.callHandler('exitApp');
+                } else if (!/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')) {
+                    /* PC / desktop PWA: window band mat karo (reopen problem) - sirf home state wapas rakho */
+                    history.pushState({ type: 'home', stack: [] }, '', '');
                 } else {
                     window.close();
                     setTimeout(() => { history.go(-(history.length)); }, 100);
                 }
-            } catch(e) { window.close(); }
+            } catch(e) { /* desktop me window close nahi */ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')) window.close(); }
         }
     });
     // ================== END HISTORY NAVIGATION ==================
