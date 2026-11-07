@@ -1017,7 +1017,7 @@ body { width: 100%; }
         <div class="dash-tile bg-reports" onclick="showReports()"><span>📊</span>Reports</div>
         <div class="dash-tile bg-reports" onclick="showTopSelling()"><span>🏆</span>Top Selling</div>
         <div class="dash-tile bg-reports" onclick="showItemManage()"><span>📋</span>Manage</div>
-        <div class="dash-tile bg-reports" onclick="showExpenses()"><span>💸</span>Expenses</div>
+        <div class="dash-tile bg-reports" onclick="showExpenses()"><span><i class="fas fa-money-bill-wave"></i></span>Expenses</div>
 
 
         
@@ -3701,7 +3701,8 @@ function refreshReports(force) {
         const s = document.getElementById('repManualStart').value, e = document.getElementById('repManualEnd').value;
         if (s && e) renderSalesDashboardRange(new Date(s + 'T00:00:00'), new Date(e + 'T00:00:00'), 'MANUAL');
     } else {
-        renderSalesDashboard(_repCurrentFilter || 'today');
+        window._repAutoRefresh = true;
+        try { renderSalesDashboard(_repCurrentFilter || 'today'); } finally { window._repAutoRefresh = false; }
     }
 }
 setInterval(function(){ try { refreshReports(false); } catch(e) {} }, 1500);
@@ -3744,6 +3745,13 @@ function toggleRepManualPicker(){
     p.style.display = (p.style.display === 'none' || !p.style.display) ? 'flex' : 'none';
     document.querySelectorAll('.rep-filter-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.rep-filter-btn[data-f="manual"]').classList.add('active');
+    _repCurrentFilter = 'manual';
+    try {
+        const s0 = document.getElementById('repManualStart'), e0 = document.getElementById('repManualEnd');
+        const n0 = new Date(), k0 = repFmtKey(n0);
+        if (s0 && !s0.value) s0.value = k0.slice(0, 8) + '01';
+        if (e0 && !e0.value) e0.value = k0;
+    } catch (x) {}
 }
 function applyRepManualFilter(){
     const s = document.getElementById('repManualStart').value;
@@ -3758,7 +3766,7 @@ function renderSalesDashboard(filter){
     document.querySelectorAll('.rep-filter-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector('.rep-filter-btn[data-f="' + filter + '"]');
     if (activeBtn) activeBtn.classList.add('active');
-    if (filter !== 'manual') document.getElementById('repManualPicker').style.display = 'none';
+    if (filter !== 'manual' && !window._repAutoRefresh) document.getElementById('repManualPicker').style.display = 'none';
 
     const { start, end } = getRepDateRange(filter);
     const label = filter.toUpperCase();
@@ -3801,7 +3809,7 @@ function renderSalesDashboardRange(start, end, label){
         var _nl = document.getElementById('repNetLine');
         if (_nl && window.EXP) {
             var _ex = EXP.totalForRange(startKey, endKey), _net = totalRevenue - _ex, _op = EXP.openingFor(startKey);
-            _nl.innerHTML = '<div style="display:inline-block;margin-bottom:8px;padding:5px 14px;border-radius:999px;background:rgba(255,255,255,.14);font-size:12px;font-weight:800;letter-spacing:.4px;">🏦 OPENING CASH: ' + _op.toFixed(cdec()) + '</div><br>💸 Expenses: ' + _ex.toFixed(cdec()) + ' &nbsp;·&nbsp; Net: <span style="color:' + (_net < 0 ? '#fca5a5' : '#86efac') + '">' + _net.toFixed(cdec()) + '</span>';
+            _nl.innerHTML = '<div style="display:inline-block;margin-bottom:8px;padding:5px 14px;border-radius:999px;background:rgba(255,255,255,.14);font-size:12px;font-weight:800;letter-spacing:.4px;">🏦 OPENING CASH: ' + _op.toFixed(cdec()) + '</div><br><i class="fas fa-money-bill-wave" style="color:#fca5a5"></i> Expenses: ' + _ex.toFixed(cdec()) + ' &nbsp;·&nbsp; Net: <span style="color:' + (_net < 0 ? '#fca5a5' : '#86efac') + '">' + _net.toFixed(cdec()) + '</span>';
         }
     } catch (e) {}
 }
@@ -3899,16 +3907,83 @@ function renderTopSellingRange(start, end){
 // 2. रिपोर्ट्स के अंदर Daily/Monthly की लिस्ट दिखाना
 let dailyReportMonth = null, dailyReportYear = null; // null = current month/year (default)
 
+function repSalesLogs(){ try { return JSON.parse(localStorage.getItem('asb_sales_logs')) || []; } catch (e) { return []; } }
+function repYearsWithData(sales){ const ys = {}; sales.forEach(s => { const y = parseInt(String(s.date || '').slice(0, 4)); if (y) ys[y] = 1; }); return Object.keys(ys).map(Number).sort((a, b) => a - b); }
+function repMonthsWithData(sales, year){ const ms = {}; sales.forEach(s => { const d = String(s.date || ''); if (parseInt(d.slice(0, 4)) === year) { const m = parseInt(d.slice(5, 7)) - 1; if (m >= 0 && m < 12) ms[m] = 1; } }); return Object.keys(ms).map(Number).sort((a, b) => a - b); }
+let monthlyReportYear = null;
+
+function rpSummary(items, unitLabel){
+    const box = document.getElementById('dateSummary'); if (!box) return;
+    const act = items.filter(i => i.amount > 0);
+    const total = items.reduce((a, i) => a + i.amount, 0);
+    const best = act.reduce((m, i) => (!m || i.amount > m.amount) ? i : m, null);
+    const avg = act.length ? total / act.length : 0;
+    const c = (t, v, s, col) => '<div class="rp-sum"><small>' + t + '</small><b style="color:' + col + ';">' + v + '</b><span>' + s + '</span></div>';
+    box.innerHTML = '<div class="rp-sums">' +
+        c('TOTAL', total.toFixed(cdec()), curCode(), '#0f172a') +
+        c('BEST ' + unitLabel.toUpperCase(), best ? best.amount.toFixed(cdec()) : '\u2014', best ? best.label : 'No sales yet', '#059669') +
+        c('AVG / ' + unitLabel.toUpperCase(), avg.toFixed(cdec()), act.length + ' active', '#2563eb') + '</div>';
+    box.style.display = 'block';
+}
+
+function rpCard(parent, o){
+    const d = document.createElement('div');
+    d.className = 'rp-card' + (o.active ? ' rp-active' : '') + (o.amount <= 0 ? ' rp-zero' : '') + (o.future ? ' rp-future' : '');
+    if (o.dateKey) { d.style.cursor = 'pointer'; d.onclick = () => showIndividualBills(o.dateKey, o.label); }
+    const pct = o.max > 0 ? Math.max(o.amount > 0 ? 6 : 0, Math.round(o.amount / o.max * 100)) : 0;
+    d.innerHTML =
+        '<div class="rp-date"><b>' + o.big + '</b><small>' + o.small + '</small></div>' +
+        '<div class="rp-body"><div class="rp-amt"><span>' + curCode() + '</span> ' + o.amount.toFixed(cdec()) + '</div>' +
+        '<div class="rp-bar"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="rp-meta">' + (o.bills ? o.bills + (o.bills === 1 ? ' bill' : ' bills') : 'No bills') + '</div></div>' +
+        (o.badge ? '<em class="rp-badge">' + o.badge + '</em>' : '');
+    parent.appendChild(d);
+}
+
+function rpYearChips(ys, selected, onPick){
+    const box = document.getElementById('dateYearChips'); if (!box) return;
+    if (ys.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.innerHTML = '';
+    ys.forEach(y => {
+        const b = document.createElement('button');
+        b.className = 'rep-filter-btn' + (y === selected ? ' active' : '');
+        b.innerText = y; b.onclick = () => onPick(y);
+        box.appendChild(b);
+    });
+    box.style.display = 'flex';
+}
+
+function renderMonthlyReports(year){
+    const list = document.getElementById('dateList'), title = document.getElementById('detailTitle');
+    const sales = repSalesLogs(), now = new Date();
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    title.innerText = "MONTHLY REPORTS"; list.innerHTML = '';
+    monthlyReportYear = year;
+    const ys = repYearsWithData(sales); if (ys.indexOf(now.getFullYear()) < 0) ys.push(now.getFullYear()); ys.sort((a, b) => a - b);
+    rpYearChips(ys, year, renderMonthlyReports);
+    const items = months.map((m, i) => {
+        const rows = sales.filter(s => { const d = String(s.date || ''); return parseInt(d.slice(0, 4)) === year && parseInt(d.slice(5, 7)) - 1 === i; });
+        return { label: m + ' ' + year, name: m, idx: i, amount: rows.reduce((a, b) => a + (parseFloat(b.amount) || 0), 0), bills: rows.length };
+    });
+    const max = items.reduce((m, i) => Math.max(m, i.amount), 0);
+    rpSummary(items, 'month');
+    items.forEach(i => rpCard(list, { big: i.name, small: year, amount: i.amount, bills: i.bills, max: max, label: i.label,
+        active: year === now.getFullYear() && i.idx === now.getMonth(),
+        badge: (year === now.getFullYear() && i.idx === now.getMonth()) ? 'THIS MONTH' : '',
+        future: year > now.getFullYear() || (year === now.getFullYear() && i.idx > now.getMonth()) }));
+}
+
 function showDetails(type) {
-    
-  document.getElementById('dateDetailsPage').style.display = 'flex';
+    document.getElementById('dateDetailsPage').style.display = 'flex';
     const list = document.getElementById('dateList');
     const title = document.getElementById('detailTitle');
-    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    const sales = repSalesLogs();
     const now = new Date();
     list.innerHTML = '';
-
     const filterBar = document.getElementById('dailyReportFilterBar');
+    const chips = document.getElementById('dateYearChips'), sum = document.getElementById('dateSummary');
+    if (chips) { chips.style.display = 'none'; chips.innerHTML = ''; }
+    if (sum) sum.style.display = 'none';
 
     if (type === 'day') {
         filterBar.style.display = 'block';
@@ -3922,24 +3997,19 @@ function showDetails(type) {
         filterBar.style.display = 'none';
     }
     if (type === 'month') {
-        title.innerText = "MONTHLY REPORTS";
-        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-        months.forEach((m, i) => {
-            let mTotal = sales.filter(s => {
-                let d = new Date(s.date);
-                return d.getMonth() === i && d.getFullYear() === now.getFullYear();
-            }).reduce((a, b) => a + b.amount, 0);
-            addReportRow(list, `${m} ${now.getFullYear()}`, mTotal.toFixed(cdec()), i === now.getMonth(), null);
-        });
-    } 
+        renderMonthlyReports(now.getFullYear());
+    }
     else if (type === 'year') {
         title.innerText = "YEARLY REPORTS";
-        const currentYear = now.getFullYear();
-        let lastYear = currentYear; sales.forEach(s2 => { const yy = new Date(s2.date).getFullYear(); if (yy > lastYear) lastYear = yy; });
-        for (let y = 2026; y <= lastYear; y++) {
-            let yTotal = sales.filter(s => new Date(s.date).getFullYear() === y).reduce((a, b) => a + b.amount, 0);
-            addReportRow(list, `Year ${y}`, yTotal.toFixed(cdec()), y === currentYear, null);
-        }
+        const ys = repYearsWithData(sales); if (ys.indexOf(now.getFullYear()) < 0) ys.push(now.getFullYear()); ys.sort((a, b) => a - b);
+        const items = ys.map(y => {
+            const rows = sales.filter(s => parseInt(String(s.date || '').slice(0, 4)) === y);
+            return { y: y, amount: rows.reduce((a, b) => a + (parseFloat(b.amount) || 0), 0), bills: rows.length, label: 'Year ' + y };
+        });
+        const max = items.reduce((m, i) => Math.max(m, i.amount), 0);
+        rpSummary(items, 'year');
+        items.forEach(i => rpCard(list, { big: i.y, small: 'Full year', amount: i.amount, bills: i.bills, max: max, label: i.label,
+            active: i.y === now.getFullYear(), badge: i.y === now.getFullYear() ? 'THIS YEAR' : '', future: false }));
     }
 }
 
@@ -3947,18 +4017,26 @@ function showDetails(type) {
 function renderDailyReportsFor(year, month) {
     const list = document.getElementById('dateList');
     const title = document.getElementById('detailTitle');
-    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    const sales = repSalesLogs();
     const now = new Date();
     const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const wd = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     list.innerHTML = '';
     title.innerText = "DAILY REPORTS";
-    let daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const items = [];
     for (let i = 1; i <= daysInMonth; i++) {
-        let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        let dayTotal = sales.filter(s => s.date === dateKey).reduce((a, b) => a + b.amount, 0);
-        let isToday = (i === now.getDate() && month === now.getMonth() && year === now.getFullYear());
-        addReportRow(list, `${months[month]} ${i}`, dayTotal.toFixed(cdec()), isToday, dateKey);
+        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const rows = sales.filter(s => s.date === dateKey);
+        const dt = new Date(year, month, i);
+        items.push({ i: i, dateKey: dateKey, amount: rows.reduce((a, b) => a + (parseFloat(b.amount) || 0), 0), bills: rows.length,
+            label: months[month] + ' ' + i, wd: wd[dt.getDay()], isToday: (i === now.getDate() && month === now.getMonth() && year === now.getFullYear()),
+            future: dt > new Date(now.getFullYear(), now.getMonth(), now.getDate()) });
     }
+    const max = items.reduce((m, i) => Math.max(m, i.amount), 0);
+    rpSummary(items, 'day');
+    items.forEach(i => rpCard(list, { big: String(i.i).padStart(2, '0'), small: months[month] + ' \u00b7 ' + i.wd, amount: i.amount, bills: i.bills, max: max,
+        label: i.label, dateKey: i.dateKey, active: i.isToday, badge: i.isToday ? 'TODAY' : '', future: i.future }));
 }
 
 let dailyFilterMode = 'month'; // 'month' | 'manual'
@@ -3985,28 +4063,32 @@ function toggleDailyManualPicker() {
     const monthSel = document.getElementById('dailyManualMonthSelect');
     const yearSel = document.getElementById('dailyManualYearSelect');
 
-    // Year dropdown: 2024 se current year tak (future years exclude)
-    yearSel.innerHTML = '';
+    // Year/month dropdown: sirf wahi jinka data system me hai
+    const sales = repSalesLogs();
     const currentYear = now.getFullYear();
-    for (let y = currentYear; y >= 2024; y--) {
+    let ys = repYearsWithData(sales);
+    if (!ys.length) ys = [currentYear];
+    yearSel.innerHTML = '';
+    const defYear = ys.indexOf(currentYear) >= 0 ? currentYear : ys[ys.length - 1];
+    ys.forEach(y => {
         const opt = document.createElement('option');
-        opt.value = y;
-        opt.innerText = y;
-        if (y === currentYear) opt.selected = true;
+        opt.value = y; opt.innerText = y;
+        if (y === defYear) opt.selected = true;
         yearSel.appendChild(opt);
-    }
+    });
 
     function populateMonths() {
         const selYear = parseInt(yearSel.value);
-        const maxMonth = (selYear === currentYear) ? now.getMonth() : 11; // future months exclude
+        let ms = repMonthsWithData(sales, selYear);
+        if (selYear === currentYear && ms.indexOf(now.getMonth()) < 0) { ms.push(now.getMonth()); ms.sort((a, b) => a - b); }
+        if (!ms.length) ms = [selYear === currentYear ? now.getMonth() : 0];
         monthSel.innerHTML = '';
-        for (let m = 0; m <= maxMonth; m++) {
+        ms.forEach(m => {
             const opt = document.createElement('option');
-            opt.value = m;
-            opt.innerText = months[m];
+            opt.value = m; opt.innerText = months[m];
             monthSel.appendChild(opt);
-        }
-        monthSel.value = maxMonth; // default current month (auto-fill)
+        });
+        monthSel.value = (selYear === currentYear && ms.indexOf(now.getMonth()) >= 0) ? now.getMonth() : ms[ms.length - 1];
     }
     populateMonths();
     yearSel.onchange = populateMonths;
@@ -5366,6 +5448,31 @@ function deleteBill(billNo, dateKey, displayLabel){
     </style>
 </div>
 
+<style id="rep-pro-css">
+.rp-sums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rp-sum{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:10px 12px;box-shadow:0 2px 8px rgba(15,23,42,.04);min-width:0}
+.rp-sum small{display:block;font-size:9.5px;font-weight:800;letter-spacing:.7px;color:#64748b}
+.rp-sum b{display:block;margin:3px 0 1px;font-size:16px;font-weight:800;letter-spacing:-.2px;word-break:break-all;line-height:1.15}
+.rp-sum span{display:block;font-size:10.5px;font-weight:600;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dateList{grid-auto-rows:max-content}
+#dateList .rp-card{flex:none;min-height:min-content;position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 2px 8px rgba(15,23,42,.04);transition:transform .12s ease,box-shadow .12s ease;min-width:0;overflow:hidden}
+#dateList .rp-card[style*="pointer"]:active{transform:scale(.98)}
+#dateList .rp-card.rp-active{border-color:#10b981;background:linear-gradient(135deg,#ecfdf5,#fff);box-shadow:0 6px 16px rgba(16,185,129,.16)}
+#dateList .rp-card.rp-active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#10b981}
+#dateList .rp-card.rp-zero .rp-amt{color:#94a3b8}
+#dateList .rp-card.rp-future{opacity:.55}
+.rp-date{flex:none;min-width:58px;text-align:center;padding:6px 8px;border-radius:12px;background:#f1f5f9}
+.rp-active .rp-date{background:#d1fae5}
+.rp-date b{display:block;font-size:20px;font-weight:800;color:#0f172a;line-height:1.1}
+.rp-date small{display:block;margin-top:2px;font-size:9.5px;font-weight:700;color:#64748b;letter-spacing:.3px;white-space:nowrap}
+.rp-body{flex:1;min-width:0}
+.rp-amt{font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-.2px;white-space:nowrap}
+.rp-amt span{font-size:10.5px;font-weight:700;color:#64748b;margin-right:2px}
+.rp-bar{height:6px;margin:6px 0 4px;border-radius:6px;background:#eef2f7;overflow:hidden}
+.rp-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#0ea5e9,#10b981)}
+.rp-meta{font-size:10.5px;font-weight:600;color:#94a3b8}
+.rp-badge{position:absolute;top:8px;right:10px;font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#047857;background:#d1fae5;padding:2px 7px;border-radius:999px}
+</style>
 <div id="dateDetailsPage" class="full-page" style="background: #f1f5f9; display: none; flex-direction: column; overflow: hidden;">
     <div class="dash-header" style="background: white; padding: 12px 20px; border-bottom: 2px solid #e2e8f0; flex-shrink: 0;">
         <div style="display: flex; flex-direction: column;">
@@ -5390,6 +5497,8 @@ function deleteBill(billNo, dateKey, displayLabel){
         </button>
     </div>
 </div>
+<div id="dateYearChips" style="display:none; gap:8px; overflow-x:auto; padding:10px 15px 0; background:#f1f5f9; flex-shrink:0;"></div>
+<div id="dateSummary" style="display:none; padding:12px 12px 0; flex-shrink:0;"></div>
 <div id="dateList" style="flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; align-content: start;">
     </div>
 
@@ -7165,7 +7274,7 @@ window.openIconPicker=function(t){ KPIcons.open(t); };
 </style>
 <div id="expensesPage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
     <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
-        <b style="font-size:17px; color:#1e293b;">💸 Expenses</b>
+        <b style="font-size:17px; color:#1e293b;"><i class="fas fa-money-bill-wave" style="color:#ef4444"></i> Expenses</b>
         <button onclick="closeExpenses()" aria-label="Close Expenses" title="Close" class="layout-corner-close">×</button>
     </div>
     <div style="padding:12px 12px 0; flex-shrink:0;">
@@ -7197,7 +7306,7 @@ window.openIconPicker=function(t){ KPIcons.open(t); };
 <!-- Add / Edit expense -->
 <div id="expFormOv" onclick="EXP.closeForm()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:200100;backdrop-filter:blur(4px);"></div>
 <div id="expFormBox" style="display:none;position:fixed;z-index:200101;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;max-height:92vh;">
-    <div class="xp-head"><div class="xp-chip">💸</div><div><h3 id="expFormTitle" class="xp-ttl">Add Expense</h3><span class="xp-sub">Record a business expense</span></div></div>
+    <div class="xp-head"><div class="xp-chip"><i class="fas fa-money-bill-wave" style="color:#ef4444"></i></div><div><h3 id="expFormTitle" class="xp-ttl">Add Expense</h3><span class="xp-sub">Record a business expense</span></div></div>
     <div class="xp-body">
         <div class="xp-field"><label class="xp-lbl" for="expfDate">Date</label><input type="date" id="expfDate" class="xp-in"></div>
         <div class="xp-field"><label class="xp-lbl" for="expfCat">Category</label><select id="expfCat" class="xp-in"></select></div>
