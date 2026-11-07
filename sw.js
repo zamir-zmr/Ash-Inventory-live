@@ -1,98 +1,46 @@
-/* KP HARDWARE — Service Worker v32
-   Meets all PWA installability criteria:
-   - fetch handler present (required by Chrome)
-   - cache-first for core assets, network-first for dynamic
-   - proper activate: old cache cleanup
-*/
+const CACHE = 'kp-inventory-v8';
+const SHELL = ['./', './index.html', './pos_system.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
-const CACHE_NAME = 'kp-hw-v32';
-const CORE_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './favicon-64.png',
-  './icon-192.png',
-  './icon-512.png',
-  './apple-touch-icon.png'
-];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL).catch(() => {})).then(() => self.skipWaiting()));
+});
 
-/* ── Install: cache core assets ── */
-self.addEventListener('install', function (e) {
-  self.skipWaiting();
+self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(function (cache) {
-      return cache.addAll(CORE_ASSETS).catch(function () {
-        /* If some icon files are missing, still install */
-        return cache.add('./index.html');
-      });
-    })
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-/* ── Activate: delete old caches ── */
-self.addEventListener('activate', function (e) {
-  e.waitUntil(
-    caches.keys().then(function (keys) {
-      return Promise.all(
-        keys.filter(function (k) { return k !== CACHE_NAME; })
-            .map(function (k) { return caches.delete(k); })
-      );
-    }).then(function () {
-      return self.clients.claim();
-    })
-  );
-});
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return; // Firebase, CDN etc. go straight to network
 
-/* ── Fetch: REQUIRED for installability ──
-   Strategy:
-   - HTML pages  → Network first, fall back to cache
-   - Assets/CDN  → Cache first, fall back to network
-   - Firebase/API → Network only (never cache)
-*/
-self.addEventListener('fetch', function (e) {
-  var url = e.request.url;
+  // Cache key = path only (ignores ?v=... query), so index.html and pos_system.html stay separate
+  const key = new Request(url.origin + url.pathname);
+  const isImage = /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(url.pathname);
 
-  /* Skip non-GET, chrome-extension, Firebase, googleapis data requests */
-  if (e.request.method !== 'GET') return;
-  if (url.includes('firebaseio.com') ||
-      url.includes('googleapis.com/identitytoolkit') ||
-      url.includes('firebaseapp.com') ||
-      url.startsWith('chrome-extension://')) {
-    return; /* Let browser handle normally */
-  }
-
-  /* CDN assets → cache first */
-  if (url.includes('cdnjs.cloudflare.com') ||
-      url.includes('cdn.jsdelivr.net') ||
-      url.includes('fonts.googleapis.com') ||
-      url.includes('fonts.gstatic.com') ||
-      url.includes('gstatic.com/firebasejs') ||
-      url.includes('sweetalert2')) {
+  // Images/icons: cache first, update in background
+  if (isImage) {
     e.respondWith(
-      caches.match(e.request).then(function (cached) {
-        if (cached) return cached;
-        return fetch(e.request).then(function (resp) {
-          if (!resp || resp.status !== 200) return resp;
-          var clone = resp.clone();
-          caches.open(CACHE_NAME).then(function (c) { c.put(e.request, clone); });
-          return resp;
-        }).catch(function () { return new Response('', { status: 503 }); });
+      caches.match(key).then(cached => {
+        const net = fetch(req).then(res => {
+          if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(key, copy)); }
+          return res;
+        }).catch(() => cached);
+        return cached || net;
       })
     );
     return;
   }
 
-  /* Local app files → network first, cache fallback */
+  // Pages, scripts, json: always network first (latest GitHub/Vercel update), cache only when offline
   e.respondWith(
-    fetch(e.request).then(function (resp) {
-      if (!resp || resp.status !== 200 || resp.type === 'opaque') return resp;
-      var clone = resp.clone();
-      caches.open(CACHE_NAME).then(function (c) { c.put(e.request, clone); });
-      return resp;
-    }).catch(function () {
-      return caches.match(e.request).then(function (cached) {
-        return cached || caches.match('./index.html');
-      });
-    })
+    fetch(req, { cache: 'no-store' }).then(res => {
+      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(key, copy)); }
+      return res;
+    }).catch(() => caches.match(key).then(r => r || (req.mode === 'navigate' ? caches.match('./index.html') : undefined)))
   );
 });
