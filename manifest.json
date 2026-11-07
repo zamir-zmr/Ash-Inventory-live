@@ -3,13 +3,30 @@
   "short_name": "KP Inventory",
   "description": "KP Hardware inventory, purchase, distribution and wastage manager",
   "id": "./",
-  "start_url": "./?source=pwa&v=8",
+  "start_url": "./?source=pwa&v=33",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "any",
   "background_color": "#0E1116",
-  "theme_color": "#0E1116",
+  "theme_color": "#0d9488",
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "categories": ["business", "productivity"],
   "icons": [
+    {
+      "src": "favicon-64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "icon-192.png",
       "sizes": "192x192",
@@ -29,9 +46,29 @@
       "purpose": "maskable"
     }
   ],
-  "display_override": [
-    "standalone"
+  "screenshots": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "KP Hardware Inventory Dashboard"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "KP Hardware Inventory Mobile"
+    }
   ],
-  "lang": "en",
-  "dir": "ltr"
+  "shortcuts": [
+    {
+      "name": "Open POS",
+      "short_name": "POS",
+      "description": "Open Point of Sale",
+      "url": "./?mode=pos&source=pwa_shortcut",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
 }
