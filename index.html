@@ -517,13 +517,18 @@
 
      
     </style>
-    <link rel="manifest" href="manifest.json?v=8">
-    <meta name="theme-color" content="#0E1116">
+    <link rel="manifest" href="manifest.json?v=32">
+    <meta name="theme-color" content="#0d9488">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="KP Inventory">
-    <link rel="icon" type="image/png" href="favicon-64.png">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KP Hardware">
+    <meta name="application-name" content="KP Hardware">
+    <meta name="msapplication-TileColor" content="#0d9488">
+    <meta name="msapplication-tap-highlight" content="no">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <style>
     /* ===== Splash (KP HARDWARE) ===== */
     #splash{--sp-bg:#0E1116;--sp-text:#E9EAEE;--sp-accent:#FBBF24;--sp-surface:#1D2230;position:fixed;inset:0;z-index:2147483000;background:var(--sp-bg);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .7s ease,transform .7s cubic-bezier(.4,0,.2,1),visibility .7s}
@@ -597,9 +602,59 @@ body { background: var(--bg); }
   setTimeout(function () { if (sp.isConnected) { sp.classList.add('hide'); setTimeout(function () { sp.remove(); }, 700); } }, 5000);
 })();
 if ('serviceWorker' in navigator && location.protocol !== 'file:' && location.protocol !== 'content:') {
-  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (r) { try { r.update(); } catch (e) {} }).catch(function () {}); });
-  navigator.serviceWorker.addEventListener('controllerchange', function () { try { if (sessionStorage.getItem('swReloaded')) return; sessionStorage.setItem('swReloaded', '1'); } catch (e) {} location.reload(); });
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(function (r) { try { r.update(); } catch (e) {} })
+      .catch(function () {});
+  });
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    try { if (sessionStorage.getItem('swReloaded')) return; sessionStorage.setItem('swReloaded', '1'); } catch (e) {}
+    location.reload();
+  });
 }
+
+/* ── PWA Install Prompt (PC + Mobile) ── */
+(function () {
+  var deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    /* Show a subtle install banner after 4 seconds if not already installed */
+    setTimeout(function () {
+      if (!deferredPrompt) return;
+      var already = window.matchMedia('(display-mode: standalone)').matches ||
+                    window.matchMedia('(display-mode: window-controls-overlay)').matches ||
+                    navigator.standalone === true;
+      if (already) return;
+      var banner = document.createElement('div');
+      banner.id = 'kp-install-banner';
+      banner.innerHTML =
+        '<span style="flex:1;font-size:13px;font-weight:700;color:#0f172a;">📲 Install KP Hardware as an app</span>' +
+        '<button id="kp-install-yes" style="background:#0d9488;color:#fff;border:none;padding:8px 16px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap;">Install</button>' +
+        '<button id="kp-install-no" style="background:#f1f5f9;color:#64748b;border:none;padding:8px 12px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;">✕</button>';
+      banner.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:12px 16px;box-shadow:0 8px 28px rgba(15,23,42,.18);max-width:420px;width:calc(100% - 32px);box-sizing:border-box;animation:kpBannerIn .3s cubic-bezier(.2,.9,.3,1.1) both;';
+      if (!document.getElementById('kp-install-banner-style')) {
+        var st = document.createElement('style');
+        st.id = 'kp-install-banner-style';
+        st.textContent = '@keyframes kpBannerIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+        document.head.appendChild(st);
+      }
+      document.body.appendChild(banner);
+      document.getElementById('kp-install-yes').addEventListener('click', function () {
+        if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(function () { deferredPrompt = null; }); }
+        banner.remove();
+      });
+      document.getElementById('kp-install-no').addEventListener('click', function () {
+        banner.remove(); deferredPrompt = null;
+      });
+    }, 4000);
+  });
+  window.addEventListener('appinstalled', function () {
+    deferredPrompt = null;
+    var b = document.getElementById('kp-install-banner');
+    if (b) b.remove();
+  });
+})();
 </script>
 
 <div class="container">
