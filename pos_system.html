@@ -3746,12 +3746,6 @@ function toggleRepManualPicker(){
     document.querySelectorAll('.rep-filter-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.rep-filter-btn[data-f="manual"]').classList.add('active');
     _repCurrentFilter = 'manual';
-    try {
-        const s0 = document.getElementById('repManualStart'), e0 = document.getElementById('repManualEnd');
-        const n0 = new Date(), k0 = repFmtKey(n0);
-        if (s0 && !s0.value) s0.value = k0.slice(0, 8) + '01';
-        if (e0 && !e0.value) e0.value = k0;
-    } catch (x) {}
 }
 function applyRepManualFilter(){
     const s = document.getElementById('repManualStart').value;
@@ -3935,8 +3929,8 @@ function rpCard(parent, o){
         '<div class="rp-date"><b>' + o.big + '</b><small>' + o.small + '</small></div>' +
         '<div class="rp-body"><div class="rp-amt"><span>' + curCode() + '</span> ' + o.amount.toFixed(cdec()) + '</div>' +
         '<div class="rp-bar"><i style="width:' + pct + '%"></i></div>' +
-        '<div class="rp-meta">' + (o.bills ? o.bills + (o.bills === 1 ? ' bill' : ' bills') : 'No bills') + '</div></div>' +
-        (o.badge ? '<em class="rp-badge">' + o.badge + '</em>' : '');
+        '<div class="rp-meta"><span>' + (o.bills ? o.bills + (o.bills === 1 ? ' bill' : ' bills') : 'No bills') + '</span>' +
+        (o.badge ? '<em class="rp-badge">' + o.badge + '</em>' : '') + '</div></div>';
     parent.appendChild(d);
 }
 
@@ -5452,9 +5446,10 @@ function deleteBill(billNo, dateKey, displayLabel){
 .rp-sums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .rp-sum{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:10px 12px;box-shadow:0 2px 8px rgba(15,23,42,.04);min-width:0}
 .rp-sum small{display:block;font-size:9.5px;font-weight:800;letter-spacing:.7px;color:#64748b}
-.rp-sum b{display:block;margin:3px 0 1px;font-size:16px;font-weight:800;letter-spacing:-.2px;word-break:break-all;line-height:1.15}
+.rp-sum b{display:block;margin:3px 0 1px;font-size:16px;font-weight:800;letter-spacing:-.2px;white-space:nowrap;line-height:1.15}
+@media (max-width:520px){.rp-sum b{font-size:14px}.rp-sum{padding:10px 9px}}
 .rp-sum span{display:block;font-size:10.5px;font-weight:600;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#dateList{grid-auto-rows:max-content}
+#dateList{grid-auto-rows:max-content;grid-template-columns:repeat(auto-fill,minmax(270px,1fr)) !important}
 #dateList .rp-card{flex:none;min-height:min-content;position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 2px 8px rgba(15,23,42,.04);transition:transform .12s ease,box-shadow .12s ease;min-width:0;overflow:hidden}
 #dateList .rp-card[style*="pointer"]:active{transform:scale(.98)}
 #dateList .rp-card.rp-active{border-color:#10b981;background:linear-gradient(135deg,#ecfdf5,#fff);box-shadow:0 6px 16px rgba(16,185,129,.16)}
@@ -5466,12 +5461,12 @@ function deleteBill(billNo, dateKey, displayLabel){
 .rp-date b{display:block;font-size:20px;font-weight:800;color:#0f172a;line-height:1.1}
 .rp-date small{display:block;margin-top:2px;font-size:9.5px;font-weight:700;color:#64748b;letter-spacing:.3px;white-space:nowrap}
 .rp-body{flex:1;min-width:0}
-.rp-amt{font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-.2px;white-space:nowrap}
+.rp-amt{font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rp-amt span{font-size:10.5px;font-weight:700;color:#64748b;margin-right:2px}
 .rp-bar{height:6px;margin:6px 0 4px;border-radius:6px;background:#eef2f7;overflow:hidden}
 .rp-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#0ea5e9,#10b981)}
-.rp-meta{font-size:10.5px;font-weight:600;color:#94a3b8}
-.rp-badge{position:absolute;top:8px;right:10px;font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#047857;background:#d1fae5;padding:2px 7px;border-radius:999px}
+.rp-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10.5px;font-weight:600;color:#94a3b8}
+.rp-badge{flex:none;font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#047857;background:#d1fae5;padding:2px 7px;border-radius:999px}
 </style>
 <div id="dateDetailsPage" class="full-page" style="background: #f1f5f9; display: none; flex-direction: column; overflow: hidden;">
     <div class="dash-header" style="background: white; padding: 12px 20px; border-bottom: 2px solid #e2e8f0; flex-shrink: 0;">
